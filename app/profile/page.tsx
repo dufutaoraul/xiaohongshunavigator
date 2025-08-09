@@ -190,19 +190,6 @@ export default function ProfilePage() {
           <p>• <strong className="text-white">内容关键词</strong>：选择你最擅长和最感兴趣的领域，保持垂直度</p>
           <p>• <strong className="text-white">90天愿景</strong>：设定具体可量化的目标，有助于AI为你制定内容策略</p>
         </div>
-        
-        <div className="mt-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
-          <div className="flex items-start">
-            <span className="text-blue-400 mr-2 text-lg">ℹ️</span>
-            <div className="text-sm text-blue-300">
-              <strong>测试学号：</strong><br/>
-              • AXCF2025040088 - 张三<br/>
-              • AXCF2025040089 - 李四<br/>
-              • AXCF2025040090 - 王五<br/>
-              （您可以使用这些测试学号体验功能）
-            </div>
-          </div>
-        </div>
       </Card>
     </div>
   )
