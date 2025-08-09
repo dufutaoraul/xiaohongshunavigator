@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --cosmic-blue: #0f0f23;
+  --deep-space: #1a0b2e;
+  --nebula-purple: #16213e;
+  --cosmic-cyan: #0f3460;
+  --star-gold: #e94560;
+  --aurora-blue: #533483;
+  --galaxy-purple: #7209b7;
+  --cosmic-white: #e8eaed;
+  --stardust-gray: #9aa0a6;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: radial-gradient(ellipse at center, var(--nebula-purple) 0%, var(--deep-space) 35%, var(--cosmic-blue) 100%);
+  background-attachment: fixed;
+  color: var(--cosmic-white);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 星空粒子动画 */
+.cosmic-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 160px 30px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 200px 60px, rgba(233, 69, 96, 0.4), transparent),
+    radial-gradient(1px 1px at 250px 20px, rgba(114, 9, 183, 0.3), transparent);
+  background-repeat: repeat;
+  background-size: 300px 150px;
+  animation: sparkle 25s linear infinite;
+  z-index: -1;
+}
+
+@keyframes sparkle {
+  0% { transform: translateY(0px) rotate(0deg); opacity: 1; }
+  25% { opacity: 0.8; }
+  50% { opacity: 1; }
+  75% { opacity: 0.6; }
+  100% { transform: translateY(-100px) rotate(180deg); opacity: 1; }
+}
+
+/* 玻璃拟态效果 */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 
+    0 8px 32px 0 rgba(31, 38, 135, 0.37),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-effect:hover {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 8px 32px 0 rgba(31, 38, 135, 0.5),
+    0 0 20px rgba(116, 52, 131, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-5px);
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+/* 渐变文字效果 */
+.gradient-text {
+  background: linear-gradient(135deg, var(--star-gold), var(--galaxy-purple), var(--cosmic-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* 发光按钮效果 */
+.cosmic-button {
+  background: linear-gradient(135deg, var(--galaxy-purple), var(--star-gold));
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cosmic-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.cosmic-button:hover::before {
+  left: 100%;
+}
+
+.cosmic-button:hover {
+  box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+  transform: scale(1.05);
+}
+
+/* 导航栏样式 */
+.cosmic-nav {
+  background: rgba(15, 15, 35, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 输入框样式 */
+.cosmic-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: var(--cosmic-white);
+  backdrop-filter: blur(10px);
+}
+
+.cosmic-input:focus {
+  border-color: var(--galaxy-purple);
+  box-shadow: 0 0 0 3px rgba(114, 9, 183, 0.1);
+  outline: none;
+}
+
+.cosmic-input::placeholder {
+  color: var(--stardust-gray);
+}
+
+/* 卡片hover响应动画 */
+.floating-card {
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.floating-card:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: 
+    0 20px 40px 0 rgba(31, 38, 135, 0.4),
+    0 0 30px rgba(233, 69, 96, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.floating-card:hover .breathing-glow {
+  transform: scale(1.1);
+  filter: brightness(1.3);
+}
+
+/* 呼吸灯效果 */
+@keyframes breathe {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.breathing-glow {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* 页面渐入动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cosmic-blue);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--galaxy-purple), var(--star-gold));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(var(--star-gold), var(--galaxy-purple));
+}
