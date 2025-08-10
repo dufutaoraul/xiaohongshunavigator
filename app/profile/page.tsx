@@ -74,7 +74,7 @@ export default function ProfilePage() {
         // 填充用户信息
         setProfile({
           student_id: inputStudentId,
-          name: '',
+          name: result.user.name || '',
           persona: result.user.persona || '',
           keywords: result.user.keywords || '',
           vision: result.user.vision || ''
@@ -249,19 +249,10 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-              <div className="text-right space-y-2">
-                {isExistingUser ? (
-                  <span className="block px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">
-                    ✨ 老用户
-                  </span>
-                ) : (
-                  <span className="block px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-xs">
-                    🆕 新用户
-                  </span>
-                )}
+              <div className="text-right">
                 <button
                   onClick={() => setShowPasswordModal(true)}
-                  className="block px-3 py-1 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 hover:text-purple-200 rounded-full text-xs transition-all duration-300"
+                  className="px-3 py-1 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 hover:text-purple-200 rounded-full text-xs transition-all duration-300"
                 >
                   🔑 修改密码
                 </button>
@@ -341,6 +332,7 @@ export default function ProfilePage() {
         onClose={() => setShowPasswordModal(false)}
         onChangePassword={handlePasswordChange}
         studentId={profile.student_id}
+        currentPassword={currentPassword}
         loading={authLoading}
       />
     </div>

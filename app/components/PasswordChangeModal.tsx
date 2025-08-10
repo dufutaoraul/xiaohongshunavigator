@@ -7,6 +7,7 @@ interface PasswordChangeModalProps {
   onClose: () => void
   onChangePassword: (newPassword: string) => Promise<boolean>
   studentId: string
+  currentPassword: string
   loading?: boolean
 }
 
@@ -15,12 +16,16 @@ export default function PasswordChangeModal({
   onClose, 
   onChangePassword, 
   studentId, 
+  currentPassword,
   loading = false 
 }: PasswordChangeModalProps) {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  
+  // 检查当前密码是否与学号相同
+  const isPasswordSameAsStudentId = currentPassword === studentId
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,10 +79,15 @@ export default function PasswordChangeModal({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full shadow-2xl">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-4">🔒</div>
-          <h2 className="text-2xl font-bold gradient-text mb-2">安全提醒</h2>
+          <div className="text-4xl mb-4">{isPasswordSameAsStudentId ? '🔒' : '🔑'}</div>
+          <h2 className="text-2xl font-bold gradient-text mb-2">
+            {isPasswordSameAsStudentId ? '安全提醒' : '修改密码'}
+          </h2>
           <p className="text-white/60 text-sm">
-            检测到您的密码仍是初始密码，建议立即修改以保障账户安全
+            {isPasswordSameAsStudentId 
+              ? '检测到您的密码仍是初始密码，建议立即修改以保障账户安全'
+              : '请输入新密码来更新您的账户密码'
+            }
           </p>
         </div>
 
@@ -89,11 +99,13 @@ export default function PasswordChangeModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="p-4 bg-yellow-500/10 border border-yellow-400/30 rounded-lg">
-              <p className="text-yellow-300 text-sm">
-                ⚠️ 当前密码: <span className="font-mono">{studentId}</span>（与学号相同）
-              </p>
-            </div>
+            {isPasswordSameAsStudentId && (
+              <div className="p-4 bg-yellow-500/10 border border-yellow-400/30 rounded-lg">
+                <p className="text-yellow-300 text-sm">
+                  ⚠️ 当前密码: <span className="font-mono">{studentId}</span>（与学号相同）
+                </p>
+              </div>
+            )}
 
             <Input
               label="新密码"

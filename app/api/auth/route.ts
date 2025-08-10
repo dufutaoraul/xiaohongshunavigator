@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       // 验证用户登录
       const { data: user, error } = await supabase
         .from('users')
-        .select('student_id, password, persona, keywords, vision')
+        .select('student_id, name, password, persona, keywords, vision')
         .eq('student_id', student_id)
         .single()
 
@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
         success: true,
         user: {
           student_id: user.student_id,
+          name: user.name,
           persona: user.persona,
           keywords: user.keywords,
           vision: user.vision
