@@ -80,31 +80,118 @@ export async function POST(request: NextRequest) {
         console.log('Dify response headers:', Object.fromEntries(difyResponse.headers.entries()))
 
         if (difyResponse.ok) {
-          const result = await difyResponse.json()
+          const rawResult = await difyResponse.json()
           console.log('===== DIFY RESPONSE ANALYSIS =====')
-          console.log('Raw Dify response:', JSON.stringify(result, null, 2))
-          console.log('Response type:', typeof result)
-          console.log('Response keys:', Object.keys(result))
+          console.log('Raw Dify response:', JSON.stringify(rawResult, null, 2))
+          console.log('Response type:', typeof rawResult)
           
-          if (result.data) {
-            console.log('result.data exists:', result.data)
-            console.log('result.data type:', typeof result.data)
-            console.log('result.data keys:', Object.keys(result.data))
-            console.log('result.data.titles:', result.data.titles)
-            console.log('result.data.bodies:', result.data.bodies)
+          let result = rawResult
+          
+          // 检查是否返回的是字符串化的JSON（被双引号包裹）
+          if (typeof rawResult === 'string') {
+            try {
+              result = JSON.parse(rawResult)
+              console.log('Parsed string JSON:', JSON.stringify(result, null, 2))
+            } catch (parseError) {
+              console.error('Failed to parse stringified JSON:', parseError)
+              console.error('Raw string content:', rawResult.substring(0, 500) + '...')
+              throw new Error('Invalid JSON format from Dify')
+            }
           }
           
-          if (result.answer) {
-            console.log('result.answer exists:', result.answer)
+          // 如果result中有字符串字段包含JSON，也尝试解析
+          if (result.answer && typeof result.answer === 'string' && result.answer.startsWith('{')) {
+            try {
+              const parsedAnswer = JSON.parse(result.answer)
+              console.log('Found JSON in answer field:', parsedAnswer)
+              result = { ...result, parsedAnswer }
+            } catch (e) {
+              console.log('answer field is not valid JSON, keeping as string')
+            }
           }
           
-          if (result.content) {
-            console.log('result.content exists:', result.content)
-          }
-          
+          console.log('Final processed result keys:', Object.keys(result))
           console.log('====================================')
           
-          // 处理真实的Dify响应格式 - 数据在data.outputs.structured_output中
+          // 首先检查直接的structured_output格式（新的Dify输出）
+          if (result.structured_output) {
+            const structuredData = result.structured_output
+            console.log('Found direct structured_output:', structuredData)
+            
+            // 处理缺失的hashtags字段
+            let hashtags = []
+            if (Array.isArray(structuredData.hashtags)) {
+              hashtags = structuredData.hashtags
+            } else {
+              // 如果没有hashtags，提供默认标签
+              hashtags = ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "AI工具", "效率提升", "学习方法"]
+              console.log('Using default hashtags as none provided')
+            }
+            
+            // 处理visuals字段
+            const visuals = {
+              images: structuredData.visuals?.images || [],
+              videos: structuredData.visuals?.videos || []
+            }
+            
+            // 如果没有videos，添加默认建议
+            if (visuals.videos.length === 0) {
+              visuals.videos = [
+                { id: 1, suggestion: "制作操作演示视频，展示完整的实践过程" },
+                { id: 2, suggestion: "录制学习心得分享视频，增加真实感和互动性" }
+              ]
+              console.log('Added default video suggestions')
+            }
+            
+            return NextResponse.json({
+              titles: structuredData.titles || [],
+              bodies: structuredData.bodies || [],
+              hashtags: hashtags,
+              visuals: visuals,
+              dify: true,
+              source: 'direct_structured_output'
+            })
+          }
+          
+          // 检查parsedAnswer中的structured_output
+          if (result.parsedAnswer && result.parsedAnswer.structured_output) {
+            const structuredData = result.parsedAnswer.structured_output
+            console.log('Found structured_output in parsed answer:', structuredData)
+            
+            // 处理缺失的hashtags字段
+            let hashtags = []
+            if (Array.isArray(structuredData.hashtags)) {
+              hashtags = structuredData.hashtags
+            } else {
+              hashtags = ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "AI工具", "效率提升", "学习方法"]
+              console.log('Using default hashtags as none provided in parsed answer')
+            }
+            
+            // 处理visuals字段
+            const visuals = {
+              images: structuredData.visuals?.images || [],
+              videos: structuredData.visuals?.videos || []
+            }
+            
+            if (visuals.videos.length === 0) {
+              visuals.videos = [
+                { id: 1, suggestion: "制作操作演示视频，展示完整的实践过程" },
+                { id: 2, suggestion: "录制学习心得分享视频，增加真实感和互动性" }
+              ]
+              console.log('Added default video suggestions in parsed answer')
+            }
+            
+            return NextResponse.json({
+              titles: structuredData.titles || [],
+              bodies: structuredData.bodies || [],
+              hashtags: hashtags,
+              visuals: visuals,
+              dify: true,
+              source: 'parsed_answer_structured_output'
+            })
+          }
+          
+          // 处理传统的Dify响应格式 - 数据在data.outputs.structured_output中
           if (result.data && result.data.outputs && result.data.outputs.structured_output) {
             const structuredData = result.data.outputs.structured_output
             console.log('Found Dify structured_output:', structuredData)
