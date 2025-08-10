@@ -29,20 +29,6 @@ export default function StudentInputWithAutocomplete({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 组件挂载时读取保存的学号
-  useEffect(() => {
-    try {
-      const savedStudentId = localStorage.getItem('rememberedStudentId')
-      if (savedStudentId && !value) {
-        onChange(savedStudentId)
-        // 自动验证保存的学号
-        verifyStudentId(savedStudentId)
-      }
-    } catch (error) {
-      console.error('Failed to read saved student ID:', error)
-    }
-  }, [onChange, value, verifyStudentId])
-
   // 保存学号到localStorage
   const saveStudentId = (studentId: string) => {
     try {
@@ -78,6 +64,20 @@ export default function StudentInputWithAutocomplete({
       setLoading(false)
     }
   }, [onStudentFound])
+
+  // 组件挂载时读取保存的学号
+  useEffect(() => {
+    try {
+      const savedStudentId = localStorage.getItem('rememberedStudentId')
+      if (savedStudentId && !value) {
+        onChange(savedStudentId)
+        // 自动验证保存的学号
+        verifyStudentId(savedStudentId)
+      }
+    } catch (error) {
+      console.error('Failed to read saved student ID:', error)
+    }
+  }, [onChange, value, verifyStudentId])
 
   // 搜索建议
   const searchSuggestions = useCallback(async (query: string) => {
