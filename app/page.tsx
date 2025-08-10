@@ -81,6 +81,16 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        {/* 调试入口 */}
+        <div className="text-center mt-8">
+          <Link 
+            href="/debug" 
+            className="text-white/40 hover:text-white/60 text-sm transition-colors duration-300"
+          >
+            🔍 调试面板
+          </Link>
+        </div>
       </div>
     </div>
   )
