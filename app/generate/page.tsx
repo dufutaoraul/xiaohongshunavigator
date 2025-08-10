@@ -103,10 +103,18 @@ export default function GeneratePage() {
       }
 
       const result = await response.json()
+      console.log('API response:', result)
       
-      // 处理Dify返回的数据格式
+      // 处理API响应数据格式
       let mockData
-      if (result.dify) {
+      if (result.mockData) {
+        // 直接使用API返回的mockData
+        mockData = result.mockData
+        if (result.debug) {
+          console.log('API debug info:', result.debug)
+          setMessage(`✅ API调用成功！环境配置状态: Dify URL ${result.debug.environment.hasDifyUrl ? '✅' : '❌'}, API Key ${result.debug.environment.hasDifyKey ? '✅' : '❌'}`)
+        }
+      } else if (result.dify) {
         // Dify返回了结构化数据，直接使用
         if (result.titles && result.bodies) {
           mockData = {

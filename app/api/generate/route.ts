@@ -4,6 +4,22 @@ import { supabase } from '@/lib/supabase'
 export async function POST(request: NextRequest) {
   try {
     console.log('API /generate called')
+    
+    // 首先返回一个简单的测试响应，确认API能够到达
+    return NextResponse.json({
+      message: 'Generate API is working',
+      mockData: generateSimpleMockData(),
+      debug: {
+        environment: {
+          hasDifyUrl: !!process.env.DIFY_API_URL,
+          hasDifyKey: !!process.env.DIFY_API_KEY,
+          difyUrl: process.env.DIFY_API_URL || 'not configured'
+        },
+        timestamp: new Date().toISOString()
+      }
+    })
+    
+    /* 暂时注释掉复杂逻辑进行调试
     const body = await request.json()
     console.log('Request body:', body)
     const { student_id, user_input, angle } = body
@@ -121,116 +137,52 @@ export async function POST(request: NextRequest) {
       console.log('Dify API not configured, using mock data')
     }
 
-    // 降级方案：使用模拟数据
-    console.log('Using mock data - Dify API not configured or failed')
-    const mockContent = generateMockContent(userData, user_input, angle)
-    const mockVisualSuggestions = generateMockVisualSuggestions(angle)
-
-    // 模拟API延迟
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    return NextResponse.json({
-      content: mockContent,
-      visual_suggestions: mockVisualSuggestions,
-      mock: true // 标记这是模拟数据
-    })
+    */
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
 }
 
-function generateMockContent(userData: any, userInput: string, angle: string): string {
-  const angleMap: { [key: string]: string } = {
-    experience: '踩坑经验分享',
-    efficiency: '效率提升技巧',
-    beginner: '新手入门指南',
-    case_study: '案例深度分析',
-    tools: '实用工具推荐'
+// 简单的mock数据函数
+function generateSimpleMockData() {
+  return {
+    titles: [
+      { id: 1, content: "🚀 90天AI学习计划，从小白到高手的华丽转身！" },
+      { id: 2, content: "⚡ ChatGPT思维导图神器，效率提升300%不是梦！" }
+    ],
+    bodies: [
+      {
+        id: 1,
+        content: `大家好！今天想和大家分享一个超级实用的AI学习心得✨
+
+最近在爱学AI创富营学习，真的收获满满！特别是学会用ChatGPT做思维导图后，我的学习效率直接提升了3倍！
+
+🔥 我的具体操作：
+1. 先让AI帮我梳理知识框架
+2. 用思维导图工具可视化展示
+3. 结合实际案例加深理解
+
+现在无论是工作汇报还是学习笔记，都变得井井有条。以前需要花2小时整理的内容，现在30分钟就搞定！
+
+#AI学习心得 #效率提升 #思维导图`,
+        style: "测试版本"
+      }
+    ],
+    hashtags: {
+      fixed: ["AI学习", "创富营", "效率提升"],
+      generated: ["ChatGPT", "思维导图", "职场技能"]
+    },
+    visuals: {
+      images: [
+        { suggestion: "制作一张对比图，展示使用AI前后的工作效率差异" }
+      ],
+      videos: [
+        { suggestion: "录制屏幕操作视频，演示如何用ChatGPT生成思维导图" }
+      ]
+    }
   }
-
-  return `🌟 ${angleMap[angle]} | ${userData.persona}
-
-📝 ${userInput}
-
-✨ 关键要点：
-1. 基于${userData.keywords.split(',')[0]}领域的实战经验
-2. ${userData.keywords.split(',')[1] || '相关技能'}的具体应用
-3. 向着"${userData.vision}"目标迈进
-
-💡 核心价值：
-通过今天的学习和实践，我发现...
-[这里会根据你的人设和输入生成个性化内容]
-
-🔥 实用建议：
-• 建议1：...
-• 建议2：...  
-• 建议3：...
-
-📈 成长感悟：
-[基于你的90天愿景生成的感悟内容]
-
-#AI学习 #${userData.keywords.split(',')[0]} #个人成长 #副业赚钱
-
----
-💬 你在这个领域有什么经验？评论区交流~`
-}
-
-function generateMockVisualSuggestions(angle: string): string {
-  const suggestions: { [key: string]: string } = {
-    experience: `📸 配图建议：
-• 对比图：使用前后效果对比
-• 截图：展示踩坑时的错误界面和正确界面
-• 表情包：用来表达踩坑时的心情
-
-🎥 视频建议：
-• 制作踩坑过程的时间线视频
-• 录制解决问题的操作步骤
-• 加入轻松幽默的配音解说`,
-
-    efficiency: `📸 配图建议：
-• 数据对比图：效率提升前后的数据对比
-• 工具截图：展示使用的效率工具界面
-• 时间管理图表
-
-🎥 视频建议：
-• 快进展示工作流程优化
-• 分屏对比：传统方法 vs 高效方法
-• 制作操作教程视频`,
-
-    beginner: `📸 配图建议：
-• 步骤图：分步骤展示入门流程
-• 思维导图：新手学习路径图
-• 对话截图：新手常见问题Q&A
-
-🎥 视频建议：
-• 新手教学视频：从0到1的过程
-• 常见错误合集和解决方案
-• 学习资源推荐视频`,
-
-    case_study: `📸 配图建议：
-• 案例截图：成功案例的关键数据
-• 流程图：案例分析的思维过程
-• 结果展示：最终成果图
-
-🎥 视频建议：
-• 案例拆解视频：深度分析成功要素
-• 复盘视频：经验总结和反思
-• 应用演示：如何运用到自己的项目`,
-
-    tools: `📸 配图建议：
-• 工具界面截图：清晰展示工具功能
-• 对比图：不同工具的优缺点对比
-• 使用效果图：工具产出的成果展示
-
-🎥 视频建议：
-• 工具操作演示：详细使用教程
-• 多工具对比测评视频
-• 工具组合使用的最佳实践`
-  }
-
-  return suggestions[angle] || suggestions.experience
 }
