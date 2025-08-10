@@ -131,8 +131,9 @@ function ResultPageContent() {
     }
     
     // 合并必选标签和现有标签，去重
-    const mergedTags = [...new Set([...requiredTags, ...allTags])]
-    return mergedTags
+    const combinedTags = [...requiredTags, ...allTags]
+    const uniqueTags = combinedTags.filter((tag, index) => combinedTags.indexOf(tag) === index)
+    return uniqueTags
   }
 
   const handleRegenerate = () => {
