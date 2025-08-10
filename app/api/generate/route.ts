@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 调用 Dify 工作流进行内容生成
-    if (process.env.DIFY_API_URL && process.env.DIFY_API_KEY) {
+    if (process.env.DIFY_API_URL && process.env.DIFY_API_KEY && process.env.DIFY_WORKFLOW_ID) {
       try {
-        // 构建Dify API请求
+        // 构建Dify API请求 - 根据提供的准确格式
         const difyResponse = await fetch(process.env.DIFY_API_URL, {
           method: 'POST',
           headers: {
@@ -39,34 +39,46 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             inputs: {
-              student_id,
-              user_input,
-              angle,
-              persona: userData.persona,
-              keywords: userData.keywords,
-              vision: userData.vision,
-              name: userData.name
+              persona: userData.persona || "",
+              keywords: userData.keywords || "",
+              vision: userData.vision || "",
+              user_input: user_input,
+              angle: angle,
+              day_number: 1 // 默认第1天
             },
-            query: user_input,
             response_mode: "blocking",
-            user: student_id
+            user: student_id,
+            workflow_id: process.env.DIFY_WORKFLOW_ID
           })
         })
 
         if (difyResponse.ok) {
           const result = await difyResponse.json()
           
-          // Dify响应格式处理
-          const content = result.answer || result.data?.answer || result.content
-          const visual_suggestions = result.metadata?.visual_suggestions || 
-                                   result.outputs?.visual_suggestions ||
-                                   generateMockVisualSuggestions(angle)
-          
-          if (content) {
+          // 根据您提供的返回数据结构处理
+          if (result.data && (result.data.titles || result.data.bodies)) {
             return NextResponse.json({
-              content,
-              visual_suggestions,
+              titles: result.data.titles || [],
+              bodies: result.data.bodies || [],
+              hashtags: result.data.hashtags || { fixed: [], generated: [] },
+              visuals: result.data.visuals || { images: [], videos: [] },
               dify: true // 标记这是Dify生成的数据
+            })
+          }
+          
+          // 如果返回格式不匹配，尝试解析其他可能的格式
+          const content = result.answer || result.data?.answer || result.content
+          if (content) {
+            // 简单转换为前端需要的格式
+            return NextResponse.json({
+              titles: [{ id: 1, content: "✨ AI生成的专属内容分享" }],
+              bodies: [{ id: 1, content: content, style: "AI智能生成" }],
+              hashtags: { fixed: ["AI学习", "创富营", "效率提升"], generated: ["AI工具", "学习方法", "个人成长"] },
+              visuals: { 
+                images: [{ suggestion: "根据内容主题制作相关配图，突出重点信息" }],
+                videos: [{ suggestion: "制作内容相关的短视频，增强表达效果" }]
+              },
+              dify: true
             })
           }
         } else {

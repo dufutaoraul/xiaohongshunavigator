@@ -104,11 +104,24 @@ export default function GeneratePage() {
 
       const result = await response.json()
       
-      // 处理Dify返回的数据格式，转换为前端所需格式
+      // 处理Dify返回的数据格式
       let mockData
       if (result.dify) {
-        // Dify返回的是原始内容，需要转换格式
-        mockData = convertDifyResponseToMockFormat(result.content, result.visual_suggestions)
+        // Dify返回了结构化数据，直接使用
+        if (result.titles && result.bodies) {
+          mockData = {
+            titles: result.titles,
+            bodies: result.bodies, 
+            hashtags: result.hashtags || { fixed: [], generated: [] },
+            visuals: result.visuals || { images: [], videos: [] }
+          }
+        } else if (result.content) {
+          // Dify返回的是原始内容，需要转换格式
+          mockData = convertDifyResponseToMockFormat(result.content, result.visual_suggestions)
+        } else {
+          // 兜底使用模拟数据
+          mockData = generateMockData()
+        }
       } else {
         // 使用模拟数据时仍使用原有格式
         mockData = generateMockData()
