@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Button from '../components/Button'
@@ -18,7 +18,7 @@ interface GeneratedContent {
   }
 }
 
-export default function ResultPage() {
+function ResultPageContent() {
   const [data, setData] = useState<GeneratedContent | null>(null)
   const [copyFeedback, setCopyFeedback] = useState<string>('')
   const searchParams = useSearchParams()
@@ -254,5 +254,20 @@ export default function ResultPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ResultPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⏳</div>
+          <p className="text-white/80">正在加载页面...</p>
+        </div>
+      </div>
+    }>
+      <ResultPageContent />
+    </Suspense>
   )
 }
