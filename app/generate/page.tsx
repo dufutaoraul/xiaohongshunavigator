@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
-import StudentInputWithAutocomplete from '../components/StudentInputWithAutocomplete'
 
 export default function GeneratePage() {
   const [studentId, setStudentId] = useState('')
+  const [userName, setUserName] = useState('')
   const [userInput, setUserInput] = useState('')
   const [selectedAngle, setSelectedAngle] = useState('')
   const [dayNumber, setDayNumber] = useState('1')
@@ -16,7 +16,30 @@ export default function GeneratePage() {
   const [visualSuggestions, setVisualSuggestions] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
+  
+  // 检查认证状态
+  useEffect(() => {
+    const authData = localStorage.getItem('userAuth')
+    if (authData) {
+      try {
+        const { student_id, isAuthenticated: authenticated } = JSON.parse(authData)
+        if (authenticated) {
+          setIsAuthenticated(true)
+          setStudentId(student_id)
+          // 这里可以额外获取用户姓名，暂时留空
+          setUserName('') // 可以从API获取完整用户信息
+        } else {
+          router.push('/profile') // 未认证跳转到登录
+        }
+      } catch {
+        router.push('/profile')
+      }
+    } else {
+      router.push('/profile')
+    }
+  }, [])
 
   const angles = [
     { value: '踩坑经验', label: '踩坑经验' },
@@ -71,7 +94,7 @@ export default function GeneratePage() {
   }
 
   const handleGenerate = async () => {
-    if (!studentId.trim() || !userInput.trim() || !selectedAngle || !dayNumber.trim()) {
+    if (!userInput.trim() || !selectedAngle || !dayNumber.trim()) {
       setMessage('请填写所有必填项')
       return
     }
@@ -201,6 +224,18 @@ export default function GeneratePage() {
     }
   }
 
+  // 如果未认证，显示加载状态（实际会自动跳转）
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔄</div>
+          <p className="text-white/80">正在验证身份...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center fade-in-up">
@@ -212,11 +247,20 @@ export default function GeneratePage() {
 
       <Card title="内容生成设置" icon="⚡" className="mb-8">
         <div className="space-y-6">
-          <StudentInputWithAutocomplete
-            value={studentId}
-            onChange={setStudentId}
-            required
-          />
+          {/* 显示已登录的用户信息 */}
+          <div className="p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-400/30 rounded-lg">
+            <div className="flex items-center">
+              <span className="text-xl mr-3">👤</span>
+              <div>
+                <p className="text-white font-medium">
+                  {userName ? `${userName} (${studentId})` : `学号: ${studentId}`}
+                </p>
+                <p className="text-green-300 text-xs">
+                  已通过身份验证，可使用AI内容生成功能
+                </p>
+              </div>
+            </div>
+          </div>
 
           <Textarea
             label="今日学习主题/灵感"

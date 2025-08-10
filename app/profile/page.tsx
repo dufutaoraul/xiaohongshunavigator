@@ -250,23 +250,37 @@ export default function ProfilePage() {
 
       <Card title="学员信息" icon="👤" className="mb-8">
         <div className="space-y-6">
-          <StudentInputWithAutocomplete
-            value={studentId}
-            onChange={setStudentId}
-            onStudentFound={handleStudentFound}
-            required
-          />
-          
-          {profile.name && (
-            <div className="p-4 bg-green-500/10 border border-green-400/30 rounded-lg">
-              <div className="flex items-center text-green-400 text-sm">
-                <span className="mr-2">👋</span>
-                欢迎，{profile.name}！
-                {isExistingUser && <span className="ml-2 text-blue-400">（老用户）</span>}
-                {!isExistingUser && profile.student_id && <span className="ml-2 text-yellow-400">（新用户）</span>}
+          {/* 显示已登录的学员信息 */}
+          <div className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/30 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <span className="text-2xl mr-3">👋</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    欢迎，{profile.name || '学员'}！
+                  </h3>
+                  <p className="text-blue-300 text-sm">
+                    学号: {profile.student_id}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                {isExistingUser ? (
+                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">
+                    ✨ 老用户
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-xs">
+                    🆕 新用户
+                  </span>
+                )}
               </div>
             </div>
-          )}
+            
+            <div className="text-xs text-white/50">
+              已通过身份验证，可以编辑个人IP设定
+            </div>
+          </div>
         </div>
 
         {message && (
@@ -323,10 +337,10 @@ export default function ProfilePage() {
 
       <Card className="mt-8" title="使用提示" icon="💡">
         <div className="text-sm text-white/70 space-y-3">
-          <p>• <strong className="text-white">学员学号</strong>：请输入你的课程学号，系统会自动关联你的姓名信息</p>
-          <p>• <strong className="text-white">人设定位</strong>：要具体明确，体现你的专业背景和独特性</p>
-          <p>• <strong className="text-white">内容关键词</strong>：选择你最擅长和最感兴趣的领域，保持垂直度</p>
-          <p>• <strong className="text-white">90天愿景</strong>：设定具体可量化的目标，有助于AI为你制定内容策略</p>
+          <p>• <strong className="text-white">人设定位</strong>：要具体明确，体现你的专业背景和独特性，这是AI生成内容的核心基础</p>
+          <p>• <strong className="text-white">内容关键词</strong>：选择你最擅长和最感兴趣的3个领域，保持垂直度和专业性</p>
+          <p>• <strong className="text-white">90天愿景</strong>：设定具体可量化的目标，有助于AI为你制定个性化内容策略</p>
+          <p>• <strong className="text-white">保存设定</strong>：信息保存后，AI将根据你的IP设定生成专属内容</p>
         </div>
       </Card>
       

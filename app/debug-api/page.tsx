@@ -1,18 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Button from '../components/Button'
 import Textarea from '../components/Textarea'
 
 export default function DebugApiPage() {
-  const [studentId, setStudentId] = useState('AXCF2025040001')
+  const [studentId, setStudentId] = useState('')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userInput, setUserInput] = useState('今天我学会了用Gemini生成网页，效率提升了很多')
   const [angle, setAngle] = useState('效率提升')
   const [dayNumber, setDayNumber] = useState('1')
   const [result, setResult] = useState('')
   const [loading, setLoading] = useState(false)
   const [resultType, setResultType] = useState<'info' | 'success' | 'error' | 'loading'>('info')
+  const router = useRouter()
+
+  // 检查认证状态
+  useEffect(() => {
+    const authData = localStorage.getItem('userAuth')
+    if (authData) {
+      try {
+        const { student_id, isAuthenticated: authenticated } = JSON.parse(authData)
+        if (authenticated) {
+          setIsAuthenticated(true)
+          setStudentId(student_id)
+        } else {
+          router.push('/profile')
+        }
+      } catch {
+        router.push('/profile')
+      }
+    } else {
+      router.push('/profile')
+    }
+  }, [])
 
   const angles = [
     { value: '踩坑经验', label: '踩坑经验' },
@@ -28,7 +51,7 @@ export default function DebugApiPage() {
   }
 
   const handleTest = async () => {
-    if (!studentId || !userInput || !angle || !dayNumber) {
+    if (!userInput || !angle || !dayNumber) {
       showResult('请填写所有必填项', 'error')
       return
     }
@@ -96,6 +119,18 @@ export default function DebugApiPage() {
     }
   }
 
+  // 如果未认证，显示加载状态（实际会自动跳转）
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔄</div>
+          <p className="text-white/80">正在验证身份...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center fade-in-up">
@@ -107,17 +142,17 @@ export default function DebugApiPage() {
 
       <Card title="API 测试参数" icon="🚀" className="mb-8">
         <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-white mb-2">
-              学员学号 <span className="text-pink-400 ml-1">*</span>
-            </label>
-            <input
-              type="text"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              className="w-full px-4 py-3 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 focus:outline-none transition-all duration-300"
-              placeholder="例如: AXCF2025040001"
-            />
+          {/* 显示已登录的用户信息 */}
+          <div className="p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-400/30 rounded-lg">
+            <div className="flex items-center">
+              <span className="text-xl mr-3">🔧</span>
+              <div>
+                <p className="text-white font-medium">调试用户: {studentId}</p>
+                <p className="text-purple-300 text-xs">
+                  已通过身份验证，可进行API测试
+                </p>
+              </div>
+            </div>
           </div>
 
           <Textarea
