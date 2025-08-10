@@ -59,7 +59,7 @@ export default function DebugApiPage() {
       const duration = endTime - startTime
       
       console.log('Response status:', response.status)
-      console.log('Response headers:', [...response.headers.entries()])
+      console.log('Response headers:', Object.fromEntries(response.headers))
       
       if (!response.ok) {
         let errorMsg = `HTTP ${response.status} - ${response.statusText}`

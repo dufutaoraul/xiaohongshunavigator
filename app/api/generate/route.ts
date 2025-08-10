@@ -86,7 +86,20 @@ export async function POST(request: NextRequest) {
         console.log('Dify response headers:', Object.fromEntries(difyResponse.headers.entries()))
 
         if (difyResponse.ok) {
-          const rawResult = await difyResponse.json()
+          // 先获取响应文本，避免JSON解析问题
+          const responseText = await difyResponse.text()
+          console.log('Raw response text length:', responseText.length)
+          console.log('Raw response text preview:', responseText.substring(0, 200) + '...')
+          
+          // 尝试解析为JSON
+          let rawResult
+          try {
+            rawResult = JSON.parse(responseText)
+          } catch (parseError) {
+            console.error('Failed to parse response as JSON:', parseError)
+            console.error('Response text:', responseText.substring(0, 1000))
+            throw new Error('Invalid JSON response from Dify')
+          }
           console.log('===== DIFY RESPONSE ANALYSIS =====')
           console.log('Raw Dify response:', JSON.stringify(rawResult, null, 2))
           console.log('Response type:', typeof rawResult)
