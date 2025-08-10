@@ -21,7 +21,7 @@ export interface StudentInfo {
 export async function getStudentByStudentId(studentId: string): Promise<StudentInfo | null> {
   try {
     const { data, error } = await supabase
-      .from('students')
+      .from('users')
       .select('*')
       .eq('student_id', studentId)
       .single()
@@ -45,7 +45,7 @@ export async function getStudentByStudentId(studentId: string): Promise<StudentI
 export async function upsertStudent(studentData: StudentInfo): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('students')
+      .from('users')
       .upsert({
         student_id: studentData.student_id,
         name: studentData.name,
