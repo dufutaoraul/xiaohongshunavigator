@@ -16,7 +16,8 @@
       "Bash(git remote add:*)",
       "Bash(git push:*)",
       "Bash(git commit:*)",
-      "WebFetch(domain:pro.aifunbox.com)"
+      "WebFetch(domain:pro.aifunbox.com)",
+      "WebFetch(domain:xiaohongshunavigator.netlify.app)"
     ],
     "deny": []
   }

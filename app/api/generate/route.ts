@@ -28,28 +28,37 @@ export async function POST(request: NextRequest) {
     }
 
     // 调用 Dify 工作流进行内容生成
-    if (process.env.DIFY_API_URL && process.env.DIFY_API_KEY && process.env.DIFY_WORKFLOW_ID) {
+    console.log('Environment check:', {
+      hasApiUrl: !!process.env.DIFY_API_URL,
+      hasApiKey: !!process.env.DIFY_API_KEY,
+      apiUrl: process.env.DIFY_API_URL
+    })
+    
+    if (process.env.DIFY_API_URL && process.env.DIFY_API_KEY) {
       try {
         // 构建Dify API请求 - 根据提供的准确格式
+        console.log('Making Dify API request...')
+        const requestBody = {
+          inputs: {
+            persona: userData.persona || "",
+            keywords: userData.keywords || "",
+            vision: userData.vision || "",
+            user_input: user_input,
+            angle: angle,
+            day_number: 1
+          },
+          response_mode: "blocking",
+          user: student_id
+        }
+        console.log('Request body:', JSON.stringify(requestBody, null, 2))
+        
         const difyResponse = await fetch(process.env.DIFY_API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.DIFY_API_KEY}`
           },
-          body: JSON.stringify({
-            inputs: {
-              persona: userData.persona || "",
-              keywords: userData.keywords || "",
-              vision: userData.vision || "",
-              user_input: user_input,
-              angle: angle,
-              day_number: 1 // 默认第1天
-            },
-            response_mode: "blocking",
-            user: student_id,
-            workflow_id: process.env.DIFY_WORKFLOW_ID
-          })
+          body: JSON.stringify(requestBody)
         })
 
         if (difyResponse.ok) {
