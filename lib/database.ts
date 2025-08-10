@@ -51,8 +51,7 @@ export async function upsertStudent(studentData: StudentInfo): Promise<boolean> 
         name: studentData.name,
         persona: studentData.persona,
         keywords: studentData.keywords,
-        vision: studentData.vision,
-        updated_at: new Date().toISOString()
+        vision: studentData.vision
       }, {
         onConflict: 'student_id'
       })
