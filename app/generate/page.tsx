@@ -97,11 +97,29 @@ export default function GeneratePage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || '生成失败')
+        console.error('Response not ok:', response.status, response.statusText)
+        
+        // 特别处理504网关超时
+        if (response.status === 504) {
+          throw new Error('服务器响应超时，请稍后重试。如果问题持续存在，可能是Dify API响应缓慢。')
+        }
+        
+        // 尝试获取错误详情
+        try {
+          const errorData = await response.json()
+          throw new Error(errorData.error || `请求失败 (${response.status})`)
+        } catch (jsonError) {
+          throw new Error(`请求失败 (${response.status}): ${response.statusText}`)
+        }
       }
 
-      const result = await response.json()
+      let result
+      try {
+        result = await response.json()
+      } catch (parseError) {
+        console.error('Failed to parse response JSON:', parseError)
+        throw new Error('服务器返回了无效的数据格式，请重试')
+      }
       console.log('API response:', result)
       
       // 处理API响应数据格式

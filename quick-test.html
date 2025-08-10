@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速测试 API 修复</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+        }
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+        }
+        pre {
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .status.success { background: #4CAF50; }
+        .status.error { background: #f44336; }
+        .status.warning { background: #ff9800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 API 修复验证</h1>
+        <p>测试修复后的 API 接口是否正常工作</p>
+        
+        <button onclick="testAPI()" id="testBtn">🚀 测试 API</button>
+        <button onclick="goToResult()" id="resultBtn" disabled>📊 查看结果页面</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let testData = null;
+
+        async function testAPI() {
+            const btn = document.getElementById('testBtn');
+            const resultDiv = document.getElementById('result');
+            
+            btn.textContent = '🔄 测试中...';
+            btn.disabled = true;
+            
+            try {
+                const requestData = {
+                    student_id: 'AXCF2025040088',
+                    user_input: '今天学会了使用AI工具提升工作效率，想分享一下心得',
+                    angle: 'efficiency',
+                    day_number: 15
+                };
+
+                console.log('发送请求:', requestData);
+                
+                const response = await fetch('http://localhost:3003/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                console.log('响应状态:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                testData = data;
+                
+                console.log('响应数据:', data);
+
+                // 保存到localStorage
+                localStorage.setItem('generatedContent', JSON.stringify(data));
+                
+                // 显示成功结果
+                resultDiv.className = 'success';
+                resultDiv.innerHTML = `
+                    <h3>✅ 测试成功!</h3>
+                    <div>
+                        <strong>数据来源:</strong>
+                        <span class="status ${data.dify ? 'success' : data.mock ? 'warning' : 'error'}">
+                            ${data.dify ? '✅ Dify AI' : data.mock ? '⚠️ 模拟数据' : '❌ 未知来源'}
+                        </span>
+                    </div>
+                    <div>
+                        <strong>数据统计:</strong>
+                        标题 ${data.titles?.length || 0}个 | 
+                        正文 ${data.bodies?.length || 0}个 | 
+                        标签 ${(data.hashtags?.fixed?.length || 0) + (data.hashtags?.generated?.length || 0)}个
+                    </div>
+                    <details>
+                        <summary>📋 查看完整数据</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+                
+                document.getElementById('resultBtn').disabled = false;
+
+            } catch (error) {
+                console.error('测试失败:', error);
+                
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `
+                    <h3>❌ 测试失败</h3>
+                    <p><strong>错误信息:</strong> ${error.message}</p>
+                    <p><strong>可能原因:</strong></p>
+                    <ul>
+                        <li>开发服务器未启动 (应该在 http://localhost:3003)</li>
+                        <li>网络连接问题</li>
+                        <li>API 接口仍有错误</li>
+                    </ul>
+                    <p><strong>建议:</strong> 检查浏览器控制台和开发服务器日志</p>
+                `;
+            } finally {
+                btn.textContent = '🚀 测试 API';
+                btn.disabled = false;
+            }
+        }
+
+        function goToResult() {
+            if (testData) {
+                localStorage.setItem('generatedContent', JSON.stringify(testData));
+                window.open('http://localhost:3003/result', '_blank');
+            }
+        }
+
+        // 页面加载时的提示
+        console.log('💡 使用说明:');
+        console.log('1. 确保开发服务器运行在 http://localhost:3003');
+        console.log('2. 点击"测试 API"按钮');
+        console.log('3. 查看测试结果');
+        console.log('4. 如果成功，点击"查看结果页面"验证界面显示');
+    </script>
+</body>
+</html>

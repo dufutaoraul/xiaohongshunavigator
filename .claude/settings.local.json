@@ -17,7 +17,11 @@
       "Bash(git push:*)",
       "Bash(git commit:*)",
       "WebFetch(domain:pro.aifunbox.com)",
-      "WebFetch(domain:xiaohongshunavigator.netlify.app)"
+      "WebFetch(domain:xiaohongshunavigator.netlify.app)",
+      "WebFetch(domain:localhost)",
+      "Bash(timeout:*)",
+      "Bash(node:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

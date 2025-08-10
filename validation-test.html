@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 输出格式验证测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 1.5em;
+        }
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid #4CAF50;
+        }
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 2px solid #f44336;
+        }
+        .warning {
+            background: rgba(255, 152, 0, 0.2);
+            border: 2px solid #ff9800;
+        }
+        .status-indicator {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-success { background: #4CAF50; }
+        .status-error { background: #f44336; }
+        .status-warning { background: #ff9800; }
+        .format-check {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .format-item {
+            background: rgba(255,255,255,0.08);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .format-item .count {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .format-item .expected {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        .format-item.correct { border: 2px solid #4CAF50; }
+        .format-item.incorrect { border: 2px solid #f44336; }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .link-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            text-decoration: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            display: inline-block;
+            margin: 5px;
+        }
+        .link-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 输出格式验证测试</h1>
+        <p style="text-align: center; font-size: 1.1em; opacity: 0.9;">
+            验证修复后的API是否返回正确数量的内容项
+        </p>
+
+        <!-- 格式要求 -->
+        <div class="test-section">
+            <h2>📋 正确格式要求</h2>
+            <div class="format-check">
+                <div class="format-item">
+                    <div class="count">10</div>
+                    <div>个标题</div>
+                    <div class="expected">titles数组</div>
+                </div>
+                <div class="format-item">
+                    <div class="count">2</div>
+                    <div>个正文</div>
+                    <div class="expected">bodies数组</div>
+                </div>
+                <div class="format-item">
+                    <div class="count">2</div>
+                    <div>个图片建议</div>
+                    <div class="expected">visuals.images数组</div>
+                </div>
+                <div class="format-item">
+                    <div class="count">2</div>
+                    <div>个视频建议</div>
+                    <div class="expected">visuals.videos数组</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API测试 -->
+        <div class="test-section">
+            <h2>🧪 API输出格式测试</h2>
+            <p>测试当前API是否返回正确数量的内容</p>
+            
+            <button onclick="testAPIFormat()" id="formatTestBtn">🚀 测试API输出格式</button>
+            <button onclick="goToResultPage()" id="resultPageBtn" disabled>📊 查看结果页面</button>
+            
+            <div id="formatResult"></div>
+        </div>
+
+        <!-- 快速链接 -->
+        <div class="test-section">
+            <h2>🔗 快速访问</h2>
+            <div style="text-align: center;">
+                <a href="http://localhost:3004/generate" target="_blank" class="link-button">
+                    ✨ 生成页面
+                </a>
+                <a href="http://localhost:3004/result" target="_blank" class="link-button">
+                    📊 结果页面
+                </a>
+                <a href="http://localhost:3004/test" target="_blank" class="link-button">
+                    🧪 测试页面
+                </a>
+                <a href="http://localhost:3004/debug-dify" target="_blank" class="link-button">
+                    🔬 调试页面
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testData = null;
+
+        async function testAPIFormat() {
+            const btn = document.getElementById('formatTestBtn');
+            const resultDiv = document.getElementById('formatResult');
+            
+            btn.textContent = '🔄 测试中...';
+            btn.disabled = true;
+            
+            try {
+                const requestData = {
+                    student_id: 'FORMAT_TEST_2025',
+                    user_input: '验证输出格式：AI工具提升效率完整攻略',
+                    angle: 'efficiency',
+                    day_number: 20
+                };
+
+                console.log('🚀 开始格式验证测试:', requestData);
+                
+                const response = await fetch('http://localhost:3004/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                testData = data;
+                
+                console.log('✅ API响应成功:', data);
+
+                // 验证格式
+                const validation = {
+                    titles: { actual: data.titles?.length || 0, expected: 10 },
+                    bodies: { actual: data.bodies?.length || 0, expected: 2 },
+                    imagesSuggestions: { actual: data.visuals?.images?.length || 0, expected: 2 },
+                    videosSuggestions: { actual: data.visuals?.videos?.length || 0, expected: 2 }
+                };
+
+                const allCorrect = Object.values(validation).every(item => item.actual === item.expected);
+
+                // 保存到localStorage
+                localStorage.setItem('generatedContent', JSON.stringify(data));
+                
+                // 显示验证结果
+                resultDiv.className = `result ${allCorrect ? 'success' : 'warning'}`;
+                resultDiv.innerHTML = `
+                    <h3>${allCorrect ? '✅ 格式验证通过!' : '⚠️ 格式不完全正确'}</h3>
+                    <div>
+                        <strong>数据来源:</strong>
+                        <span class="status-indicator ${data.dify ? 'status-success' : data.mock ? 'status-warning' : 'status-error'}">
+                            ${data.dify ? '✅ Dify AI' : data.mock ? '⚠️ 模拟数据' : '❌ 未知来源'}
+                        </span>
+                    </div>
+                    
+                    <div class="format-check" style="margin-top: 20px;">
+                        <div class="format-item ${validation.titles.actual === validation.titles.expected ? 'correct' : 'incorrect'}">
+                            <div class="count">${validation.titles.actual}</div>
+                            <div>个标题</div>
+                            <div class="expected">预期: ${validation.titles.expected}个</div>
+                        </div>
+                        <div class="format-item ${validation.bodies.actual === validation.bodies.expected ? 'correct' : 'incorrect'}">
+                            <div class="count">${validation.bodies.actual}</div>
+                            <div>个正文</div>
+                            <div class="expected">预期: ${validation.bodies.expected}个</div>
+                        </div>
+                        <div class="format-item ${validation.imagesSuggestions.actual === validation.imagesSuggestions.expected ? 'correct' : 'incorrect'}">
+                            <div class="count">${validation.imagesSuggestions.actual}</div>
+                            <div>个图片建议</div>
+                            <div class="expected">预期: ${validation.imagesSuggestions.expected}个</div>
+                        </div>
+                        <div class="format-item ${validation.videosSuggestions.actual === validation.videosSuggestions.expected ? 'correct' : 'incorrect'}">
+                            <div class="count">${validation.videosSuggestions.actual}</div>
+                            <div>个视频建议</div>
+                            <div class="expected">预期: ${validation.videosSuggestions.expected}个</div>
+                        </div>
+                    </div>
+                    
+                    <details style="margin-top: 20px;">
+                        <summary style="cursor: pointer;">📋 查看完整响应数据</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+                
+                // 启用结果页面按钮
+                document.getElementById('resultPageBtn').disabled = false;
+
+            } catch (error) {
+                console.error('❌ 格式验证失败:', error);
+                
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ 格式验证失败</h3>
+                    <p><strong>错误信息:</strong> ${error.message}</p>
+                    <div style="margin-top: 15px;">
+                        <strong>可能的解决方案:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>确认开发服务器运行在 http://localhost:3004</li>
+                            <li>检查网络连接是否正常</li>
+                            <li>查看浏览器控制台获取详细错误信息</li>
+                            <li>检查API代码是否正确修复</li>
+                        </ul>
+                    </div>
+                `;
+            } finally {
+                btn.textContent = '🚀 测试API输出格式';
+                btn.disabled = false;
+            }
+        }
+
+        function goToResultPage() {
+            if (testData) {
+                localStorage.setItem('generatedContent', JSON.stringify(testData));
+            }
+            window.open('http://localhost:3004/result', '_blank');
+        }
+
+        // 页面初始化
+        console.log('🎯 格式验证测试页面已加载');
+        console.log('📋 验证要求:');
+        console.log('- 10个标题 (titles数组)');
+        console.log('- 2个正文 (bodies数组)'); 
+        console.log('- 2个图片建议 (visuals.images数组)');
+        console.log('- 2个视频建议 (visuals.videos数组)');
+        console.log('');
+        console.log('🔗 当前服务器: http://localhost:3004');
+
+        // 预设一些正确格式的测试数据
+        const correctFormatData = {
+            titles: [
+                { id: 1, content: "🚀 90天AI学习计划完整攻略" },
+                { id: 2, content: "⚡ ChatGPT效率神器使用心得" },
+                { id: 3, content: "🎯 AI工具实战应用指南" },
+                { id: 4, content: "💡 零基础AI学习路径规划" },
+                { id: 5, content: "🌟 AI创富营学习成果分享" },
+                { id: 6, content: "🔥 AI副业变现完整方案" },
+                { id: 7, content: "✨ AI提效技巧深度解析" },
+                { id: 8, content: "📈 AI赋能职场成长之路" },
+                { id: 9, content: "🎨 AI创作工具使用指南" },
+                { id: 10, content: "💰 AI变现策略实战总结" }
+            ],
+            bodies: [
+                { 
+                    id: 1, 
+                    content: "经过深入研究和实践，我总结了AI工具提升效率的完整攻略...",
+                    style: "实战攻略型" 
+                },
+                { 
+                    id: 2, 
+                    content: "从初学者到熟练应用，这是我90天AI学习的完整心得...",
+                    style: "经验总结型" 
+                }
+            ],
+            hashtags: {
+                fixed: ["AI学习", "效率提升", "实战攻略"],
+                generated: ["AI工具", "职场技能", "学习方法", "副业变现"]
+            },
+            visuals: {
+                images: [
+                    { suggestion: "制作AI工具效率提升对比图表" },
+                    { suggestion: "设计90天学习进程可视化图" }
+                ],
+                videos: [
+                    { suggestion: "录制AI工具实操演示视频" },
+                    { suggestion: "制作学习成果总结分享视频" }
+                ]
+            },
+            mock: true
+        };
+        
+        // 如果localStorage中没有正确格式的数据，设置一份
+        if (!localStorage.getItem('generatedContent')) {
+            localStorage.setItem('generatedContent', JSON.stringify(correctFormatData));
+            console.log('📝 已预设正确格式的测试数据');
+        }
+    </script>
+</body>
+</html>

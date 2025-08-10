@@ -67,14 +67,20 @@ export async function POST(request: NextRequest) {
         }
         console.log('Request body:', JSON.stringify(requestBody, null, 2))
         
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时
+        
         const difyResponse = await fetch(process.env.DIFY_API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.DIFY_API_KEY}`
           },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
         })
+        
+        clearTimeout(timeoutId)
 
         console.log('Dify response status:', difyResponse.status)
         console.log('Dify response headers:', Object.fromEntries(difyResponse.headers.entries()))
@@ -288,10 +294,16 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('===== DIFY REQUEST EXCEPTION =====')
         console.error('Error type:', typeof error)
+        console.error('Error name:', error instanceof Error ? error.name : 'Unknown')
         console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
         console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
-        console.error('Full error object:', error)
         console.error('Request was attempting to:', process.env.DIFY_API_URL)
+        
+        // 特别处理超时错误
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.error('Request was aborted due to timeout (60s)')
+        }
+        
         console.error('==================================')
         // 如果Dify请求失败，降级到模拟数据
       }
