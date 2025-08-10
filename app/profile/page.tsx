@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
 import StudentInputWithAutocomplete from '../components/StudentInputWithAutocomplete'
+import LoginModal from '../components/LoginModal'
+import PasswordChangeModal from '../components/PasswordChangeModal'
 import { StudentInfo, upsertStudent } from '../../lib/database'
 
 interface UserProfile {
@@ -27,6 +29,122 @@ export default function ProfilePage() {
   const [isExistingUser, setIsExistingUser] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  
+  // 认证相关状态
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [authLoading, setAuthLoading] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+
+  // 页面加载时检查认证状态
+  useEffect(() => {
+    const authData = localStorage.getItem('userAuth')
+    if (authData) {
+      try {
+        const { student_id, isAuthenticated: authenticated } = JSON.parse(authData)
+        if (authenticated) {
+          setIsAuthenticated(true)
+          setStudentId(student_id)
+        } else {
+          setShowLoginModal(true)
+        }
+      } catch {
+        setShowLoginModal(true)
+      }
+    } else {
+      setShowLoginModal(true)
+    }
+  }, [])
+
+  // 登录处理
+  const handleLogin = async (inputStudentId: string, password: string): Promise<boolean> => {
+    setAuthLoading(true)
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          student_id: inputStudentId,
+          password: password
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        // 登录成功
+        setIsAuthenticated(true)
+        setStudentId(inputStudentId)
+        setCurrentPassword(password)
+        setShowLoginModal(false)
+        
+        // 保存认证信息到localStorage
+        localStorage.setItem('userAuth', JSON.stringify({
+          student_id: inputStudentId,
+          isAuthenticated: true
+        }))
+        
+        // 填充用户信息
+        setProfile({
+          student_id: inputStudentId,
+          name: '',
+          persona: result.user.persona || '',
+          keywords: result.user.keywords || '',
+          vision: result.user.vision || ''
+        })
+        
+        const hasContent = Boolean(result.user.persona || result.user.keywords || result.user.vision)
+        setIsExistingUser(hasContent)
+        
+        // 如果需要修改密码，显示密码修改提示
+        if (result.needsPasswordChange) {
+          setTimeout(() => setShowPasswordModal(true), 500)
+        }
+        
+        return true
+      } else {
+        return false
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      return false
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  // 密码修改处理
+  const handlePasswordChange = async (newPassword: string): Promise<boolean> => {
+    setAuthLoading(true)
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'change_password',
+          student_id: profile.student_id,
+          password: currentPassword,
+          new_password: newPassword
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setCurrentPassword(newPassword)
+        return true
+      } else {
+        return false
+      }
+    } catch (error) {
+      console.error('Password change error:', error)
+      return false
+    } finally {
+      setAuthLoading(false)
+    }
+  }
 
   const handleStudentFound = useCallback((student: StudentInfo | null) => {
     if (student) {
@@ -99,6 +217,26 @@ export default function ProfilePage() {
   const getButtonText = () => {
     if (loading) return '保存中...'
     return isExistingUser ? '保存设置' : '保存设定'
+  }
+
+  // 如果未认证，显示加载状态
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔐</div>
+          <p className="text-white/80">正在验证身份...</p>
+        </div>
+        
+        {/* 登录模态框 */}
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onLogin={handleLogin}
+          loading={authLoading}
+        />
+      </div>
+    )
   }
 
   return (
@@ -191,6 +329,15 @@ export default function ProfilePage() {
           <p>• <strong className="text-white">90天愿景</strong>：设定具体可量化的目标，有助于AI为你制定内容策略</p>
         </div>
       </Card>
+      
+      {/* 密码修改模态框 */}
+      <PasswordChangeModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onChangePassword={handlePasswordChange}
+        studentId={profile.student_id}
+        loading={authLoading}
+      />
     </div>
   )
 }

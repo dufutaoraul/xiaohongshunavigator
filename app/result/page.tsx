@@ -23,8 +23,12 @@ interface GeneratedContent {
 function ResultPageContent() {
   const [data, setData] = useState<GeneratedContent | null>(null)
   const [copyFeedback, setCopyFeedback] = useState<string>('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const searchParams = useSearchParams()
   const router = useRouter()
+  
+  // 必选标签
+  const requiredTags = ['#爱学AI社区', '#爱学AI创富营', '#爱学AI90天打卡陪跑', '#爱学AI深潜计划']
 
   useEffect(() => {
     // 从URL参数中获取数据或从localStorage中读取
@@ -48,6 +52,36 @@ function ResultPageContent() {
       }
     }
   }, [searchParams])
+  
+  // 当数据加载后，初始化标签选择状态
+  useEffect(() => {
+    if (data) {
+      let allTags: string[] = []
+      
+      if (Array.isArray(data.hashtags)) {
+        allTags = data.hashtags.map(tag => tag.startsWith('#') ? tag : `#${tag}`)
+      } else {
+        const fixed = data.hashtags.fixed.map(tag => tag.startsWith('#') ? tag : `#${tag}`)
+        const generated = data.hashtags.generated.map(tag => tag.startsWith('#') ? tag : `#${tag}`)
+        allTags = [...fixed, ...generated]
+      }
+      
+      // 默认选中必选标签
+      const defaultSelected = allTags.filter(tag => 
+        requiredTags.some(reqTag => tag.includes(reqTag.replace('#', '')) || reqTag.includes(tag.replace('#', '')))
+      )
+      
+      // 如果没有匹配到必选标签，就直接添加必选标签
+      const finalSelected = [...requiredTags]
+      allTags.forEach(tag => {
+        if (!finalSelected.some(selected => selected.includes(tag.replace('#', '')) || tag.includes(selected.replace('#', '')))) {
+          // 其他标签默认不选中
+        }
+      })
+      
+      setSelectedTags(finalSelected)
+    }
+  }, [data])
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
@@ -61,20 +95,44 @@ function ResultPageContent() {
     }
   }
 
-  const copyAllTags = async () => {
-    if (!data) return
-    let allTags: string[] = []
+  const toggleTag = (tag: string) => {
+    const formattedTag = tag.startsWith('#') ? tag : `#${tag}`
     
-    if (Array.isArray(data.hashtags)) {
-      // 新格式：直接是字符串数组
-      allTags = data.hashtags
-    } else {
-      // 旧格式：有fixed和generated分组
-      allTags = [...data.hashtags.fixed, ...data.hashtags.generated]
+    // 必选标签不能取消选择
+    if (requiredTags.includes(formattedTag)) {
+      return
     }
     
-    const tagText = allTags.map(tag => tag.startsWith('#') ? tag : `#${tag}`).join(' ')
-    await copyToClipboard(tagText, '所有标签')
+    setSelectedTags(prev => {
+      if (prev.includes(formattedTag)) {
+        return prev.filter(t => t !== formattedTag)
+      } else {
+        return [...prev, formattedTag]
+      }
+    })
+  }
+  
+  const copySelectedTags = async () => {
+    if (selectedTags.length === 0) return
+    const tagText = selectedTags.join(' ')
+    await copyToClipboard(tagText, '选中标签')
+  }
+  
+  const getAllTags = () => {
+    if (!data) return []
+    
+    let allTags: string[] = []
+    if (Array.isArray(data.hashtags)) {
+      allTags = data.hashtags.map(tag => tag.startsWith('#') ? tag : `#${tag}`)
+    } else {
+      const fixed = data.hashtags.fixed.map(tag => tag.startsWith('#') ? tag : `#${tag}`)
+      const generated = data.hashtags.generated.map(tag => tag.startsWith('#') ? tag : `#${tag}`)
+      allTags = [...fixed, ...generated]
+    }
+    
+    // 合并必选标签和现有标签，去重
+    const mergedTags = [...new Set([...requiredTags, ...allTags])]
+    return mergedTags
   }
 
   const handleRegenerate = () => {
@@ -123,14 +181,6 @@ function ResultPageContent() {
                 <span className="text-yellow-300 text-sm font-medium flex items-center">
                   <span className="w-2 h-2 bg-yellow-400 rounded-full mr-2 animate-pulse"></span>
                   ⚠️ 使用模拟数据 (Dify未配置)
-                </span>
-              </div>
-            )}
-            {(!data?.dify && !data?.mock) && (
-              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 px-4 py-2 rounded-full">
-                <span className="text-purple-300 text-sm font-medium flex items-center">
-                  <span className="w-2 h-2 bg-purple-400 rounded-full mr-2 animate-pulse"></span>
-                  🔧 开发测试数据
                 </span>
               </div>
             )}
@@ -231,82 +281,70 @@ function ResultPageContent() {
             <h2 className="text-2xl font-bold text-white flex items-center">
               <span className="text-2xl mr-2">🏷️</span>
               推荐标签
+              <span className="ml-2 text-xs text-white/40">({selectedTags.length}已选)</span>
             </h2>
-            <Button onClick={copyAllTags} className="px-4 py-2 hover:scale-105 transition-transform">
-              📋 一键复制所有标签
+            <Button onClick={copySelectedTags} className="px-4 py-2 hover:scale-105 transition-transform">
+              📋 复制选中标签
             </Button>
           </div>
           
-          {Array.isArray(data.hashtags) ? (
-            // 新格式：单一数组
-            <div className="glass-effect p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <span className="w-3 h-3 bg-gradient-to-r from-blue-400 to-pink-400 rounded-full mr-2"></span>
-                AI推荐标签
-                <span className="ml-2 text-xs text-white/40">({data.hashtags.length})</span>
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {data.hashtags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gradient-to-r from-blue-400 to-pink-400 text-white px-3 py-1 rounded-full text-sm font-medium hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
-                    onClick={() => copyToClipboard(tag.startsWith('#') ? tag : `#${tag}`, '标签')}
+          <div className="glass-effect p-6 rounded-lg">
+            {/* 必选标签提示 */}
+            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+              <p className="text-blue-300 text-sm flex items-center">
+                <span className="mr-2">⭐</span>
+                以下标签为必选项，已默认选中且无法取消：
+              </p>
+            </div>
+            
+            {/* 标签列表 */}
+            <div className="flex flex-wrap gap-3">
+              {getAllTags().map((tag, index) => {
+                const isSelected = selectedTags.includes(tag)
+                const isRequired = requiredTags.includes(tag)
+                
+                return (
+                  <button
+                    key={`${tag}-${index}`}
+                    onClick={() => toggleTag(tag)}
+                    disabled={isRequired}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 relative ${
+                      isSelected
+                        ? isRequired
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-lg shadow-green-500/25 hover:scale-105 cursor-pointer'
+                        : 'bg-white/10 text-white/70 border border-white/30 hover:border-white/50 hover:bg-white/15 hover:scale-105 cursor-pointer'
+                    }`}
                   >
-                    {tag.startsWith('#') ? tag : `#${tag}`}
-                  </span>
-                ))}
-              </div>
+                    {tag}
+                    {isRequired && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">⭐</span>
+                      </span>
+                    )}
+                    {isSelected && !isRequired && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
-          ) : (
-            // 旧格式：分组显示
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* 固定标签 */}
-              <div className="glass-effect p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <span className="w-3 h-3 bg-blue-400 rounded-full mr-2"></span>
-                  核心标签
-                  <span className="ml-2 text-xs text-white/40">({data.hashtags.fixed.length})</span>
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {data.hashtags.fixed.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
-                      onClick={() => copyToClipboard(`#${tag}`, '标签')}
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* 生成标签 */}
-              <div className="glass-effect p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <span className="w-3 h-3 bg-pink-400 rounded-full mr-2"></span>
-                  AI生成标签
-                  <span className="ml-2 text-xs text-white/40">({data.hashtags.generated.length})</span>
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {data.hashtags.generated.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="bg-gradient-to-r from-pink-400 to-red-400 text-white px-3 py-1 rounded-full text-sm font-medium hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
-                      onClick={() => copyToClipboard(`#${tag}`, '标签')}
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
+            
+            {/* 使用说明 */}
+            <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
+              <h4 className="text-white font-medium mb-2 flex items-center">
+                <span className="mr-2">💡</span>
+                使用说明
+              </h4>
+              <ul className="text-white/60 text-xs space-y-1">
+                <li>• 蓝色带星标签为必选项，已默认选中</li>
+                <li>• 绿色带勾标签为您已选中的可选标签</li>
+                <li>• 灰色标签为可选项，点击即可选中/取消</li>
+                <li>• 点击右上角按钮复制所有选中的标签</li>
+              </ul>
             </div>
-          )}
-          
-          {/* 使用提示 */}
-          <div className="mt-4 text-center">
-            <p className="text-white/50 text-xs">
-              💡 点击任意标签复制单个标签，或使用上方按钮复制所有标签
-            </p>
           </div>
         </section>
 
