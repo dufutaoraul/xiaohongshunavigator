@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
-import StudentInput from '../components/StudentInput'
+import StudentInputWithAutocomplete from '../components/StudentInputWithAutocomplete'
 import { StudentInfo, upsertStudent } from '../../lib/database'
 
 interface UserProfile {
@@ -112,7 +112,7 @@ export default function ProfilePage() {
 
       <Card title="学员信息" icon="👤" className="mb-8">
         <div className="space-y-6">
-          <StudentInput
+          <StudentInputWithAutocomplete
             value={studentId}
             onChange={setStudentId}
             onStudentFound={handleStudentFound}
