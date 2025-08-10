@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
-import StudentInput from '../components/StudentInput'
+import StudentInputWithAutocomplete from '../components/StudentInputWithAutocomplete'
 
 export default function GeneratePage() {
   const [studentId, setStudentId] = useState('')
@@ -199,7 +199,7 @@ export default function GeneratePage() {
 
       <Card title="内容生成设置" icon="⚡" className="mb-8">
         <div className="space-y-6">
-          <StudentInput
+          <StudentInputWithAutocomplete
             value={studentId}
             onChange={setStudentId}
             required

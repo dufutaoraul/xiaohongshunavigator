@@ -29,6 +29,56 @@ export default function StudentInputWithAutocomplete({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // 组件挂载时读取保存的学号
+  useEffect(() => {
+    try {
+      const savedStudentId = localStorage.getItem('rememberedStudentId')
+      if (savedStudentId && !value) {
+        onChange(savedStudentId)
+        // 自动验证保存的学号
+        verifyStudentId(savedStudentId)
+      }
+    } catch (error) {
+      console.error('Failed to read saved student ID:', error)
+    }
+  }, [onChange, value, verifyStudentId])
+
+  // 保存学号到localStorage
+  const saveStudentId = (studentId: string) => {
+    try {
+      localStorage.setItem('rememberedStudentId', studentId)
+    } catch (error) {
+      console.error('Failed to save student ID:', error)
+    }
+  }
+
+  // 验证学号（用于自动加载）
+  const verifyStudentId = useCallback(async (studentId: string) => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const student = await getStudentByStudentId(studentId)
+      
+      if (student) {
+        setStudentName(student.name)
+        setError('')
+        onStudentFound?.(student)
+      } else {
+        setStudentName('')
+        setError('学号不存在')
+        onStudentFound?.(null)
+      }
+    } catch (error) {
+      console.error('Verification failed:', error)
+      setStudentName('')
+      setError('查询失败，请重试')
+      onStudentFound?.(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [onStudentFound])
+
   // 搜索建议
   const searchSuggestions = useCallback(async (query: string) => {
     if (query.length < 3) {
@@ -101,6 +151,8 @@ export default function StudentInputWithAutocomplete({
         if (studentId && studentId !== value) {
           onChange(studentId)
         }
+        // 保存学号到本地存储
+        saveStudentId(targetId)
       } else {
         setStudentName('')
         setError('未找到该学号对应的学员')
