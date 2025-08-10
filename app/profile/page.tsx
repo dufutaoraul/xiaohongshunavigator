@@ -40,7 +40,7 @@ export default function ProfilePage() {
       })
       
       // 判断是否为老用户（有内容）
-      const hasContent = student.persona || student.keywords || student.vision
+      const hasContent = Boolean(student.persona || student.keywords || student.vision)
       setIsExistingUser(hasContent)
     } else {
       // 没找到学员，清空profile（保留学号）
