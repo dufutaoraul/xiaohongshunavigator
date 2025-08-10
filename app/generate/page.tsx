@@ -84,17 +84,42 @@ export default function GeneratePage() {
     setVisualSuggestions('')
 
     try {
-      // 模拟API请求延迟
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // 调用API生成内容
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          student_id: studentId,
+          user_input: userInput,
+          angle: selectedAngle
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || '生成失败')
+      }
+
+      const result = await response.json()
       
-      // 生成模拟数据
-      const mockData = generateMockData()
+      // 处理Dify返回的数据格式，转换为前端所需格式
+      let mockData
+      if (result.dify) {
+        // Dify返回的是原始内容，需要转换格式
+        mockData = convertDifyResponseToMockFormat(result.content, result.visual_suggestions)
+      } else {
+        // 使用模拟数据时仍使用原有格式
+        mockData = generateMockData()
+        setMessage('⚠️ 当前使用模拟数据，请配置Dify API以获得真实AI生成内容')
+      }
       
       // 保存数据到localStorage
       localStorage.setItem('generatedContent', JSON.stringify(mockData))
       
       // 设置成功消息
-      setMessage('内容生成成功！正在跳转到结果页面...')
+      setMessage(`内容生成成功${result.dify ? ' (Dify AI生成)' : ' (模拟数据)'}！正在跳转到结果页面...`)
       
       // 延迟跳转，让用户看到成功消息
       setTimeout(() => {
@@ -102,10 +127,51 @@ export default function GeneratePage() {
       }, 1000)
       
     } catch (error) {
-      setMessage('网络错误，请检查连接')
+      setMessage(error instanceof Error ? error.message : '网络错误，请检查连接')
       console.error('Generate error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // 转换Dify响应为前端所需格式的函数
+  const convertDifyResponseToMockFormat = (content: string, visualSuggestions: string) => {
+    // 尝试从content中提取标题和正文
+    const lines = content.split('\n').filter(line => line.trim())
+    
+    // 提取可能的标题（以emoji开头或较短的行）
+    const titles = lines
+      .filter(line => line.length < 100 && (line.includes('🔥') || line.includes('✨') || line.includes('💡')))
+      .slice(0, 3)
+      .map(title => ({ content: title }))
+    
+    // 如果没有找到合适的标题，生成一些默认标题
+    if (titles.length === 0) {
+      titles.push({ content: "✨ AI生成的专属内容分享" })
+    }
+
+    // 从内容中提取标签
+    const hashtagMatches = content.match(/#[\u4e00-\u9fa5a-zA-Z0-9]+/g) || []
+    const extractedTags = hashtagMatches.map(tag => tag.replace('#', ''))
+    
+    return {
+      titles,
+      bodies: [{
+        content: content,
+        style: "AI智能生成"
+      }],
+      hashtags: {
+        fixed: ["AI学习", "创富营", "效率提升"],
+        generated: extractedTags.length > 0 ? extractedTags : ["AI工具", "学习方法", "个人成长"]
+      },
+      visuals: {
+        images: [
+          { suggestion: visualSuggestions || "根据内容主题制作相关配图，突出重点信息" }
+        ],
+        videos: [
+          { suggestion: "制作内容相关的短视频，增强表达效果" }
+        ]
+      }
     }
   }
 

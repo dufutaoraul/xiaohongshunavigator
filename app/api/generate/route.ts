@@ -27,41 +27,60 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 调用 N8N 工作流进行内容生成
-    if (process.env.N8N_WEBHOOK_URL_GENERATE) {
+    // 调用 Dify 工作流进行内容生成
+    if (process.env.DIFY_API_URL && process.env.DIFY_API_KEY) {
       try {
-        const n8nResponse = await fetch(process.env.N8N_WEBHOOK_URL_GENERATE, {
+        // 构建Dify API请求
+        const difyResponse = await fetch(process.env.DIFY_API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(process.env.N8N_API_KEY && { 'Authorization': `Bearer ${process.env.N8N_API_KEY}` })
+            'Authorization': `Bearer ${process.env.DIFY_API_KEY}`
           },
           body: JSON.stringify({
-            student_id,
-            user_input,
-            angle,
-            user_data: userData
+            inputs: {
+              student_id,
+              user_input,
+              angle,
+              persona: userData.persona,
+              keywords: userData.keywords,
+              vision: userData.vision,
+              name: userData.name
+            },
+            query: user_input,
+            response_mode: "blocking",
+            user: student_id
           })
         })
 
-        if (n8nResponse.ok) {
-          const result = await n8nResponse.json()
-          return NextResponse.json({
-            content: result.content || result.generated_content,
-            visual_suggestions: result.visual_suggestions || result.visual_advice
-          })
+        if (difyResponse.ok) {
+          const result = await difyResponse.json()
+          
+          // Dify响应格式处理
+          const content = result.answer || result.data?.answer || result.content
+          const visual_suggestions = result.metadata?.visual_suggestions || 
+                                   result.outputs?.visual_suggestions ||
+                                   generateMockVisualSuggestions(angle)
+          
+          if (content) {
+            return NextResponse.json({
+              content,
+              visual_suggestions,
+              dify: true // 标记这是Dify生成的数据
+            })
+          }
         } else {
-          console.error('N8N workflow failed:', await n8nResponse.text())
-          // 如果N8N失败，降级到模拟数据
+          console.error('Dify API failed:', await difyResponse.text())
+          // 如果Dify失败，降级到模拟数据
         }
       } catch (error) {
-        console.error('N8N request failed:', error)
-        // 如果N8N请求失败，降级到模拟数据
+        console.error('Dify request failed:', error)
+        // 如果Dify请求失败，降级到模拟数据
       }
     }
 
     // 降级方案：使用模拟数据
-    console.log('Using mock data - N8N webhook not configured or failed')
+    console.log('Using mock data - Dify API not configured or failed')
     const mockContent = generateMockContent(userData, user_input, angle)
     const mockVisualSuggestions = generateMockVisualSuggestions(angle)
 
