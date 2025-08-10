@@ -3,10 +3,13 @@ import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('API /generate called')
     const body = await request.json()
+    console.log('Request body:', body)
     const { student_id, user_input, angle } = body
 
     if (!student_id || !user_input || !angle) {
+      console.log('Missing required fields')
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -16,11 +19,19 @@ export async function POST(request: NextRequest) {
     // 获取用户人设信息
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('*')
+      .select('student_id, persona, keywords, vision')
       .eq('student_id', student_id)
       .single()
 
-    if (userError || !userData) {
+    if (userError) {
+      console.error('Supabase query error:', userError)
+      return NextResponse.json(
+        { error: 'User not found. Please set up your profile first.' },
+        { status: 404 }
+      )
+    }
+
+    if (!userData) {
       return NextResponse.json(
         { error: 'User not found. Please set up your profile first.' },
         { status: 404 }
@@ -91,13 +102,23 @@ export async function POST(request: NextRequest) {
             })
           }
         } else {
-          console.error('Dify API failed:', await difyResponse.text())
+          const errorText = await difyResponse.text()
+          console.error('Dify API failed:', {
+            status: difyResponse.status,
+            statusText: difyResponse.statusText,
+            error: errorText
+          })
           // 如果Dify失败，降级到模拟数据
         }
       } catch (error) {
-        console.error('Dify request failed:', error)
+        console.error('Dify request failed:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          error
+        })
         // 如果Dify请求失败，降级到模拟数据
       }
+    } else {
+      console.log('Dify API not configured, using mock data')
     }
 
     // 降级方案：使用模拟数据
