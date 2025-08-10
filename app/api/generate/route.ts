@@ -90,12 +90,29 @@ export async function POST(request: NextRequest) {
           // 检查是否返回的是字符串化的JSON（被双引号包裹）
           if (typeof rawResult === 'string') {
             try {
-              result = JSON.parse(rawResult)
-              console.log('Parsed string JSON:', JSON.stringify(result, null, 2))
+              // 清理字符串格式
+              let cleanedString = rawResult
+              
+              // 移除最外层的双重引号包装 ""content""
+              if (cleanedString.startsWith('""') && cleanedString.endsWith('""')) {
+                cleanedString = cleanedString.slice(2, -2)
+                console.log('Removed double quotes wrapper')
+              }
+              
+              // 处理转义字符和换行符
+              cleanedString = cleanedString
+                .replace(/\\n/g, '\n')  // 转义的换行符转为真实换行符
+                .replace(/\\"/g, '"')   // 转义的引号转为真实引号
+                .replace(/\\\\/g, '\\') // 转义的反斜杠
+              
+              console.log('Cleaned string sample:', cleanedString.substring(0, 200) + '...')
+              
+              result = JSON.parse(cleanedString)
+              console.log('Successfully parsed cleaned JSON')
             } catch (parseError) {
               console.error('Failed to parse stringified JSON:', parseError)
-              console.error('Raw string content:', rawResult.substring(0, 500) + '...')
-              throw new Error('Invalid JSON format from Dify')
+              console.error('Raw string content sample:', rawResult.substring(0, 500) + '...')
+              throw new Error(`JSON parsing failed: ${parseError.message}`)
             }
           }
           
