@@ -112,7 +112,8 @@ export async function POST(request: NextRequest) {
             } catch (parseError) {
               console.error('Failed to parse stringified JSON:', parseError)
               console.error('Raw string content sample:', rawResult.substring(0, 500) + '...')
-              throw new Error(`JSON parsing failed: ${parseError.message}`)
+              const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parsing error'
+              throw new Error(`JSON parsing failed: ${errorMessage}`)
             }
           }
           
