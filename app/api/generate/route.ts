@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
               titles: [{ id: 1, content: "✨ AI生成的专属内容分享" }],
               bodies: [{ id: 1, content: content, style: "AI智能生成" }],
-              hashtags: { fixed: ["AI学习", "创富营", "效率提升"], generated: ["AI工具", "学习方法", "个人成长"] },
+              hashtags: { fixed: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划"], generated: ["AI工具", "学习方法", "个人成长"] },
               visuals: { 
                 images: [{ suggestion: "根据内容主题制作相关配图，突出重点信息" }],
                 videos: [{ suggestion: "制作内容相关的短视频，增强表达效果" }]
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
         }
       ],
       hashtags: { 
-        fixed: ["AI学习", "创富营", "效率提升"], 
+        fixed: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划"], 
         generated: ["ChatGPT", "思维导图", "职场技能", "副业赚钱", "AI工具", "学习方法"] 
       },
       visuals: { 

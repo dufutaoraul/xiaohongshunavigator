@@ -19,11 +19,11 @@ export default function GeneratePage() {
   const router = useRouter()
 
   const angles = [
-    { value: 'experience', label: '踩坑经验' },
-    { value: 'efficiency', label: '效率提升' },
-    { value: 'beginner', label: '新手建议' },
-    { value: 'case_study', label: '案例分析' },
-    { value: 'tools', label: '工具推荐' }
+    { value: '踩坑经验', label: '踩坑经验' },
+    { value: '效率提升', label: '效率提升' },
+    { value: '新手建议', label: '新手建议' },
+    { value: '案例分析', label: '案例分析' },
+    { value: '工具推荐', label: '工具推荐' }
   ]
 
   const generateMockData = () => {
@@ -55,7 +55,7 @@ export default function GeneratePage() {
         }
       ],
       hashtags: {
-        fixed: ["AI学习", "创富营", "效率提升"],
+        fixed: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划"],
         generated: ["ChatGPT", "思维导图", "职场技能", "副业赚钱", "AI工具", "学习方法"]
       },
       visuals: {

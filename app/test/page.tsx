@@ -18,7 +18,7 @@ export default function TestPage() {
       const testData = {
         student_id: 'AXCF2025040088',
         user_input: '如何用AI提升工作效率',
-        angle: 'efficiency',
+        angle: '效率提升',
         day_number: 15
       };
 
