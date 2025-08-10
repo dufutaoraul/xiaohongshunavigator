@@ -6,9 +6,9 @@ export async function POST(request: NextRequest) {
     console.log('API /generate called')
     const body = await request.json()
     console.log('Request body:', body)
-    const { student_id, user_input, angle } = body
+    const { student_id, user_input, angle, day_number } = body
 
-    if (!student_id || !user_input || !angle) {
+    if (!student_id || !user_input || !angle || !day_number) {
       console.log('Missing required fields')
       return NextResponse.json(
         { error: 'All fields are required' },
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
             vision: userData.vision || "",
             user_input: user_input,
             angle: angle,
-            day_number: 1
+            day_number: parseInt(day_number) || 1
           },
           response_mode: "blocking",
           user: student_id

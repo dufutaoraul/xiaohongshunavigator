@@ -11,6 +11,7 @@ export default function GeneratePage() {
   const [studentId, setStudentId] = useState('')
   const [userInput, setUserInput] = useState('')
   const [selectedAngle, setSelectedAngle] = useState('')
+  const [dayNumber, setDayNumber] = useState('1')
   const [generatedContent, setGeneratedContent] = useState('')
   const [visualSuggestions, setVisualSuggestions] = useState('')
   const [loading, setLoading] = useState(false)
@@ -73,7 +74,7 @@ export default function GeneratePage() {
   }
 
   const handleGenerate = async () => {
-    if (!studentId.trim() || !userInput.trim() || !selectedAngle) {
+    if (!studentId.trim() || !userInput.trim() || !selectedAngle || !dayNumber.trim()) {
       setMessage('请填写所有必填项')
       return
     }
@@ -93,7 +94,8 @@ export default function GeneratePage() {
         body: JSON.stringify({
           student_id: studentId,
           user_input: userInput,
-          angle: selectedAngle
+          angle: selectedAngle,
+          day_number: parseInt(dayNumber)
         })
       })
 
@@ -232,6 +234,29 @@ export default function GeneratePage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">
+              第几天打卡 <span className="text-pink-400 ml-1">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={dayNumber}
+                onChange={(e) => setDayNumber(e.target.value)}
+                placeholder="请输入打卡天数，如：1、15、30等"
+                className="w-full px-4 py-3 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 focus:outline-none transition-all duration-300"
+              />
+              <div className="absolute right-3 top-3 text-white/40 text-sm">
+                天
+              </div>
+            </div>
+            <p className="text-white/50 text-xs mt-1">
+              💡 提示：输入您当前的学习打卡天数，有助于AI生成更个性化的内容
+            </p>
           </div>
 
           <Button onClick={handleGenerate} disabled={loading} className="w-full">
