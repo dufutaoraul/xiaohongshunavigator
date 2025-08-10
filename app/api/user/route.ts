@@ -61,8 +61,7 @@ export async function POST(request: NextRequest) {
         student_id,
         persona,
         keywords,
-        vision,
-        created_at: new Date().toISOString()
+        vision
       }, {
         onConflict: 'student_id'
       })

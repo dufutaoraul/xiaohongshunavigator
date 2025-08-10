@@ -14,7 +14,6 @@ export interface StudentInfo {
   keywords?: string
   vision?: string
   created_at?: string
-  updated_at?: string
 }
 
 // 根据学号查询学员信息
