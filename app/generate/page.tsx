@@ -54,20 +54,17 @@ export default function GeneratePage() {
           style: "避坑指南型"
         }
       ],
-      hashtags: {
-        fixed: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划"],
-        generated: ["ChatGPT", "思维导图", "职场技能", "副业赚钱", "AI工具", "学习方法"]
-      },
+      hashtags: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "ChatGPT", "思维导图", "职场技能", "副业赚钱", "AI工具", "学习方法"],
       visuals: {
         images: [
-          { suggestion: "制作一张对比图，展示使用AI前后的工作效率差异，用数字和图表直观表现提升效果" },
-          { suggestion: "设计思维导图截图，展示AI辅助整理的知识结构，配色要清晰美观" },
-          { suggestion: "制作学习打卡日历图，标记每天的学习进度和收获，体现坚持的力量" }
+          { id: 1, suggestion: "制作一张对比图，展示使用AI前后的工作效率差异，用数字和图表直观表现提升效果" },
+          { id: 2, suggestion: "设计思维导图截图，展示AI辅助整理的知识结构，配色要清晰美观" },
+          { id: 3, suggestion: "制作学习打卡日历图，标记每天的学习进度和收获，体现坚持的力量" }
         ],
         videos: [
-          { suggestion: "录制屏幕操作视频，演示如何用ChatGPT生成思维导图的完整流程" },
-          { suggestion: "制作时间轴视频，展示90天学习计划的关键节点和阶段性成果" },
-          { suggestion: "拍摄学习环境vlog，分享高效学习的工具和方法，营造真实感" }
+          { id: 1, suggestion: "录制屏幕操作视频，演示如何用ChatGPT生成思维导图的完整流程" },
+          { id: 2, suggestion: "制作时间轴视频，展示90天学习计划的关键节点和阶段性成果" },
+          { id: 3, suggestion: "拍摄学习环境vlog，分享高效学习的工具和方法，营造真实感" }
         ]
       }
     }
@@ -120,7 +117,7 @@ export default function GeneratePage() {
         mockData = {
           titles: result.titles,
           bodies: result.bodies, 
-          hashtags: result.hashtags || { fixed: [], generated: [] },
+          hashtags: result.hashtags || [],
           visuals: result.visuals || { images: [], videos: [] }
         }
       } else {
@@ -174,16 +171,13 @@ export default function GeneratePage() {
         content: content,
         style: "AI智能生成"
       }],
-      hashtags: {
-        fixed: ["AI学习", "创富营", "效率提升"],
-        generated: extractedTags.length > 0 ? extractedTags : ["AI工具", "学习方法", "个人成长"]
-      },
+      hashtags: ["AI学习", "创富营", "效率提升"].concat(extractedTags.length > 0 ? extractedTags : ["AI工具", "学习方法", "个人成长"]),
       visuals: {
         images: [
-          { suggestion: visualSuggestions || "根据内容主题制作相关配图，突出重点信息" }
+          { id: 1, suggestion: visualSuggestions || "根据内容主题制作相关配图，突出重点信息" }
         ],
         videos: [
-          { suggestion: "制作内容相关的短视频，增强表达效果" }
+          { id: 1, suggestion: "制作内容相关的短视频，增强表达效果" }
         ]
       }
     }
@@ -260,7 +254,14 @@ export default function GeneratePage() {
           </div>
 
           <Button onClick={handleGenerate} disabled={loading} className="w-full">
-            {loading ? '生成中...' : '生成内容'}
+            {loading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <span>正在生成中，请耐心等待，不会超过1分钟...</span>
+              </div>
+            ) : (
+              '生成内容'
+            )}
           </Button>
 
           {message && (

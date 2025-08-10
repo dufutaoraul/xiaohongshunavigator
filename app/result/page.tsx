@@ -8,13 +8,13 @@ import Button from '../components/Button'
 interface GeneratedContent {
   titles: Array<{ id?: number, content: string }>
   bodies: Array<{ id?: number, content: string, style: string }>
-  hashtags: {
+  hashtags: string[] | {
     fixed: string[]
     generated: string[]
   }
   visuals: {
-    images: Array<{ suggestion: string }>
-    videos: Array<{ suggestion: string }>
+    images: Array<{ id?: number, suggestion: string }>
+    videos: Array<{ id?: number, suggestion: string }>
   }
   dify?: boolean  // 标识是否来自Dify
   mock?: boolean  // 标识是否为模拟数据
@@ -63,8 +63,17 @@ function ResultPageContent() {
 
   const copyAllTags = async () => {
     if (!data) return
-    const allTags = [...data.hashtags.fixed, ...data.hashtags.generated]
-    const tagText = allTags.map(tag => `#${tag}`).join(' ')
+    let allTags: string[] = []
+    
+    if (Array.isArray(data.hashtags)) {
+      // 新格式：直接是字符串数组
+      allTags = data.hashtags
+    } else {
+      // 旧格式：有fixed和generated分组
+      allTags = [...data.hashtags.fixed, ...data.hashtags.generated]
+    }
+    
+    const tagText = allTags.map(tag => tag.startsWith('#') ? tag : `#${tag}`).join(' ')
     await copyToClipboard(tagText, '所有标签')
   }
 
@@ -228,47 +237,70 @@ function ResultPageContent() {
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 固定标签 */}
+          {Array.isArray(data.hashtags) ? (
+            // 新格式：单一数组
             <div className="glass-effect p-6 rounded-lg">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <span className="w-3 h-3 bg-blue-400 rounded-full mr-2"></span>
-                核心标签
-                <span className="ml-2 text-xs text-white/40">({data.hashtags.fixed.length})</span>
+                <span className="w-3 h-3 bg-gradient-to-r from-blue-400 to-pink-400 rounded-full mr-2"></span>
+                AI推荐标签
+                <span className="ml-2 text-xs text-white/40">({data.hashtags.length})</span>
               </h3>
               <div className="flex flex-wrap gap-2">
-                {data.hashtags.fixed.map((tag, index) => (
+                {data.hashtags.map((tag, index) => (
                   <span
                     key={index}
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
-                    onClick={() => copyToClipboard(`#${tag}`, '标签')}
+                    className="bg-gradient-to-r from-blue-400 to-pink-400 text-white px-3 py-1 rounded-full text-sm font-medium hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
+                    onClick={() => copyToClipboard(tag.startsWith('#') ? tag : `#${tag}`, '标签')}
                   >
-                    #{tag}
+                    {tag.startsWith('#') ? tag : `#${tag}`}
                   </span>
                 ))}
               </div>
             </div>
+          ) : (
+            // 旧格式：分组显示
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 固定标签 */}
+              <div className="glass-effect p-6 rounded-lg">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <span className="w-3 h-3 bg-blue-400 rounded-full mr-2"></span>
+                  核心标签
+                  <span className="ml-2 text-xs text-white/40">({data.hashtags.fixed.length})</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {data.hashtags.fixed.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
+                      onClick={() => copyToClipboard(`#${tag}`, '标签')}
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
 
-            {/* 生成标签 */}
-            <div className="glass-effect p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <span className="w-3 h-3 bg-pink-400 rounded-full mr-2"></span>
-                AI生成标签
-                <span className="ml-2 text-xs text-white/40">({data.hashtags.generated.length})</span>
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {data.hashtags.generated.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gradient-to-r from-pink-400 to-red-400 text-white px-3 py-1 rounded-full text-sm font-medium hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
-                    onClick={() => copyToClipboard(`#${tag}`, '标签')}
-                  >
-                    #{tag}
-                  </span>
-                ))}
+              {/* 生成标签 */}
+              <div className="glass-effect p-6 rounded-lg">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <span className="w-3 h-3 bg-pink-400 rounded-full mr-2"></span>
+                  AI生成标签
+                  <span className="ml-2 text-xs text-white/40">({data.hashtags.generated.length})</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {data.hashtags.generated.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="bg-gradient-to-r from-pink-400 to-red-400 text-white px-3 py-1 rounded-full text-sm font-medium hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
+                      onClick={() => copyToClipboard(`#${tag}`, '标签')}
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
           
           {/* 使用提示 */}
           <div className="mt-4 text-center">
@@ -295,11 +327,18 @@ function ResultPageContent() {
               </h3>
               <div className="space-y-3">
                 {data.visuals.images.map((image, index) => (
-                  <div key={index} className="bg-black/20 border border-white/10 p-4 rounded-lg hover:border-white/20 transition-all duration-300 relative group">
+                  <div key={image.id || index} className="bg-black/20 border border-white/10 p-4 rounded-lg hover:border-white/20 transition-all duration-300 relative group">
                     <div className="flex items-start justify-between">
-                      <p className="text-white/80 text-sm leading-relaxed flex-1">
-                        {image.suggestion}
-                      </p>
+                      <div className="flex-1">
+                        {image.id && (
+                          <div className="text-xs text-white/40 mb-1">
+                            图片建议 #{image.id}
+                          </div>
+                        )}
+                        <p className="text-white/80 text-sm leading-relaxed">
+                          {image.suggestion}
+                        </p>
+                      </div>
                       <button
                         onClick={() => copyToClipboard(image.suggestion, '图片建议')}
                         className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-white/60 hover:text-white text-xs"
@@ -322,11 +361,18 @@ function ResultPageContent() {
               </h3>
               <div className="space-y-3">
                 {data.visuals.videos.map((video, index) => (
-                  <div key={index} className="bg-black/20 border border-white/10 p-4 rounded-lg hover:border-white/20 transition-all duration-300 relative group">
+                  <div key={video.id || index} className="bg-black/20 border border-white/10 p-4 rounded-lg hover:border-white/20 transition-all duration-300 relative group">
                     <div className="flex items-start justify-between">
-                      <p className="text-white/80 text-sm leading-relaxed flex-1">
-                        {video.suggestion}
-                      </p>
+                      <div className="flex-1">
+                        {video.id && (
+                          <div className="text-xs text-white/40 mb-1">
+                            视频建议 #{video.id}
+                          </div>
+                        )}
+                        <p className="text-white/80 text-sm leading-relaxed">
+                          {video.suggestion}
+                        </p>
+                      </div>
                       <button
                         onClick={() => copyToClipboard(video.suggestion, '视频建议')}
                         className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-white/60 hover:text-white text-xs"

@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
               titles: structuredData.titles || [],
               bodies: structuredData.bodies || [],
-              hashtags: structuredData.hashtags || { fixed: [], generated: [] },
+              hashtags: Array.isArray(structuredData.hashtags) ? structuredData.hashtags : [],
               visuals: {
                 images: structuredData.visuals?.images || [],
                 videos: structuredData.visuals?.videos || []
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
               titles: structuredData.titles || [],
               bodies: structuredData.bodies || [],
-              hashtags: structuredData.hashtags || { fixed: [], generated: [] },
+              hashtags: Array.isArray(structuredData.hashtags) ? structuredData.hashtags : [],
               visuals: {
                 images: structuredData.visuals?.images || [],
                 videos: structuredData.visuals?.videos || []
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
               titles: result.data.titles || [],
               bodies: result.data.bodies || [],
-              hashtags: result.data.hashtags || { fixed: [], generated: [] },
+              hashtags: Array.isArray(result.data.hashtags) ? result.data.hashtags : [],
               visuals: result.data.visuals || { images: [], videos: [] },
               dify: true
             })
@@ -160,10 +160,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
               titles: [{ id: 1, content: "✨ AI生成的专属内容分享" }],
               bodies: [{ id: 1, content: content, style: "AI智能生成" }],
-              hashtags: { fixed: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划"], generated: ["AI工具", "学习方法", "个人成长"] },
+              hashtags: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "AI工具", "学习方法", "个人成长"],
               visuals: { 
-                images: [{ suggestion: "根据内容主题制作相关配图，突出重点信息" }],
-                videos: [{ suggestion: "制作内容相关的短视频，增强表达效果" }]
+                images: [{ id: 1, suggestion: "根据内容主题制作相关配图，突出重点信息" }],
+                videos: [{ id: 1, suggestion: "制作内容相关的短视频，增强表达效果" }]
               },
               dify: true
             })
@@ -252,18 +252,15 @@ export async function POST(request: NextRequest) {
           style: "经验分享型"
         }
       ],
-      hashtags: { 
-        fixed: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划"], 
-        generated: ["ChatGPT", "思维导图", "职场技能", "副业赚钱", "AI工具", "学习方法"] 
-      },
+      hashtags: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "ChatGPT", "思维导图", "职场技能", "副业赚钱", "AI工具", "学习方法"],
       visuals: { 
         images: [
-          { suggestion: "制作一张对比图，展示使用AI前后的工作效率差异，用数字和图表直观表现提升效果" },
-          { suggestion: "设计思维导图截图，展示AI辅助整理的知识结构，配色要清晰美观" }
+          { id: 1, suggestion: "制作一张对比图，展示使用AI前后的工作效率差异，用数字和图表直观表现提升效果" },
+          { id: 2, suggestion: "设计思维导图截图，展示AI辅助整理的知识结构，配色要清晰美观" }
         ],
         videos: [
-          { suggestion: "录制屏幕操作视频，演示如何用ChatGPT生成思维导图的完整流程" },
-          { suggestion: "制作时间轴视频，展示90天学习计划的关键节点和阶段性成果" }
+          { id: 1, suggestion: "录制屏幕操作视频，演示如何用ChatGPT生成思维导图的完整流程" },
+          { id: 2, suggestion: "制作时间轴视频，展示90天学习计划的关键节点和阶段性成果" }
         ]
       },
       mock: true
