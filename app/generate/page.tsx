@@ -107,33 +107,24 @@ export default function GeneratePage() {
       
       // 处理API响应数据格式
       let mockData
-      if (result.mockData) {
-        // 直接使用API返回的mockData
-        mockData = result.mockData
-        if (result.debug) {
-          console.log('API debug info:', result.debug)
-          setMessage(`✅ API调用成功！环境配置状态: Dify URL ${result.debug.environment.hasDifyUrl ? '✅' : '❌'}, API Key ${result.debug.environment.hasDifyKey ? '✅' : '❌'}`)
-        }
-      } else if (result.dify) {
-        // Dify返回了结构化数据，直接使用
-        if (result.titles && result.bodies) {
-          mockData = {
-            titles: result.titles,
-            bodies: result.bodies, 
-            hashtags: result.hashtags || { fixed: [], generated: [] },
-            visuals: result.visuals || { images: [], videos: [] }
-          }
-        } else if (result.content) {
-          // Dify返回的是原始内容，需要转换格式
-          mockData = convertDifyResponseToMockFormat(result.content, result.visual_suggestions)
-        } else {
-          // 兜底使用模拟数据
-          mockData = generateMockData()
+      if (result.dify) {
+        setMessage('✅ 内容生成成功 (Dify AI生成)！正在跳转到结果页面...')
+      } else if (result.mock) {
+        setMessage('⚠️ 当前使用模拟数据，Dify API调用失败或未配置')
+      }
+
+      // 直接使用API返回的结构化数据
+      if (result.titles && result.bodies) {
+        mockData = {
+          titles: result.titles,
+          bodies: result.bodies, 
+          hashtags: result.hashtags || { fixed: [], generated: [] },
+          visuals: result.visuals || { images: [], videos: [] }
         }
       } else {
-        // 使用模拟数据时仍使用原有格式
+        // 兜底使用模拟数据
         mockData = generateMockData()
-        setMessage('⚠️ 当前使用模拟数据，请配置Dify API以获得真实AI生成内容')
+        setMessage('⚠️ 响应格式错误，使用模拟数据')
       }
       
       // 保存数据到localStorage

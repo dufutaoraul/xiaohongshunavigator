@@ -4,22 +4,6 @@ import { supabase } from '@/lib/supabase'
 export async function POST(request: NextRequest) {
   try {
     console.log('API /generate called')
-    
-    // 首先返回一个简单的测试响应，确认API能够到达
-    return NextResponse.json({
-      message: 'Generate API is working',
-      mockData: generateSimpleMockData(),
-      debug: {
-        environment: {
-          hasDifyUrl: !!process.env.DIFY_API_URL,
-          hasDifyKey: !!process.env.DIFY_API_KEY,
-          difyUrl: process.env.DIFY_API_URL || 'not configured'
-        },
-        timestamp: new Date().toISOString()
-      }
-    })
-    
-    /* 暂时注释掉复杂逻辑进行调试
     const body = await request.json()
     console.log('Request body:', body)
     const { student_id, user_input, angle } = body
@@ -88,8 +72,11 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(requestBody)
         })
 
+        console.log('Dify response status:', difyResponse.status)
+
         if (difyResponse.ok) {
           const result = await difyResponse.json()
+          console.log('Dify response data:', result)
           
           // 根据您提供的返回数据结构处理
           if (result.data && (result.data.titles || result.data.bodies)) {
@@ -137,25 +124,11 @@ export async function POST(request: NextRequest) {
       console.log('Dify API not configured, using mock data')
     }
 
-    */
-  } catch (error) {
-    console.error('API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
-  }
-}
-
-// 简单的mock数据函数
-function generateSimpleMockData() {
-  return {
-    titles: [
-      { id: 1, content: "🚀 90天AI学习计划，从小白到高手的华丽转身！" },
-      { id: 2, content: "⚡ ChatGPT思维导图神器，效率提升300%不是梦！" }
-    ],
-    bodies: [
-      {
+    // 降级方案：使用模拟数据
+    console.log('Using mock data - Dify API not configured or failed')
+    return NextResponse.json({
+      titles: [{ id: 1, content: "🚀 90天AI学习计划，从小白到高手的华丽转身！" }],
+      bodies: [{
         id: 1,
         content: `大家好！今天想和大家分享一个超级实用的AI学习心得✨
 
@@ -169,20 +142,20 @@ function generateSimpleMockData() {
 现在无论是工作汇报还是学习笔记，都变得井井有条。以前需要花2小时整理的内容，现在30分钟就搞定！
 
 #AI学习心得 #效率提升 #思维导图`,
-        style: "测试版本"
-      }
-    ],
-    hashtags: {
-      fixed: ["AI学习", "创富营", "效率提升"],
-      generated: ["ChatGPT", "思维导图", "职场技能"]
-    },
-    visuals: {
-      images: [
-        { suggestion: "制作一张对比图，展示使用AI前后的工作效率差异" }
-      ],
-      videos: [
-        { suggestion: "录制屏幕操作视频，演示如何用ChatGPT生成思维导图" }
-      ]
-    }
+        style: "降级模拟数据"
+      }],
+      hashtags: { fixed: ["AI学习", "创富营", "效率提升"], generated: ["ChatGPT", "思维导图", "职场技能"] },
+      visuals: { 
+        images: [{ suggestion: "制作一张对比图，展示使用AI前后的工作效率差异" }],
+        videos: [{ suggestion: "录制屏幕操作视频，演示如何用ChatGPT生成思维导图" }]
+      },
+      mock: true
+    })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
   }
 }
