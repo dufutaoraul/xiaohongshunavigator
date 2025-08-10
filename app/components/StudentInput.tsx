@@ -153,7 +153,7 @@ export default function StudentInput({
         {!loading && !studentName && !error && value.trim() && (
           <div className="text-white/50 text-sm flex items-center">
             <span className="mr-1">💡</span>
-            输入学号后点击"确认"或按回车键查询
+            输入学号后点击&ldquo;确认&rdquo;或按回车键查询
           </div>
         )}
       </div>
