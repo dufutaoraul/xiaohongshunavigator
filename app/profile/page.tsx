@@ -37,24 +37,9 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
 
-  // 页面加载时检查认证状态
+  // 页面加载时始终要求登录
   useEffect(() => {
-    const authData = localStorage.getItem('userAuth')
-    if (authData) {
-      try {
-        const { student_id, isAuthenticated: authenticated } = JSON.parse(authData)
-        if (authenticated) {
-          setIsAuthenticated(true)
-          setStudentId(student_id)
-        } else {
-          setShowLoginModal(true)
-        }
-      } catch {
-        setShowLoginModal(true)
-      }
-    } else {
-      setShowLoginModal(true)
-    }
+    setShowLoginModal(true)
   }, [])
 
   // 登录处理
@@ -80,10 +65,10 @@ export default function ProfilePage() {
         setCurrentPassword(password)
         setShowLoginModal(false)
         
-        // 保存认证信息到localStorage
-        localStorage.setItem('userAuth', JSON.stringify({
+        // 保存凭证信息（不保存认证状态）
+        localStorage.setItem('lastCredentials', JSON.stringify({
           student_id: inputStudentId,
-          isAuthenticated: true
+          password: password
         }))
         
         // 填充用户信息
@@ -256,24 +241,30 @@ export default function ProfilePage() {
               <div className="flex items-center">
                 <span className="text-2xl mr-3">👋</span>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    欢迎，{profile.name || '学员'}！
+                  <h3 className="text-xl font-bold text-white mb-1">
+                    欢迎{profile.name || '学员'}
                   </h3>
                   <p className="text-blue-300 text-sm">
-                    学号: {profile.student_id}
+                    您的学号是：{profile.student_id}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-right space-y-2">
                 {isExistingUser ? (
-                  <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">
+                  <span className="block px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">
                     ✨ 老用户
                   </span>
                 ) : (
-                  <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-xs">
+                  <span className="block px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-xs">
                     🆕 新用户
                   </span>
                 )}
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="block px-3 py-1 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 hover:text-purple-200 rounded-full text-xs transition-all duration-300"
+                >
+                  🔑 修改密码
+                </button>
               </div>
             </div>
             

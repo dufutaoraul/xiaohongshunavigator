@@ -19,26 +19,9 @@ export default function GeneratePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
   
-  // 检查认证状态
+  // 检查认证状态 - 现在总是重定向到profile页面进行认证
   useEffect(() => {
-    const authData = localStorage.getItem('userAuth')
-    if (authData) {
-      try {
-        const { student_id, isAuthenticated: authenticated } = JSON.parse(authData)
-        if (authenticated) {
-          setIsAuthenticated(true)
-          setStudentId(student_id)
-          // 这里可以额外获取用户姓名，暂时留空
-          setUserName('') // 可以从API获取完整用户信息
-        } else {
-          router.push('/profile') // 未认证跳转到登录
-        }
-      } catch {
-        router.push('/profile')
-      }
-    } else {
-      router.push('/profile')
-    }
+    router.push('/profile')
   }, [])
 
   const angles = [

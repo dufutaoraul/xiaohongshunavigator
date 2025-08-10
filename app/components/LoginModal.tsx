@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from './Button'
 import Input from './Input'
 
@@ -14,6 +14,22 @@ export default function LoginModal({ isOpen, onClose, onLogin, loading = false }
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
+  // 当模态框打开时，尝试加载上次的凭证
+  useEffect(() => {
+    if (isOpen) {
+      const lastCredentials = localStorage.getItem('lastCredentials')
+      if (lastCredentials) {
+        try {
+          const { student_id, password: lastPassword } = JSON.parse(lastCredentials)
+          setStudentId(student_id || '')
+          setPassword(lastPassword || '')
+        } catch {
+          // 忽略解析错误
+        }
+      }
+    }
+  }, [isOpen])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!studentId.trim() || !password.trim()) {
@@ -26,9 +42,6 @@ export default function LoginModal({ isOpen, onClose, onLogin, loading = false }
     if (!success) {
       setError('学号或密码错误，请重试')
     } else {
-      // 登录成功后清空表单
-      setStudentId('')
-      setPassword('')
       setError('')
     }
   }
