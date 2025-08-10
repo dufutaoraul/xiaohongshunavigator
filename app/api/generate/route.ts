@@ -73,10 +73,32 @@ export async function POST(request: NextRequest) {
         })
 
         console.log('Dify response status:', difyResponse.status)
+        console.log('Dify response headers:', Object.fromEntries(difyResponse.headers.entries()))
 
         if (difyResponse.ok) {
           const result = await difyResponse.json()
-          console.log('Dify response data:', result)
+          console.log('===== DIFY RESPONSE ANALYSIS =====')
+          console.log('Raw Dify response:', JSON.stringify(result, null, 2))
+          console.log('Response type:', typeof result)
+          console.log('Response keys:', Object.keys(result))
+          
+          if (result.data) {
+            console.log('result.data exists:', result.data)
+            console.log('result.data type:', typeof result.data)
+            console.log('result.data keys:', Object.keys(result.data))
+            console.log('result.data.titles:', result.data.titles)
+            console.log('result.data.bodies:', result.data.bodies)
+          }
+          
+          if (result.answer) {
+            console.log('result.answer exists:', result.answer)
+          }
+          
+          if (result.content) {
+            console.log('result.content exists:', result.content)
+          }
+          
+          console.log('====================================')
           
           // 根据您提供的返回数据结构处理
           if (result.data && (result.data.titles || result.data.bodies)) {
@@ -106,18 +128,24 @@ export async function POST(request: NextRequest) {
           }
         } else {
           const errorText = await difyResponse.text()
-          console.error('Dify API failed:', {
-            status: difyResponse.status,
-            statusText: difyResponse.statusText,
-            error: errorText
-          })
+          console.error('===== DIFY API FAILED =====')
+          console.error('Status:', difyResponse.status)
+          console.error('Status Text:', difyResponse.statusText)
+          console.error('Headers:', Object.fromEntries(difyResponse.headers.entries()))
+          console.error('Error Response Body:', errorText)
+          console.error('Request URL:', process.env.DIFY_API_URL)
+          console.error('Request Body was:', JSON.stringify(requestBody, null, 2))
+          console.error('============================')
           // 如果Dify失败，降级到模拟数据
         }
       } catch (error) {
-        console.error('Dify request failed:', {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          error
-        })
+        console.error('===== DIFY REQUEST EXCEPTION =====')
+        console.error('Error type:', typeof error)
+        console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
+        console.error('Full error object:', error)
+        console.error('Request was attempting to:', process.env.DIFY_API_URL)
+        console.error('==================================')
         // 如果Dify请求失败，降级到模拟数据
       }
     } else {
@@ -125,8 +153,15 @@ export async function POST(request: NextRequest) {
     }
 
     // 降级方案：使用模拟数据
-    console.log('Using mock data - Dify API not configured or failed')
-    return NextResponse.json({
+    console.log('===== USING MOCK DATA =====')
+    console.log('Reason: Dify API not configured or failed')
+    console.log('Environment check:')
+    console.log('- DIFY_API_URL exists:', !!process.env.DIFY_API_URL)
+    console.log('- DIFY_API_KEY exists:', !!process.env.DIFY_API_KEY)
+    console.log('- DIFY_API_URL value:', process.env.DIFY_API_URL)
+    console.log('============================')
+    
+    const mockResponse = {
       titles: [{ id: 1, content: "🚀 90天AI学习计划，从小白到高手的华丽转身！" }],
       bodies: [{
         id: 1,
@@ -150,7 +185,10 @@ export async function POST(request: NextRequest) {
         videos: [{ suggestion: "录制屏幕操作视频，演示如何用ChatGPT生成思维导图" }]
       },
       mock: true
-    })
+    }
+    
+    console.log('Mock response prepared:', JSON.stringify(mockResponse, null, 2))
+    return NextResponse.json(mockResponse)
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json(
