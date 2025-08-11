@@ -19,9 +19,25 @@ export default function GeneratePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
   
-  // 检查认证状态 - 现在总是重定向到profile页面进行认证
+  // 检查认证状态
   useEffect(() => {
-    router.push('/profile')
+    const userSession = localStorage.getItem('userSession')
+    if (userSession) {
+      try {
+        const { student_id, name, isAuthenticated } = JSON.parse(userSession)
+        if (isAuthenticated) {
+          setIsAuthenticated(true)
+          setStudentId(student_id)
+          setUserName(name || '')
+        } else {
+          router.push('/profile')
+        }
+      } catch {
+        router.push('/profile')
+      }
+    } else {
+      router.push('/profile')
+    }
   }, [])
 
   const angles = [
@@ -236,9 +252,12 @@ export default function GeneratePage() {
               <span className="text-xl mr-3">👤</span>
               <div>
                 <p className="text-white font-medium">
-                  {userName ? `${userName} (${studentId})` : `学号: ${studentId}`}
+                  欢迎{userName || '学员'}
                 </p>
-                <p className="text-green-300 text-xs">
+                <p className="text-green-300 text-sm">
+                  学号：{studentId}
+                </p>
+                <p className="text-green-300/70 text-xs mt-1">
                   已通过身份验证，可使用AI内容生成功能
                 </p>
               </div>

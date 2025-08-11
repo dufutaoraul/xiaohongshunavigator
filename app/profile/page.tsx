@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
@@ -18,6 +19,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+  const router = useRouter()
   const [studentId, setStudentId] = useState('')
   const [profile, setProfile] = useState<UserProfile>({
     student_id: '',
@@ -204,6 +206,16 @@ export default function ProfilePage() {
     return isExistingUser ? '保存设置' : '保存设定'
   }
 
+  const handleGoToGenerate = () => {
+    // 保存当前认证状态并跳转到生成页面
+    localStorage.setItem('userSession', JSON.stringify({
+      student_id: profile.student_id,
+      name: profile.name,
+      isAuthenticated: true
+    }))
+    router.push('/generate')
+  }
+
   // 如果未认证，显示加载状态
   if (!isAuthenticated) {
     return (
@@ -305,7 +317,7 @@ export default function ProfilePage() {
             rows={3}
           />
 
-          <div className="pt-4">
+          <div className="pt-4 space-y-4">
             <Button 
               onClick={handleSave} 
               disabled={loading || !profile.name}
@@ -313,6 +325,17 @@ export default function ProfilePage() {
             >
               {getButtonText()}
             </Button>
+            
+            {/* AI生成模板按钮 - 仅在用户有基本信息时显示 */}
+            {profile.persona && profile.keywords && profile.vision && (
+              <Button 
+                onClick={handleGoToGenerate}
+                disabled={loading}
+                className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 ml-0 sm:ml-4"
+              >
+                ✨ AI生成模板
+              </Button>
+            )}
           </div>
         </div>
       </Card>

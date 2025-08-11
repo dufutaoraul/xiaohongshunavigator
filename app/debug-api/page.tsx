@@ -17,9 +17,24 @@ export default function DebugApiPage() {
   const [resultType, setResultType] = useState<'info' | 'success' | 'error' | 'loading'>('info')
   const router = useRouter()
 
-  // 检查认证状态 - 现在总是重定向到profile页面进行认证
+  // 检查认证状态
   useEffect(() => {
-    router.push('/profile')
+    const userSession = localStorage.getItem('userSession')
+    if (userSession) {
+      try {
+        const { student_id, isAuthenticated } = JSON.parse(userSession)
+        if (isAuthenticated) {
+          setIsAuthenticated(true)
+          setStudentId(student_id)
+        } else {
+          router.push('/profile')
+        }
+      } catch {
+        router.push('/profile')
+      }
+    } else {
+      router.push('/profile')
+    }
   }, [])
 
   const angles = [
