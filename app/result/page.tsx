@@ -256,12 +256,6 @@ function ResultPageContent() {
                   </p>
                 </div>
                 
-                {/* 统计信息 */}
-                <div className="flex items-center justify-between text-xs text-white/40 mb-4">
-                  <span>{body.content.length} 字符</span>
-                  <span>{body.content.split('\n').length} 行</span>
-                </div>
-                
                 {/* 复制按钮 */}
                 <div className="flex justify-end">
                   <Button

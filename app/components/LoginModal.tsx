@@ -61,7 +61,7 @@ export default function LoginModal({ isOpen, onClose, onLogin, loading = false }
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label="学员学号"
+            label="学号"
             placeholder="例如: AXCF2025040001"
             value={studentId}
             onChange={setStudentId}
