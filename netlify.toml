@@ -12,3 +12,5 @@
 
 [functions]
   node_bundler = "esbuild"
+  # 设置函数超时为60秒以支持Dify API调用
+  timeout = 60
