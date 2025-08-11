@@ -21,7 +21,8 @@
       "WebFetch(domain:localhost)",
       "Bash(timeout:*)",
       "Bash(node:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm run type-check:*)"
     ],
     "deny": []
   }

@@ -228,7 +228,10 @@ export default function ProfilePage() {
         {/* 登录模态框 */}
         <LoginModal
           isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
+          onClose={() => {
+            setShowLoginModal(false)
+            router.push('/')
+          }}
           onLogin={handleLogin}
           loading={authLoading}
         />

@@ -1,6 +1,89 @@
+'use client'
+
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import LoginModal from './components/LoginModal'
 
 export default function Home() {
+  const router = useRouter()
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [authLoading, setAuthLoading] = useState(false)
+
+  // 检查认证并导航
+  const handleNavigation = (path: string) => {
+    const userSession = localStorage.getItem('userSession')
+    const lastCredentials = localStorage.getItem('lastCredentials')
+    
+    if (path === '/profile' || path === '/generate') {
+      // 这两个页面需要认证
+      if (userSession) {
+        try {
+          const { isAuthenticated } = JSON.parse(userSession)
+          if (isAuthenticated) {
+            router.push(path)
+            return
+          }
+        } catch {
+          // 忽略解析错误
+        }
+      }
+      
+      // 如果有保存的凭证，直接跳转到对应页面（会触发登录）
+      if (lastCredentials) {
+        router.push(path)
+      } else {
+        // 没有保存的凭证，显示登录模态框
+        setShowLoginModal(true)
+      }
+    } else {
+      // 其他页面直接跳转
+      router.push(path)
+    }
+  }
+
+  // 登录处理
+  const handleLogin = async (studentId: string, password: string): Promise<boolean> => {
+    setAuthLoading(true)
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          student_id: studentId,
+          password: password
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        // 保存认证状态
+        localStorage.setItem('userSession', JSON.stringify({
+          student_id: studentId,
+          name: result.user.name,
+          isAuthenticated: true
+        }))
+        
+        localStorage.setItem('lastCredentials', JSON.stringify({
+          student_id: studentId,
+          password: password
+        }))
+        
+        setShowLoginModal(false)
+        router.push('/profile')
+        return true
+      } else {
+        return false
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      return false
+    } finally {
+      setAuthLoading(false)
+    }
+  }
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-6xl mx-auto py-20 px-4 sm:px-6 lg:px-8">
@@ -23,12 +106,12 @@ export default function Home() {
             <p className="text-white/70 text-sm mb-6 leading-relaxed">
               设定你的人设定位、内容关键词和90天愿景，建立专属的AI创作基因。通过详细的个人信息录入，为后续的内容生成提供精准的个性化参数。
             </p>
-            <Link 
-              href="/profile" 
+            <button
+              onClick={() => handleNavigation('/profile')}
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               启航设置 ✨
-            </Link>
+            </button>
           </div>
 
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer">
@@ -37,12 +120,12 @@ export default function Home() {
             <p className="text-white/70 text-sm mb-6 leading-relaxed">
               基于你的人设，AI生成高质量小红书内容，让创意如星河般闪耀。智能分析你的特色定位，自动生成吸引人的标题和正文内容。
             </p>
-            <Link 
-              href="/generate" 
+            <button
+              onClick={() => handleNavigation('/generate')}
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               智慧生成 🚀
-            </Link>
+            </button>
           </div>
 
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer">
@@ -51,12 +134,12 @@ export default function Home() {
             <p className="text-white/70 text-sm mb-6 leading-relaxed">
               提交小红书链接，追踪你的创作进度，每一步都是星座的轨迹。通过智能日历热力图直观显示打卡记录，统计发布频率和互动数据。
             </p>
-            <Link 
-              href="/dashboard" 
+            <button
+              onClick={() => handleNavigation('/dashboard')}
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               进度追踪 📈
-            </Link>
+            </button>
           </div>
 
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer">
@@ -65,12 +148,12 @@ export default function Home() {
             <p className="text-white/70 text-sm mb-6 leading-relaxed">
               学习优秀学员的爆款内容和经验，在星光指引下前行。精选创富营内最具影响力的成功案例，深度解析爆款内容的创作技巧。
             </p>
-            <Link 
-              href="/showcase" 
+            <button
+              onClick={() => handleNavigation('/showcase')}
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               灵感探索 🌠
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -92,6 +175,14 @@ export default function Home() {
           </Link>
         </div>
       </div>
+      
+      {/* 登录模态框 */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={handleLogin}
+        loading={authLoading}
+      />
     </div>
   )
 }
