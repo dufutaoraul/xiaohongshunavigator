@@ -165,15 +165,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 调试入口 */}
-        <div className="text-center mt-8">
-          <Link 
-            href="/debug" 
-            className="text-white/40 hover:text-white/60 text-sm transition-colors duration-300"
-          >
-            🔍 调试面板
-          </Link>
-        </div>
+        {/* 调试入口 - 仅开发环境显示 */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-center mt-8">
+            <Link 
+              href="/debug" 
+              className="text-white/40 hover:text-white/60 text-sm transition-colors duration-300"
+            >
+              🔍 调试面板
+            </Link>
+          </div>
+        )}
       </div>
       
       {/* 登录模态框 */}
