@@ -72,7 +72,7 @@ export default function DashboardPage() {
     }
   }
 
-  const checkXiaohongshuProfile = async (studentId: string) => {
+  const checkXiaohongshuProfile = async (studentId: string, forceShow = false) => {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -88,8 +88,8 @@ export default function DashboardPage() {
       const profileUrl = data?.xiaohongshu_profile_url
       setCurrentXiaohongshuUrl(profileUrl || '')
       
-      // 如果没有绑定小红书链接，显示绑定弹窗
-      if (!profileUrl) {
+      // 如果没有绑定小红书链接，或者强制显示，显示绑定弹窗
+      if (!profileUrl || forceShow) {
         setShowXiaohongshuModal(true)
       }
     } catch (error) {
@@ -211,10 +211,69 @@ export default function DashboardPage() {
   }
 
   return (
-    <ComingSoon 
-      title="自动化打卡与进度可视系统"
-      description="智能追踪你的创作进度，让每一步都成为星座的轨迹。通过日历热力图直观显示打卡记录，统计发布频率和互动数据，见证你的成长历程。"
-      icon="📊"
-    />
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="max-w-2xl mx-auto py-20 px-4 sm:px-6 lg:px-8 text-center">
+        <div className="glass-effect p-12 rounded-3xl border border-white/20 backdrop-blur-lg">
+          <div className="text-8xl mb-8 animate-pulse">📊</div>
+          <h1 className="text-4xl font-bold gradient-text mb-6">自动化打卡与进度可视系统</h1>
+          <p className="text-xl text-white/80 mb-8 leading-relaxed">
+            智能追踪你的创作进度，让每一步都成为星座的轨迹。通过日历热力图直观显示打卡记录，统计发布频率和互动数据，见证你的成长历程。
+          </p>
+          
+          {/* 小红书主页链接信息 */}
+          <div className="mb-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+            <h3 className="text-white font-medium mb-2 flex items-center justify-center">
+              <span className="mr-2">🔗</span>
+              已绑定小红书主页
+            </h3>
+            <p className="text-white/70 text-sm break-all">
+              {currentXiaohongshuUrl}
+            </p>
+          </div>
+          
+          <div className="space-y-4 text-white/60">
+            <p className="text-lg">🚀 此功能正在研发中，敬请期待~</p>
+            <p className="text-sm">我们正在全力以赴为您打造更完美的体验</p>
+          </div>
+
+          {/* 按钮组 */}
+          <div className="mt-8 space-y-4">
+            {/* 修改小红书链接按钮 */}
+            <button
+              onClick={() => {
+                checkXiaohongshuProfile(currentStudentId, true)
+              }}
+              className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              🔗 修改我的小红书主页链接
+            </button>
+            
+            {/* 返回首页按钮 */}
+            <button
+              onClick={() => router.push('/')}
+              className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              🏠 回到首页
+            </button>
+          </div>
+          
+          {/* 动效装饰 */}
+          <div className="mt-8 flex justify-center space-x-4">
+            <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce"></div>
+            <div className="w-3 h-3 bg-pink-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+            <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+          </div>
+        </div>
+      </div>
+      
+      {/* 小红书主页绑定模态框 */}
+      <XiaohongshuProfileModal
+        isOpen={showXiaohongshuModal}
+        onClose={() => setShowXiaohongshuModal(false)}
+        onUpdate={handleUpdateXiaohongshuProfile}
+        currentUrl={currentXiaohongshuUrl}
+        loading={profileLoading}
+      />
+    </div>
   )
 }
