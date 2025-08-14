@@ -94,7 +94,7 @@ export default function XiaohongshuProfileModal({
               <li>• 打开小红书App或网页版</li>
               <li>• 进入个人主页</li>
               <li>• 点击右上角分享按钮</li>
-              <li>• 选择"复制链接"即可获得</li>
+              <li>• 选择&ldquo;复制链接&rdquo;即可获得</li>
             </ul>
           </div>
 
