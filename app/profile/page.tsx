@@ -39,10 +39,49 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
 
-  // 页面加载时始终要求登录
+  // 页面加载时检查登录状态
   useEffect(() => {
-    setShowLoginModal(true)
+    checkAuthStatus()
   }, [])
+
+  const checkAuthStatus = async () => {
+    try {
+      const userSession = localStorage.getItem('userSession')
+      const lastCredentials = localStorage.getItem('lastCredentials')
+      
+      if (userSession) {
+        try {
+          const { student_id, isAuthenticated } = JSON.parse(userSession)
+          if (isAuthenticated && student_id) {
+            setIsAuthenticated(true)
+            setStudentId(student_id)
+            // 学号已设置，组件会自动加载用户信息
+            return
+          }
+        } catch {
+          // 忽略解析错误
+        }
+      }
+      
+      // 如果有保存的凭证，尝试自动登录
+      if (lastCredentials) {
+        try {
+          const { student_id, password } = JSON.parse(lastCredentials)
+          const loginSuccess = await handleLogin(student_id, password)
+          if (!loginSuccess) {
+            setShowLoginModal(true)
+          }
+        } catch {
+          setShowLoginModal(true)
+        }
+      } else {
+        setShowLoginModal(true)
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error)
+      setShowLoginModal(true)
+    }
+  }
 
   // 登录处理
   const handleLogin = async (inputStudentId: string, password: string): Promise<boolean> => {
