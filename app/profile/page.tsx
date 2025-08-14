@@ -53,6 +53,22 @@ export default function ProfilePage() {
         try {
           const { student_id, name, isAuthenticated } = JSON.parse(userSession)
           if (isAuthenticated && student_id) {
+            // 检查是否有保存的凭证，需要设置当前密码
+            if (lastCredentials) {
+              try {
+                const { password } = JSON.parse(lastCredentials)
+                setCurrentPassword(password)
+              } catch {
+                // 如果无法获取密码，回退到登录流程
+                setShowLoginModal(true)
+                return
+              }
+            } else {
+              // 没有凭证信息，需要重新登录
+              setShowLoginModal(true)
+              return
+            }
+            
             setIsAuthenticated(true)
             setStudentId(student_id)
             // 先设置基本信息
