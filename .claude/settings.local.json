@@ -22,7 +22,9 @@
       "Bash(timeout:*)",
       "Bash(node:*)",
       "Bash(rm:*)",
-      "Bash(npm run type-check:*)"
+      "Bash(npm run type-check:*)",
+      "Bash(netlify deploy:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }
