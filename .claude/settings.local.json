@@ -24,7 +24,8 @@
       "Bash(rm:*)",
       "Bash(npm run type-check:*)",
       "Bash(netlify deploy:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(nslookup:*)"
     ],
     "deny": []
   }
