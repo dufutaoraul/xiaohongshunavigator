@@ -28,16 +28,16 @@ export default function RootLayout({
               </div>
               <div className="flex space-x-1">
                 <Link href="/profile" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">
-                  🧑‍💼 个人资料
+                  🧑‍💼 个人IP资料库
                 </Link>
                 <Link href="/generate" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">
-                  🤖 AI生成
+                  🤖 AI灵感引擎
                 </Link>
                 <Link href="/dashboard" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">
                   📊 打卡中心
                 </Link>
                 <Link href="/showcase" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">
-                  🏆 优秀案例
+                  🏆 优秀案例展示墙
                 </Link>
               </div>
             </div>

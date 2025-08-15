@@ -17,9 +17,10 @@ export default function GeneratePage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userProfile, setUserProfile] = useState({ persona: '', keywords: '', vision: '' })
   const router = useRouter()
   
-  // 检查认证状态
+  // 检查认证状态并获取用户信息
   useEffect(() => {
     const userSession = localStorage.getItem('userSession')
     if (userSession) {
@@ -29,6 +30,7 @@ export default function GeneratePage() {
           setIsAuthenticated(true)
           setStudentId(student_id)
           setUserName(name || '')
+          fetchUserProfile(student_id)
         } else {
           router.push('/profile')
         }
@@ -39,6 +41,22 @@ export default function GeneratePage() {
       router.push('/profile')
     }
   }, [])
+
+  const fetchUserProfile = async (studentId: string) => {
+    try {
+      const response = await fetch(`/api/user?student_id=${studentId}`)
+      if (response.ok) {
+        const userData = await response.json()
+        setUserProfile({
+          persona: userData.persona || '',
+          keywords: userData.keywords || '',
+          vision: userData.vision || ''
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error)
+    }
+  }
 
   const angles = [
     { value: '踩坑经验', label: '踩坑经验' },
@@ -166,8 +184,23 @@ export default function GeneratePage() {
         setMessage('⚠️ 响应格式错误，使用模拟数据')
       }
       
-      // 保存数据到localStorage
-      localStorage.setItem('generatedContent', JSON.stringify(mockData))
+      // 保存数据和输入参数到localStorage
+      const contentWithParams = {
+        ...mockData,
+        inputParams: {
+          student_id: studentId,
+          user_name: userName,
+          user_input: userInput,
+          angle: selectedAngle,
+          day_number: parseInt(dayNumber),
+          persona: userProfile.persona,
+          keywords: userProfile.keywords,
+          vision: userProfile.vision
+        },
+        dify: result.dify,
+        mock: result.mock
+      }
+      localStorage.setItem('generatedContent', JSON.stringify(contentWithParams))
       
       // 设置成功消息
       setMessage(`内容生成成功${result.dify ? ' (Dify AI生成)' : ' (模拟数据)'}！正在跳转到结果页面...`)

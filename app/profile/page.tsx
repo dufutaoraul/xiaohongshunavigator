@@ -39,10 +39,98 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
 
-  // 页面加载时始终要求登录
+  // 页面加载时检查登录状态
   useEffect(() => {
-    setShowLoginModal(true)
+    checkAuthStatus()
   }, [])
+
+  const checkAuthStatus = async () => {
+    try {
+      const userSession = localStorage.getItem('userSession')
+      const lastCredentials = localStorage.getItem('lastCredentials')
+      
+      if (userSession) {
+        try {
+          const { student_id, name, isAuthenticated } = JSON.parse(userSession)
+          if (isAuthenticated && student_id) {
+            // 检查是否有保存的凭证，需要设置当前密码
+            if (lastCredentials) {
+              try {
+                const { password } = JSON.parse(lastCredentials)
+                setCurrentPassword(password)
+              } catch {
+                // 如果无法获取密码，回退到登录流程
+                setShowLoginModal(true)
+                return
+              }
+            } else {
+              // 没有凭证信息，需要重新登录
+              setShowLoginModal(true)
+              return
+            }
+            
+            setIsAuthenticated(true)
+            setStudentId(student_id)
+            // 先设置基本信息
+            setProfile(prev => ({
+              ...prev,
+              student_id: student_id,
+              name: name || ''
+            }))
+            // 然后加载完整的用户信息
+            await loadUserProfile(student_id)
+            return
+          }
+        } catch {
+          // 忽略解析错误
+        }
+      }
+      
+      // 如果有保存的凭证，尝试自动登录
+      if (lastCredentials) {
+        try {
+          const { student_id, password } = JSON.parse(lastCredentials)
+          const loginSuccess = await handleLogin(student_id, password)
+          if (!loginSuccess) {
+            setShowLoginModal(true)
+          }
+        } catch {
+          setShowLoginModal(true)
+        }
+      } else {
+        setShowLoginModal(true)
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error)
+      setShowLoginModal(true)
+    }
+  }
+
+  // 加载用户完整信息的独立函数
+  const loadUserProfile = async (studentId: string) => {
+    try {
+      const response = await fetch(`/api/user?student_id=${studentId}`)
+      if (response.ok) {
+        const userData = await response.json()
+        if (userData) {
+          setProfile(prev => ({
+            ...prev,
+            student_id: userData.student_id,
+            name: userData.name || prev.name,
+            persona: userData.persona || '',
+            keywords: userData.keywords || '',
+            vision: userData.vision || ''
+          }))
+          
+          // 判断是否为老用户（有内容）
+          const hasContent = Boolean(userData.persona || userData.keywords || userData.vision)
+          setIsExistingUser(hasContent)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load user profile:', error)
+    }
+  }
 
   // 登录处理
   const handleLogin = async (inputStudentId: string, password: string): Promise<boolean> => {
@@ -71,6 +159,13 @@ export default function ProfilePage() {
         localStorage.setItem('lastCredentials', JSON.stringify({
           student_id: inputStudentId,
           password: password
+        }))
+        
+        // 保存用户会话信息
+        localStorage.setItem('userSession', JSON.stringify({
+          student_id: inputStudentId,
+          name: result.user.name,
+          isAuthenticated: true
         }))
         
         // 填充用户信息
@@ -121,8 +216,16 @@ export default function ProfilePage() {
 
       if (response.ok && result.success) {
         setCurrentPassword(newPassword)
+        
+        // 更新本地保存的凭证信息
+        localStorage.setItem('lastCredentials', JSON.stringify({
+          student_id: profile.student_id,
+          password: newPassword
+        }))
+        
         return true
       } else {
+        console.error('Password change failed:', result.error || 'Unknown error')
         return false
       }
     } catch (error) {
@@ -185,6 +288,20 @@ export default function ProfilePage() {
       if (success) {
         setMessage('保存成功！')
         setIsExistingUser(true) // 保存成功后变为老用户
+        
+        // 更新localStorage中的会话信息
+        const userSession = localStorage.getItem('userSession')
+        if (userSession) {
+          try {
+            const sessionData = JSON.parse(userSession)
+            localStorage.setItem('userSession', JSON.stringify({
+              ...sessionData,
+              name: profile.name
+            }))
+          } catch (error) {
+            console.error('Error updating session:', error)
+          }
+        }
         
         // 3秒后清除消息
         setTimeout(() => {

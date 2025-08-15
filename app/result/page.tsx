@@ -24,6 +24,7 @@ function ResultPageContent() {
   const [data, setData] = useState<GeneratedContent | null>(null)
   const [copyFeedback, setCopyFeedback] = useState<string>('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [inputParams, setInputParams] = useState<any>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
   
@@ -37,6 +38,9 @@ function ResultPageContent() {
       try {
         const parsedData = JSON.parse(decodeURIComponent(dataParam))
         setData(parsedData)
+        if (parsedData.inputParams) {
+          setInputParams(parsedData.inputParams)
+        }
       } catch (error) {
         console.error('Failed to parse data:', error)
       }
@@ -45,7 +49,11 @@ function ResultPageContent() {
       const storedData = localStorage.getItem('generatedContent')
       if (storedData) {
         try {
-          setData(JSON.parse(storedData))
+          const parsedData = JSON.parse(storedData)
+        setData(parsedData)
+        if (parsedData.inputParams) {
+          setInputParams(parsedData.inputParams)
+        }
         } catch (error) {
           console.error('Failed to parse stored data:', error)
         }
@@ -187,6 +195,98 @@ function ResultPageContent() {
             )}
           </div>
         </div>
+
+        {/* 本次生成参数模块 */}
+        {inputParams && (
+          <section className="mb-8">
+            <div className="glass-effect p-6 rounded-lg">
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+                <span className="text-2xl mr-2">📝</span>
+                本次生成参数
+                <span className="ml-2 text-xs text-white/40">灵感回顾</span>
+              </h2>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 用户信息 */}
+                <div className="space-y-4">
+                  <div className="bg-black/20 border border-white/10 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center">
+                      <span className="mr-2">🧑‍💼</span>
+                      学员信息
+                    </h4>
+                    <div className="text-white/70 text-sm space-y-1">
+                      <p><strong>学号：</strong>{inputParams.student_id}</p>
+                      {inputParams.user_name && <p><strong>姓名：</strong>{inputParams.user_name}</p>}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-black/20 border border-white/10 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center">
+                      <span className="mr-2">🎯</span>
+                      人设定位
+                    </h4>
+                    <p className="text-white/80 text-sm leading-relaxed">
+                      {inputParams.persona || '暂未设置'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-black/20 border border-white/10 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center">
+                      <span className="mr-2">📝</span>
+                      内容关键词
+                    </h4>
+                    <p className="text-white/80 text-sm">
+                      {inputParams.keywords || '暂未设置'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* 生成参数 */}
+                <div className="space-y-4">
+                  <div className="bg-black/20 border border-white/10 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center">
+                      <span className="mr-2">💡</span>
+                      今日主题/灵感
+                    </h4>
+                    <p className="text-white/80 text-sm leading-relaxed">
+                      {inputParams.user_input}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-black/20 border border-white/10 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center">
+                      <span className="mr-2">🔄</span>
+                      分享角度
+                    </h4>
+                    <p className="text-white/80 text-sm">
+                      {inputParams.angle}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-black/20 border border-white/10 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center">
+                      <span className="mr-2">📅</span>
+                      打卡天数
+                    </h4>
+                    <p className="text-white/80 text-sm">
+                      第 {inputParams.day_number} 天
+                    </p>
+                  </div>
+                  
+                  <div className="bg-black/20 border border-white/10 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2 flex items-center">
+                      <span className="mr-2">🎆</span>
+                      90天愿景
+                    </h4>
+                    <p className="text-white/80 text-sm leading-relaxed">
+                      {inputParams.vision || '暂未设置'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* 复制反馈提示 */}
         {copyFeedback && (

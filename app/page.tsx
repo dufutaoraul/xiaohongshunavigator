@@ -2,8 +2,16 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import LoginModal from './components/LoginModal'
+import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
+import { createClient } from '@supabase/supabase-js'
+
+// 创建Supabase客户端
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function Home() {
   const router = useRouter()
@@ -84,6 +92,7 @@ export default function Home() {
       setAuthLoading(false)
     }
   }
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-6xl mx-auto py-20 px-4 sm:px-6 lg:px-8">
@@ -99,11 +108,11 @@ export default function Home() {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="glass-effect p-8 text-center floating-card group cursor-pointer">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">🧑‍💼</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">个人IP资料库</h3>
-            <p className="text-white/70 text-sm mb-6 leading-relaxed">
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
               设定你的人设定位、内容关键词和90天愿景，建立专属的AI创作基因。通过详细的个人信息录入，为后续的内容生成提供精准的个性化参数。
             </p>
             <button
@@ -114,10 +123,10 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="glass-effect p-8 text-center floating-card group cursor-pointer">
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">🤖</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">AI灵感引擎</h3>
-            <p className="text-white/70 text-sm mb-6 leading-relaxed">
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
               基于你的人设，AI生成高质量小红书内容，让创意如星河般闪耀。智能分析你的特色定位，自动生成吸引人的标题和正文内容。
             </p>
             <button
@@ -128,10 +137,10 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="glass-effect p-8 text-center floating-card group cursor-pointer">
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">📊</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">打卡中心</h3>
-            <p className="text-white/70 text-sm mb-6 leading-relaxed">
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
               提交小红书链接，追踪你的创作进度，每一步都是星座的轨迹。通过智能日历热力图直观显示打卡记录，统计发布频率和互动数据。
             </p>
             <button
@@ -142,10 +151,10 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="glass-effect p-8 text-center floating-card group cursor-pointer">
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">🏆</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">优秀案例</h3>
-            <p className="text-white/70 text-sm mb-6 leading-relaxed">
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
               学习优秀学员的爆款内容和经验，在星光指引下前行。精选创富营内最具影响力的成功案例，深度解析爆款内容的创作技巧。
             </p>
             <button
@@ -163,17 +172,20 @@ export default function Home() {
               🌌 &ldquo;科技连接宇宙智慧，每一个创作者都是闪耀的星辰&rdquo;
             </p>
           </div>
+          
         </div>
 
-        {/* 调试入口 */}
-        <div className="text-center mt-8">
-          <Link 
-            href="/debug" 
-            className="text-white/40 hover:text-white/60 text-sm transition-colors duration-300"
-          >
-            🔍 调试面板
-          </Link>
-        </div>
+        {/* 调试入口 - 仅开发环境显示 */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-center mt-8">
+            <Link 
+              href="/debug" 
+              className="text-white/40 hover:text-white/60 text-sm transition-colors duration-300"
+            >
+              🔍 调试面板
+            </Link>
+          </div>
+        )}
       </div>
       
       {/* 登录模态框 */}
@@ -183,6 +195,7 @@ export default function Home() {
         onLogin={handleLogin}
         loading={authLoading}
       />
+      
     </div>
   )
 }
