@@ -25,7 +25,7 @@ function GraduationCheckContent() {
     
     if (user) {
       setStudentId(user.student_id);
-      setStudentName(user.student_name || '');
+      setStudentName(user.name || '');
       checkGraduationStatus(user.student_id);
     } else if (urlStudentId) {
       setStudentId(urlStudentId);
@@ -60,12 +60,12 @@ function GraduationCheckContent() {
       if (!studentName && targetStudentId) {
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('student_name')
+          .select('name')
           .eq('student_id', targetStudentId)
           .single();
 
         if (userData && !userError) {
-          setStudentName(userData.student_name || '');
+          setStudentName(userData.name || '');
         }
       }
 
