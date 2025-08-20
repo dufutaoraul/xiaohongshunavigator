@@ -1,386 +1,146 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '../contexts/AuthContext'
-
-interface Homework {
-  id: string
-  student_id: string
-  student_name: string
-  title: string
-  content: string
-  xiaohongshu_link?: string
-  status: 'pending' | 'reviewed' | 'approved' | 'rejected'
-  score?: number
-  feedback?: string
-  submitted_at: string
-  reviewed_at?: string
-  reviewer?: string
-}
+import { useState } from 'react';
+import { useAuth } from '@/app/contexts/AuthContext';
+import Link from 'next/link';
 
 export default function HomeworkPage() {
-  const { user, isAdmin, isAuthenticated } = useAuth()
-  const router = useRouter()
-  const [homeworks, setHomeworks] = useState<Homework[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null)
-  const [reviewModal, setReviewModal] = useState(false)
-  const [reviewData, setReviewData] = useState({
-    score: '',
-    feedback: '',
-    status: 'reviewed' as 'reviewed' | 'approved' | 'rejected'
-  })
-
-  // 权限检查
-  useEffect(() => {
-    if (!user || !isAuthenticated) {
-      router.push('/')
-      return
-    }
-  }, [user, isAuthenticated, router])
-
-  // 使用useCallback优化loadHomeworks函数
-  const loadHomeworks = useCallback(async () => {
-    try {
-      setLoading(true)
-      
-      // 模拟数据 - 实际应该从API获取
-      const mockHomeworks: Homework[] = [
-        {
-          id: '1',
-          student_id: 'AXCF2025040001',
-          student_name: '张三',
-          title: '第1周作业：个人IP定位分析',
-          content: '我的个人IP定位是专注于AI工具应用的职场效率专家...',
-          xiaohongshu_link: 'https://www.xiaohongshu.com/explore/123456',
-          status: 'pending',
-          submitted_at: '2025-01-20T10:30:00Z'
-        },
-        {
-          id: '2',
-          student_id: 'AXCF2025040002',
-          student_name: '李四',
-          title: '第1周作业：个人IP定位分析',
-          content: '我的个人IP定位是专注于健康生活方式的分享者...',
-          xiaohongshu_link: 'https://www.xiaohongshu.com/explore/789012',
-          status: 'reviewed',
-          score: 85,
-          feedback: '内容很好，建议在标题上更加吸引人',
-          submitted_at: '2025-01-19T14:20:00Z',
-          reviewed_at: '2025-01-20T09:15:00Z',
-          reviewer: '管理员'
-        }
-      ]
-
-      // 如果是学员，只显示自己的作业
-      if (!isAdmin && user) {
-        const studentHomeworks = mockHomeworks.filter(hw => hw.student_id === user.student_id)
-        setHomeworks(studentHomeworks)
-      } else {
-        // 管理员可以看到所有作业
-        setHomeworks(mockHomeworks)
-      }
-      
-    } catch (error) {
-      console.error('Failed to load homeworks:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [isAdmin, user])
-
-  // 加载作业数据
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadHomeworks()
-    }
-  }, [isAuthenticated, loadHomeworks])
-
-  const handleReview = (homework: Homework) => {
-    setSelectedHomework(homework)
-    setReviewData({
-      score: homework.score?.toString() || '',
-      feedback: homework.feedback || '',
-      status: homework.status === 'pending' ? 'reviewed' : homework.status as any
-    })
-    setReviewModal(true)
-  }
-
-  const submitReview = async () => {
-    if (!selectedHomework) return
-
-    try {
-      // 这里应该调用API提交评分
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // 更新本地状态
-      setHomeworks(prev => 
-        prev.map(hw => 
-          hw.id === selectedHomework.id 
-            ? {
-                ...hw,
-                score: parseInt(reviewData.score) || undefined,
-                feedback: reviewData.feedback,
-                status: reviewData.status,
-                reviewed_at: new Date().toISOString(),
-                reviewer: user?.name
-              }
-            : hw
-        )
-      )
-
-      setReviewModal(false)
-      setSelectedHomework(null)
-      
-    } catch (error) {
-      console.error('Failed to submit review:', error)
-    }
-  }
-
-  if (!isAuthenticated) {
-    return null
-  }
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
-      <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* 页面标题 */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold gradient-text mb-2">
-            📝 {isAdmin ? '作业批改中心' : '我的作业'}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl font-bold gradient-text mb-4">
+            小红书AI灵感领航员 - 作业系统
           </h1>
-          <p className="text-white/70">
-            {isAdmin 
-              ? '查看和批改学员提交的作业' 
-              : '查看你的作业提交记录和批改结果'
-            }
+          <p className="text-xl text-white/60">
+            智能化作业提交、批改和毕业资格审核
           </p>
-        </div>
-
-        {/* 统计信息 - 仅管理员可见 */}
-        {isAdmin && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="glass-effect p-6 rounded-xl">
-              <div className="flex items-center">
-                <div className="text-3xl mr-4">📋</div>
-                <div>
-                  <p className="text-white/60 text-sm">总作业数</p>
-                  <p className="text-2xl font-bold text-white">{homeworks.length}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="glass-effect p-6 rounded-xl">
-              <div className="flex items-center">
-                <div className="text-3xl mr-4">⏳</div>
-                <div>
-                  <p className="text-white/60 text-sm">待批改</p>
-                  <p className="text-2xl font-bold text-yellow-400">
-                    {homeworks.filter(hw => hw.status === 'pending').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="glass-effect p-6 rounded-xl">
-              <div className="flex items-center">
-                <div className="text-3xl mr-4">✅</div>
-                <div>
-                  <p className="text-white/60 text-sm">已批改</p>
-                  <p className="text-2xl font-bold text-green-400">
-                    {homeworks.filter(hw => hw.status !== 'pending').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="glass-effect p-6 rounded-xl">
-              <div className="flex items-center">
-                <div className="text-3xl mr-4">📊</div>
-                <div>
-                  <p className="text-white/60 text-sm">平均分</p>
-                  <p className="text-2xl font-bold text-blue-400">
-                    {homeworks.filter(hw => hw.score).length > 0 
-                      ? Math.round(homeworks.filter(hw => hw.score).reduce((sum, hw) => sum + (hw.score || 0), 0) / homeworks.filter(hw => hw.score).length)
-                      : '--'
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 作业列表 */}
-        <div className="glass-effect p-6 rounded-xl">
-          <h2 className="text-2xl font-bold text-white mb-6">
-            {isAdmin ? '作业列表' : '我的作业记录'}
-          </h2>
-          
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="text-white/60">加载中...</div>
-            </div>
-          ) : homeworks.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📝</div>
-              <div className="text-white/60">
-                {isAdmin ? '暂无作业提交' : '你还没有提交任何作业'}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {homeworks.map((homework) => (
-                <div key={homework.id} className="bg-white/5 rounded-lg border border-white/10 p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-4 mb-3">
-                        <h3 className="text-xl font-bold text-white">{homework.title}</h3>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          homework.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
-                          homework.status === 'approved' ? 'bg-green-500/20 text-green-300' :
-                          homework.status === 'rejected' ? 'bg-red-500/20 text-red-300' :
-                          'bg-blue-500/20 text-blue-300'
-                        }`}>
-                          {homework.status === 'pending' ? '待批改' :
-                           homework.status === 'approved' ? '已通过' :
-                           homework.status === 'rejected' ? '需修改' :
-                           '已批改'}
-                        </span>
-                      </div>
-                      
-                      {isAdmin && (
-                        <p className="text-white/60 mb-2">
-                          学员：{homework.student_name} ({homework.student_id})
-                        </p>
-                      )}
-                      
-                      <p className="text-white/80 mb-3 line-clamp-2">{homework.content}</p>
-                      
-                      {homework.xiaohongshu_link && (
-                        <a 
-                          href={homework.xiaohongshu_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-pink-400 hover:text-pink-300 text-sm mb-3"
-                        >
-                          🔗 查看小红书链接
-                        </a>
-                      )}
-                      
-                      <div className="flex items-center space-x-4 text-sm text-white/60">
-                        <span>提交时间：{new Date(homework.submitted_at).toLocaleString('zh-CN')}</span>
-                        {homework.reviewed_at && (
-                          <span>批改时间：{new Date(homework.reviewed_at).toLocaleString('zh-CN')}</span>
-                        )}
-                      </div>
-                      
-                      {homework.score && (
-                        <div className="mt-3">
-                          <span className="text-lg font-bold text-blue-400">得分：{homework.score}/100</span>
-                        </div>
-                      )}
-                      
-                      {homework.feedback && (
-                        <div className="mt-3 p-3 bg-white/5 rounded-lg">
-                          <p className="text-white/80 text-sm">
-                            <span className="font-medium text-white">批改意见：</span>
-                            {homework.feedback}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {isAdmin && (
-                      <div className="ml-6">
-                        <button
-                          onClick={() => handleReview(homework)}
-                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors duration-300"
-                        >
-                          {homework.status === 'pending' ? '批改' : '修改评分'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+          {user && (
+            <div className="mt-4 text-purple-300">
+              欢迎回来，{user.student_name || user.student_id}！
             </div>
           )}
         </div>
-      </div>
 
-      {/* 批改模态框 */}
-      {reviewModal && selectedHomework && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-white mb-6">批改作业</h3>
-            
-            <div className="mb-6">
-              <h4 className="text-lg font-medium text-white mb-2">{selectedHomework.title}</h4>
-              <p className="text-white/60 mb-2">
-                学员：{selectedHomework.student_name} ({selectedHomework.student_id})
-              </p>
-              <div className="p-4 bg-white/5 rounded-lg">
-                <p className="text-white/80">{selectedHomework.content}</p>
+        <div className="max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* 提交作业 */}
+            <Link href="/homework/submit">
+              <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/30 transition-colors">
+                    <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    提交作业
+                  </h3>
+                  <p className="text-white/60">
+                    选择作业并上传附件进行提交
+                  </p>
+                </div>
               </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-white font-medium mb-2">评分 (0-100)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={reviewData.score}
-                  onChange={(e) => setReviewData(prev => ({ ...prev, score: e.target.value }))}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-400"
-                  placeholder="请输入分数"
-                />
+            </Link>
+
+            {/* 查询我的作业 */}
+            <Link href="/homework/my-assignments">
+              <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-500/30 transition-colors">
+                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    查询我的作业
+                  </h3>
+                  <p className="text-white/60">
+                    查看作业提交历史和批改结果
+                  </p>
+                </div>
               </div>
-              
-              <div>
-                <label className="block text-white font-medium mb-2">批改意见</label>
-                <textarea
-                  value={reviewData.feedback}
-                  onChange={(e) => setReviewData(prev => ({ ...prev, feedback: e.target.value }))}
-                  rows={4}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-400 resize-none"
-                  placeholder="请输入批改意见..."
-                />
+            </Link>
+
+            {/* 查询毕业资格 */}
+            <Link href="/homework/graduation-check">
+              <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/30 transition-colors">
+                    <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    查询毕业资格
+                  </h3>
+                  <p className="text-white/60">
+                    检查是否满足毕业条件
+                  </p>
+                </div>
               </div>
-              
-              <div>
-                <label className="block text-white font-medium mb-2">状态</label>
-                <select
-                  value={reviewData.status}
-                  onChange={(e) => setReviewData(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-400"
-                >
-                  <option value="reviewed">已批改</option>
-                  <option value="approved">通过</option>
-                  <option value="rejected">需修改</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex space-x-4 mt-8">
-              <button
-                onClick={submitReview}
-                className="flex-1 cosmic-button px-6 py-3 rounded-lg font-medium"
-              >
-                提交批改
-              </button>
-              <button
-                onClick={() => setReviewModal(false)}
-                className="flex-1 px-6 py-3 text-white/70 hover:text-white border border-white/30 hover:border-white/50 rounded-lg transition-all duration-300"
-              >
-                取消
-              </button>
-            </div>
+            </Link>
           </div>
+
+          {/* 管理员功能 - 仅管理员可见 */}
+          {user?.role === 'admin' && (
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold text-center mb-8 gradient-text">
+                管理员功能
+              </h2>
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* 作业批改管理 */}
+                <Link href="/admin/homework-review">
+                  <div className="bg-orange-500/10 backdrop-blur-lg border border-orange-400/30 rounded-2xl p-8 hover:bg-orange-500/20 transition-all duration-300 cursor-pointer group">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-500/30 transition-colors">
+                        <svg className="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-orange-300 mb-2">
+                        作业批改管理
+                      </h3>
+                      <p className="text-orange-200/60">
+                        查看和管理所有学员作业提交
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* 毕业审核管理 */}
+                <Link href="/admin/graduation">
+                  <div className="bg-pink-500/10 backdrop-blur-lg border border-pink-400/30 rounded-2xl p-8 hover:bg-pink-500/20 transition-all duration-300 cursor-pointer group">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-pink-500/30 transition-colors">
+                        <svg className="w-8 h-8 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-pink-300 mb-2">
+                        毕业审核管理
+                      </h3>
+                      <p className="text-pink-200/60">
+                        审核学员毕业资格和证书发放
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* 底部信息 */}
+        <div className="text-center mt-16">
+          <p className="text-white/40">
+            基于AI智能批改 · 智能毕业资格审核
+          </p>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
