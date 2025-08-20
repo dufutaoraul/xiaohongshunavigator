@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       // 验证用户登录
       const { data: user, error } = await supabase
         .from('users')
-        .select('student_id, name, password, persona, keywords, vision')
+        .select('student_id, name, password, persona, keywords, vision, role')
         .eq('student_id', student_id)
         .single()
 
@@ -29,8 +30,18 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // 检查密码
-      if (user.password !== password) {
+      // 检查密码 - 支持旧的明文密码和新的加密密码
+      let passwordValid = false
+      
+      // 如果密码以$2a$或$2b$开头，说明是bcrypt加密的
+      if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+        passwordValid = await bcrypt.compare(password, user.password)
+      } else {
+        // 兼容旧的明文密码
+        passwordValid = user.password === password
+      }
+      
+      if (!passwordValid) {
         return NextResponse.json(
           { error: 'Invalid credentials' },
           { status: 401 }
@@ -45,6 +56,7 @@ export async function POST(request: NextRequest) {
         user: {
           student_id: user.student_id,
           name: user.name,
+          role: user.role || 'student',
           persona: user.persona,
           keywords: user.keywords,
           vision: user.vision
@@ -96,10 +108,13 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // 加密新密码
+      const hashedPassword = await bcrypt.hash(new_password, 10)
+      
       // 更新密码
       const { error: updateError } = await supabase
         .from('users')
-        .update({ password: new_password })
+        .update({ password: hashedPassword })
         .eq('student_id', student_id)
 
       if (updateError) {
