@@ -1,6 +1,6 @@
 export interface Student {
   student_id: string;
-  student_name: string;
+  name: string;
 }
 
 export interface Assignment {
@@ -17,7 +17,7 @@ export interface Assignment {
 export interface Submission {
   submission_id: string;
   student_id: string;
-  student_name?: string;
+  name?: string;
   assignment_id: string;
   day_text?: string;
   assignment_title?: string;
