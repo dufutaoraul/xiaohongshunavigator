@@ -74,7 +74,7 @@ export function getDayTextFromAssignment(assignment: Assignment): string {
 // 为下拉列表获取所有唯一的天数文本（按时间顺序）
 export function getUniqueDayTexts(): string[] {
   const dayTexts = Object.values(assignmentDayMapping);
-  const uniqueDayTexts = [...new Set(dayTexts)];
+  const uniqueDayTexts = Array.from(new Set(dayTexts));
   
   // 定义正确的时间顺序
   const timeOrder = [
