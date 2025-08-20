@@ -19,7 +19,7 @@ export default function HomeworkPage() {
           </p>
           {user && (
             <div className="mt-4 text-purple-300">
-              欢迎回来，{user.student_name || user.student_id}！
+              欢迎回来，{user.name || user.student_id}！
             </div>
           )}
         </div>
