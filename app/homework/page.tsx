@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -40,14 +40,8 @@ export default function HomeworkPage() {
     }
   }, [user, isAuthenticated, router])
 
-  // 加载作业数据
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadHomeworks()
-    }
-  }, [isAuthenticated, isAdmin])
-
-  const loadHomeworks = async () => {
+  // 使用useCallback优化loadHomeworks函数
+  const loadHomeworks = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -93,7 +87,14 @@ export default function HomeworkPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isAdmin, user])
+
+  // 加载作业数据
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadHomeworks()
+    }
+  }, [isAuthenticated, loadHomeworks])
 
   const handleReview = (homework: Homework) => {
     setSelectedHomework(homework)
@@ -110,18 +111,6 @@ export default function HomeworkPage() {
 
     try {
       // 这里应该调用API提交评分
-      // const response = await fetch('/api/homework/review', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     homeworkId: selectedHomework.id,
-      //     score: parseInt(reviewData.score),
-      //     feedback: reviewData.feedback,
-      //     status: reviewData.status
-      //   })
-      // })
-
-      // 模拟API调用
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // 更新本地状态
