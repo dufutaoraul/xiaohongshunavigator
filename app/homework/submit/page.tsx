@@ -38,7 +38,7 @@ export default function SubmitAssignmentPage() {
   useEffect(() => {
     if (user) {
       setStudentId(user.student_id);
-      setStudentName(user.student_name || '');
+      setStudentName(user.name || '');
     }
     loadAllStudents();
     loadAvailableDays();
@@ -49,7 +49,7 @@ export default function SubmitAssignmentPage() {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('student_id, student_name')
+        .select('student_id, name')
         .order('student_id');
       
       if (data && !error) {
@@ -77,14 +77,14 @@ export default function SubmitAssignmentPage() {
     if (value.length > 0) {
       const filtered = allStudents.filter(student => 
         student.student_id.toLowerCase().includes(value.toLowerCase()) ||
-        (student.student_name && student.student_name.toLowerCase().includes(value.toLowerCase()))
+        (student.name && student.name.toLowerCase().includes(value.toLowerCase()))
       );
       setFilteredStudents(filtered);
       setShowStudentDropdown(filtered.length > 0);
       
       const exactMatch = allStudents.find(student => student.student_id === value);
       if (exactMatch) {
-        setStudentName(exactMatch.student_name || '');
+        setStudentName(exactMatch.name || '');
         setShowStudentDropdown(false);
       } else {
         setStudentName('');
@@ -99,7 +99,7 @@ export default function SubmitAssignmentPage() {
   // 选择学生
   const selectStudent = (student: Student) => {
     setStudentId(student.student_id);
-    setStudentName(student.student_name || '');
+    setStudentName(student.name || '');
     setShowStudentDropdown(false);
   };
 
@@ -241,7 +241,7 @@ export default function SubmitAssignmentPage() {
       // 提交作业记录
       const submissionData = {
         student_id: studentId,
-        student_name: studentName,
+        name: studentName,
         assignment_id: assignmentId,
         day_text: selectedAssignment?.day_text || selectedDayText,
         assignment_title: selectedAssignment?.assignment_title || '',
@@ -361,7 +361,7 @@ export default function SubmitAssignmentPage() {
                       >
                         <div className="flex justify-between items-center">
                           <span className="font-medium text-white">{student.student_id}</span>
-                          <span className="text-white/60">{student.student_name}</span>
+                          <span className="text-white/60">{student.name}</span>
                         </div>
                       </div>
                     ))}
