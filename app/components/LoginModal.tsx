@@ -92,9 +92,9 @@ export default function LoginModal({ isOpen, onClose, onLogin, loading = false }
                 disabled={loading}
               >
                 {showPassword ? (
-                  <EyeSlashIcon className="w-5 h-5" />
-                ) : (
                   <EyeIcon className="w-5 h-5" />
+                ) : (
+                  <EyeSlashIcon className="w-5 h-5" />
                 )}
               </button>
             </div>
