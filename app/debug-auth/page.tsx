@@ -25,7 +25,7 @@ export default function DebugAuth() {
       const data = await response.json()
       setResult(data)
     } catch (err) {
-      setResult({ error: err.message })
+      setResult({ error: err instanceof Error ? err.message : 'Unknown error' })
     }
     setLoading(false)
   }
