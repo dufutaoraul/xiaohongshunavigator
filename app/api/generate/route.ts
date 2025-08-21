@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+// 使用环境变量创建Supabase客户端，支持构建时的占位符
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+
+// 在构建时检查环境变量
+if (typeof window === 'undefined' && (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co')) {
+  console.warn('Supabase URL not configured properly for build in generate route')
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export async function POST(request: NextRequest) {
   try {
