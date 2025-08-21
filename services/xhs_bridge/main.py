@@ -20,6 +20,15 @@ def test():
     小红书爬虫测试函数
     返回启动成功的消息和库状态
     """
+    # 添加详细的调试信息
+    debug_info = {
+        "current_dir": os.path.dirname(os.path.abspath(__file__)),
+        "project_root": os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "xhs_service_path": os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'xhs-service'),
+        "xhs_service_exists": os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'xhs-service')),
+        "python_path": sys.path[:3]  # 显示前3个路径
+    }
+    
     if XHS_AVAILABLE:
         return {
             "message": "小红书爬虫启动成功",
@@ -30,7 +39,8 @@ def test():
                 "get_user_info", 
                 "get_note_by_id",
                 "search_notes"
-            ]
+            ],
+            "debug_info": debug_info
         }
     else:
         return {
@@ -38,7 +48,8 @@ def test():
             "xhs_library": "未加载",
             "status": "limited",
             "error": XHS_ERROR,
-            "note": "基础功能可用，但无法使用高级爬虫功能"
+            "note": "基础功能可用，但无法使用高级爬虫功能",
+            "debug_info": debug_info
         }
 
 def search_notes_by_keyword(keyword, page=1, page_size=10):

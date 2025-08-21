@@ -5,7 +5,7 @@ import path from 'path';
 // 执行Python函数的通用方法
 async function executePythonFunction(functionName: string, args: any[] = []) {
   return new Promise((resolve, reject) => {
-    const argsStr = args.length > 0 ? `, ${args.map(arg => JSON.stringify(arg)).join(', ')}` : '';
+    const argsStr = args.length > 0 ? args.map(arg => JSON.stringify(arg)).join(', ') : '';
     
     const pythonProcess = spawn('python', ['-c', `
 import sys
