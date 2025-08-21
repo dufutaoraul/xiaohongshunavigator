@@ -8,7 +8,10 @@ if (typeof window === 'undefined' && (!supabaseUrl || supabaseUrl === 'https://p
   console.warn('Supabase URL not configured properly for build')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// 只有在有效的URL时才创建客户端
+export const supabase = supabaseUrl && supabaseUrl !== 'https://placeholder.supabase.co' 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createClient('https://placeholder.supabase.co', 'placeholder-key')
 
 // 数据类型定义
 export interface User {
