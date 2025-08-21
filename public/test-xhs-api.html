@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #ff2442;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #e01e3c;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌸 小红书爬虫API测试</h1>
+        
+        <div class="test-section">
+            <h3>1. 基础测试 - 检查爬虫状态</h3>
+            <p>测试小红书爬虫基础功能和库加载状态：</p>
+            <button onclick="testXhsApi()">测试基础功能</button>
+            <div id="basic-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 搜索功能测试</h3>
+            <p>根据关键词搜索小红书笔记：</p>
+            <div style="margin: 10px 0;">
+                <input type="text" id="searchKeyword" placeholder="输入搜索关键词，如：美食" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <input type="number" id="searchPage" placeholder="页码" value="1" min="1" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; width: 80px;">
+                <input type="number" id="searchPageSize" placeholder="每页数量" value="5" min="1" max="20" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; width: 100px;">
+                <button onclick="testSearchApi()">搜索笔记</button>
+            </div>
+            <div id="search-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 笔记详情测试</h3>
+            <p>获取指定笔记的详细信息：</p>
+            <div style="margin: 10px 0;">
+                <input type="text" id="noteId" placeholder="输入笔记ID" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; width: 200px;">
+                <button onclick="testNoteApi()">获取笔记详情</button>
+            </div>
+            <div id="note-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>API接口说明</h3>
+            <ul>
+                <li><strong>基础测试：</strong> <code>GET /api/xhs/test</code></li>
+                <li><strong>搜索笔记：</strong> <code>GET /api/xhs/test?action=search&keyword=关键词&page=1&pageSize=10</code></li>
+                <li><strong>获取笔记：</strong> <code>GET /api/xhs/test?action=note&noteId=笔记ID</code></li>
+                <li><strong>POST方式：</strong> <code>POST /api/xhs/test</code> 支持 JSON 格式参数</li>
+                <li><strong>子模块：</strong> <code>xhs-service/</code> (来自 https://github.com/ReaJason/xhs)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function testXhsApi() {
+            const resultDiv = document.getElementById('basic-result');
+            resultDiv.innerHTML = '<p>正在测试基础API...</p>';
+            
+            try {
+                const response = await fetch('/api/xhs/test');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <h4>✅ 基础API测试成功！</h4>
+                            <p><strong>状态码：</strong> ${response.status}</p>
+                            <p><strong>返回数据：</strong></p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h4>❌ 基础API测试失败</h4>
+                            <p><strong>状态码：</strong> ${response.status}</p>
+                            <p><strong>错误信息：</strong></p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h4>❌ 网络错误</h4>
+                        <p><strong>错误详情：</strong> ${error.message}</p>
+                        <p>请确保开发服务器正在运行在 http://localhost:3000</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testSearchApi() {
+            const keyword = document.getElementById('searchKeyword').value.trim();
+            const page = document.getElementById('searchPage').value || 1;
+            const pageSize = document.getElementById('searchPageSize').value || 5;
+            const resultDiv = document.getElementById('search-result');
+            
+            if (!keyword) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h4>❌ 请输入搜索关键词</h4>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>正在搜索笔记...</p>';
+            
+            try {
+                const url = `/api/xhs/test?action=search&keyword=${encodeURIComponent(keyword)}&page=${page}&pageSize=${pageSize}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok && !data.error) {
+                    let notesHtml = '';
+                    if (data.notes && data.notes.length > 0) {
+                        notesHtml = data.notes.map(note => `
+                            <div style="border: 1px solid #eee; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                                <h5>${note.title || '无标题'}</h5>
+                                <p><strong>作者:</strong> ${note.user?.nickname || '未知'}</p>
+                                <p><strong>类型:</strong> ${note.type}</p>
+                                <p><strong>描述:</strong> ${note.desc || '无描述'}</p>
+                                <p><strong>笔记ID:</strong> <code>${note.note_id}</code></p>
+                                ${note.interact_info ? `<p><strong>互动:</strong> 👍${note.interact_info.liked_count || 0} 💬${note.interact_info.comment_count || 0} ⭐${note.interact_info.collected_count || 0}</p>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        notesHtml = '<p>未找到相关笔记</p>';
+                    }
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <h4>✅ 搜索成功！</h4>
+                            <p><strong>关键词:</strong> ${data.keyword}</p>
+                            <p><strong>页码:</strong> ${data.page} | <strong>每页:</strong> ${data.page_size} | <strong>还有更多:</strong> ${data.has_more ? '是' : '否'}</p>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                ${notesHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h4>❌ 搜索失败</h4>
+                            <p><strong>错误信息:</strong> ${data.error || '未知错误'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h4>❌ 搜索请求失败</h4>
+                        <p><strong>错误详情:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testNoteApi() {
+            const noteId = document.getElementById('noteId').value.trim();
+            const resultDiv = document.getElementById('note-result');
+            
+            if (!noteId) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h4>❌ 请输入笔记ID</h4>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>正在获取笔记详情...</p>';
+            
+            try {
+                const url = `/api/xhs/test?action=note&noteId=${encodeURIComponent(noteId)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok && !data.error) {
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <h4>✅ 获取笔记详情成功！</h4>
+                            <div style="border: 1px solid #eee; padding: 15px; border-radius: 5px;">
+                                <h5>${data.title || '无标题'}</h5>
+                                <p><strong>笔记ID:</strong> <code>${data.note_id}</code></p>
+                                <p><strong>类型:</strong> ${data.type}</p>
+                                <p><strong>作者:</strong> ${data.user?.nickname || '未知'} (${data.user?.user_id || 'N/A'})</p>
+                                <p><strong>描述:</strong></p>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 3px; max-height: 200px; overflow-y: auto;">
+                                    ${data.desc || '无描述'}
+                                </div>
+                                ${data.interact_info ? `
+                                <p><strong>互动数据:</strong></p>
+                                <ul>
+                                    <li>👍 点赞: ${data.interact_info.liked_count || 0}</li>
+                                    <li>💬 评论: ${data.interact_info.comment_count || 0}</li>
+                                    <li>⭐ 收藏: ${data.interact_info.collected_count || 0}</li>
+                                    <li>📤 分享: ${data.interact_info.share_count || 0}</li>
+                                </ul>
+                                ` : ''}
+                                ${data.tag_list && data.tag_list.length > 0 ? `
+                                <p><strong>标签:</strong> ${data.tag_list.map(tag => `#${tag.name || tag}`).join(' ')}</p>
+                                ` : ''}
+                                <p><strong>发布时间:</strong> ${data.time ? new Date(data.time).toLocaleString() : '未知'}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h4>❌ 获取笔记详情失败</h4>
+                            <p><strong>错误信息:</strong> ${data.error || '未知错误'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h4>❌ 请求失败</h4>
+                        <p><strong>错误详情:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
