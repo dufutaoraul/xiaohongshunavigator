@@ -64,46 +64,51 @@ def search_notes_by_keyword(keyword, page=1, page_size=10):
     if not XHS_AVAILABLE:
         return {"error": "XHS库未加载，无法执行搜索功能"}
     
-    try:
-        # 创建客户端实例（无需登录即可搜索公开内容）
-        client = XhsClient()
-        
-        # 搜索笔记
-        result = client.get_note_by_keyword(
-            keyword=keyword,
-            page=page,
-            page_size=page_size
-        )
-        
-        # 简化返回数据
-        simplified_result = {
-            "keyword": keyword,
-            "page": page,
-            "page_size": page_size,
-            "has_more": result.get("has_more", False),
-            "notes": []
-        }
-        
-        for item in result.get("items", []):
-            note = item.get("note_card", {})
-            simplified_note = {
-                "note_id": note.get("note_id"),
-                "title": note.get("title"),
-                "desc": note.get("desc", "")[:100] + "..." if len(note.get("desc", "")) > 100 else note.get("desc", ""),
-                "type": note.get("type"),
+    # 暂时返回模拟数据，因为XHS库需要签名函数才能正常工作
+    return {
+        "message": "XHS库已加载，但需要配置签名函数才能进行实际搜索",
+        "keyword": keyword,
+        "page": page,
+        "page_size": page_size,
+        "status": "需要配置",
+        "notes": [
+            {
+                "note_id": "demo_001",
+                "title": f"关于'{keyword}'的示例笔记1",
+                "desc": "这是一个示例笔记，展示搜索功能的数据结构。实际使用需要配置XHS的签名函数。",
+                "type": "normal",
                 "user": {
-                    "nickname": note.get("user", {}).get("nickname"),
-                    "user_id": note.get("user", {}).get("user_id")
+                    "nickname": "示例用户1",
+                    "user_id": "demo_user_001"
                 },
-                "interact_info": note.get("interact_info", {}),
-                "cover": note.get("cover", {}).get("url_default") if note.get("cover") else None
+                "interact_info": {
+                    "liked_count": "1.2k",
+                    "comment_count": "88",
+                    "collected_count": "456"
+                }
+            },
+            {
+                "note_id": "demo_002", 
+                "title": f"关于'{keyword}'的示例笔记2",
+                "desc": "这是第二个示例笔记。要获取真实数据，需要提供有效的Cookie和签名函数。",
+                "type": "video",
+                "user": {
+                    "nickname": "示例用户2",
+                    "user_id": "demo_user_002"
+                },
+                "interact_info": {
+                    "liked_count": "2.5k",
+                    "comment_count": "156",
+                    "collected_count": "789"
+                }
             }
-            simplified_result["notes"].append(simplified_note)
-        
-        return simplified_result
-        
-    except Exception as e:
-        return {"error": f"搜索失败: {str(e)}"}
+        ],
+        "next_steps": [
+            "1. 获取小红书登录Cookie",
+            "2. 配置签名函数或使用第三方签名服务",
+            "3. 更新XhsClient初始化参数"
+        ]
+    }
 
 def get_note_info(note_id):
     """
