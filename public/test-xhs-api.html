@@ -71,10 +71,27 @@
         </div>
 
         <div class="test-section">
-            <h3>2. 搜索功能测试</h3>
+            <h3>2. Cookie配置 (可选)</h3>
+            <p>配置小红书Cookie以获取真实数据，否则将返回演示数据：</p>
+            <div style="margin: 10px 0;">
+                <textarea id="cookiesInput" placeholder="粘贴从浏览器开发者工具中获取的完整Cookie字符串&#10;&#10;获取步骤：&#10;1. 在浏览器中登录小红书网页版 (www.xiaohongshu.com)&#10;2. 打开开发者工具(F12)&#10;3. 切换到Network标签页&#10;4. 刷新页面或进行搜索&#10;5. 找到请求头中的Cookie字段&#10;6. 复制完整的Cookie值粘贴到这里" 
+                    style="width: 100%; height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; font-family: monospace; font-size: 12px;"></textarea>
+            </div>
+            <div style="margin: 10px 0;">
+                <span id="cookieStatus" style="color: #666; font-size: 14px;">状态: 未配置 (将使用演示数据)</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 搜索功能测试</h3>
             <p>根据关键词搜索小红书笔记：</p>
             <div style="margin: 10px 0;">
                 <input type="text" id="searchKeyword" placeholder="输入搜索关键词，如：美食" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <select id="sortBy" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="general">综合排序</option>
+                    <option value="time">最新发布</option>
+                    <option value="likes">最多点赞</option>
+                </select>
                 <input type="number" id="searchPage" placeholder="页码" value="1" min="1" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; width: 80px;">
                 <input type="number" id="searchPageSize" placeholder="每页数量" value="5" min="1" max="20" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; width: 100px;">
                 <button onclick="testSearchApi()">搜索笔记</button>
@@ -83,7 +100,7 @@
         </div>
 
         <div class="test-section">
-            <h3>3. 笔记详情测试</h3>
+            <h3>4. 笔记详情测试</h3>
             <p>获取指定笔记的详细信息：</p>
             <div style="margin: 10px 0;">
                 <input type="text" id="noteId" placeholder="输入笔记ID" style="padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; width: 200px;">
@@ -147,6 +164,8 @@
             const keyword = document.getElementById('searchKeyword').value.trim();
             const page = document.getElementById('searchPage').value || 1;
             const pageSize = document.getElementById('searchPageSize').value || 5;
+            const cookies = document.getElementById('cookiesInput').value.trim();
+            const sortBy = document.getElementById('sortBy').value || 'general';
             const resultDiv = document.getElementById('search-result');
             
             if (!keyword) {
@@ -158,11 +177,39 @@
                 return;
             }
             
+            // 更新Cookie状态显示
+            const cookieStatus = document.getElementById('cookieStatus');
+            if (cookies) {
+                cookieStatus.innerHTML = '状态: 已配置 (将尝试获取真实数据)';
+                cookieStatus.style.color = '#28a745';
+            } else {
+                cookieStatus.innerHTML = '状态: 未配置 (将使用演示数据)';
+                cookieStatus.style.color = '#666';
+            }
+            
             resultDiv.innerHTML = '<p>正在搜索笔记...</p>';
             
             try {
-                const url = `/api/xhs/test?action=search&keyword=${encodeURIComponent(keyword)}&page=${page}&pageSize=${pageSize}`;
-                const response = await fetch(url);
+                // 使用POST方式发送请求以支持Cookie和排序参数
+                const requestBody = {
+                    action: 'search',
+                    keyword: keyword,
+                    page: parseInt(page),
+                    pageSize: parseInt(pageSize),
+                    sortBy: sortBy
+                };
+                
+                if (cookies) {
+                    requestBody.cookies = cookies;
+                }
+                
+                const response = await fetch('/api/xhs/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
                 const data = await response.json();
                 
                 if (response.ok && !data.error) {
@@ -186,7 +233,8 @@
                         <div class="result">
                             <h4>✅ 搜索成功！</h4>
                             <p><strong>关键词:</strong> ${data.keyword}</p>
-                            <p><strong>页码:</strong> ${data.page} | <strong>每页:</strong> ${data.page_size} | <strong>还有更多:</strong> ${data.has_more ? '是' : '否'}</p>
+                            <p><strong>排序方式:</strong> ${data.sort_name || data.sort_by || '综合排序'}</p>
+                            <p><strong>页码:</strong> ${data.page} | <strong>每页:</strong> ${data.page_size} | <strong>结果数:</strong> ${data.total_count || data.notes?.length || 0}</p>
                             <div style="max-height: 400px; overflow-y: auto;">
                                 ${notesHtml}
                             </div>

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书搜索工具 - 简化版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e, #ffa8a8);
+            min-height: 100vh;
+            padding: 20px;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff4757, #ff6b7a);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .cookie-status {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #28a745;
+        }
+
+        .cookie-status.not-configured {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .cookie-status.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .search-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            direction: ltr;
+            text-align: left;
+            unicode-bidi: normal;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #ff4757;
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #ff4757, #ff6b7a);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            height: fit-content;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .search-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .cookie-config {
+            background: #e3f2fd;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .cookie-config h3 {
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+
+        .cookie-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #bbdefb;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .cookie-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .note-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .note-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .note-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .clickable-title {
+            color: #ff4757;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .clickable-title:hover {
+            color: #ff3742;
+            text-decoration: underline;
+        }
+
+        .note-desc {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .note-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .note-stats {
+            display: flex;
+            gap: 15px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .cookie-expired-error {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .warning-text {
+            font-weight: 600;
+            color: #dc3545;
+            margin: 10px 0;
+        }
+
+        .solutions-section, .cookie-guide-section {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+        }
+
+        .solutions-section h5, .cookie-guide-section h5 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .tip-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 10px 0;
+        }
+
+        .tip-box p {
+            margin: 5px 0;
+        }
+
+        .action-buttons {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .search-form {
+                flex-direction: column;
+            }
+            
+            .form-group {
+                min-width: 100%;
+            }
+            
+            .cookie-actions {
+                flex-direction: column;
+            }
+            
+            .note-meta {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌸 小红书搜索工具</h1>
+            <p>简单易用的小红书内容搜索工具</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Cookie状态显示 -->
+            <div id="cookieStatus" class="cookie-status not-configured">
+                <h3>🍪 Cookie状态</h3>
+                <p id="cookieStatusText">未配置Cookie，当前显示演示数据</p>
+            </div>
+
+            <!-- Cookie配置区域 -->
+            <div id="cookieConfig" class="cookie-config">
+                <h3>🔧 Cookie配置</h3>
+                <div style="margin-bottom: 15px; color: #666;">
+                    <p><strong>📋 Cookie使用说明：</strong></p>
+                    <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.6;">
+                        <li><strong>个人使用：</strong>每个用户需要使用自己的小红书账号Cookie</li>
+                        <li><strong>设备独立：</strong>不同设备需要分别配置Cookie</li>
+                        <li><strong>自动保存：</strong>配置一次后会保存到当前浏览器</li>
+                        <li><strong>安全提醒：</strong>Cookie包含个人信息，请勿分享给他人</li>
+                        <li><strong>有效期：</strong>Cookie可能会过期，需要定期更新</li>
+                    </ul>
+                </div>
+                <textarea id="cookieInput" class="cookie-input" 
+                    placeholder="请粘贴从浏览器开发者工具中获取的Cookie..."></textarea>
+                <div class="cookie-actions">
+                    <button class="btn btn-primary" onclick="saveCookie()">💾 保存Cookie</button>
+                    <button class="btn btn-success" onclick="testCookie()">🧪 测试Cookie</button>
+                    <button class="btn btn-warning" onclick="clearCookie()">🗑️ 清除Cookie</button>
+                    <button class="btn" onclick="toggleCookieConfig()">📖 获取Cookie教程</button>
+                </div>
+            </div>
+
+            <!-- 搜索区域 -->
+            <div class="search-section">
+                <h3 style="margin-bottom: 20px;">🔍 搜索小红书内容</h3>
+                <div class="search-form">
+                    <div class="form-group">
+                        <label for="keyword">搜索关键词</label>
+                        <input type="text" id="keyword" placeholder="输入搜索关键词..." value="美食">
+                    </div>
+                    <div class="form-group">
+                        <label for="sortBy">排序方式</label>
+                        <select id="sortBy">
+                            <option value="general">综合排序 (平衡热度、时间、质量)</option>
+                            <option value="time">最新发布 (按发布时间排序)</option>
+                            <option value="likes">最多点赞 (按点赞数排序)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pageSize">结果数量</label>
+                        <select id="pageSize">
+                            <option value="5">5条</option>
+                            <option value="10">10条</option>
+                            <option value="20">20条</option>
+                        </select>
+                    </div>
+                    <button class="search-btn" onclick="searchNotes()" id="searchBtn">
+                        🔍 搜索
+                    </button>
+                </div>
+            </div>
+
+            <!-- 搜索结果 -->
+            <div id="results" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Cookie管理
+        function getCookie() {
+            return localStorage.getItem('xhs_cookie') || '';
+        }
+
+        function saveCookie() {
+            const cookie = document.getElementById('cookieInput').value.trim();
+            if (!cookie) {
+                alert('请输入Cookie');
+                return;
+            }
+            
+            localStorage.setItem('xhs_cookie', cookie);
+            updateCookieStatus();
+            alert('Cookie已保存！');
+        }
+
+        function clearCookie() {
+            localStorage.removeItem('xhs_cookie');
+            document.getElementById('cookieInput').value = '';
+            updateCookieStatus();
+            alert('Cookie已清除！');
+        }
+
+        function testCookie() {
+            const cookie = getCookie();
+            if (!cookie) {
+                alert('请先配置Cookie');
+                return;
+            }
+
+            // 测试Cookie有效性
+            fetch('/api/xhs/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'test',
+                    cookies: cookie
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ready') {
+                    alert('Cookie测试成功！');
+                    updateCookieStatus();
+                } else {
+                    alert('Cookie可能无效或已过期，请重新获取');
+                }
+            })
+            .catch(error => {
+                alert('测试失败：' + error.message);
+            });
+        }
+
+        function updateCookieStatus() {
+            const cookie = getCookie();
+            const statusDiv = document.getElementById('cookieStatus');
+            const statusText = document.getElementById('cookieStatusText');
+            
+            if (cookie) {
+                statusDiv.className = 'cookie-status';
+                statusText.textContent = '✅ Cookie已配置，可以获取真实数据';
+                document.getElementById('cookieInput').value = cookie;
+            } else {
+                statusDiv.className = 'cookie-status not-configured';
+                statusText.textContent = '⚠️ 未配置Cookie，当前显示演示数据';
+            }
+        }
+
+        function toggleCookieConfig() {
+            const config = document.getElementById('cookieConfig');
+            config.classList.toggle('hidden');
+        }
+
+        function showCookieConfig() {
+            const config = document.getElementById('cookieConfig');
+            config.classList.remove('hidden');
+            document.getElementById('cookieInput').focus();
+        }
+
+        // 搜索功能
+        async function searchNotes() {
+            const keyword = document.getElementById('keyword').value.trim();
+            const sortBy = document.getElementById('sortBy').value;
+            const pageSize = parseInt(document.getElementById('pageSize').value);
+            const cookie = getCookie();
+
+            if (!keyword) {
+                alert('请输入搜索关键词');
+                return;
+            }
+
+            const searchBtn = document.getElementById('searchBtn');
+            const results = document.getElementById('results');
+            
+            // 显示加载状态
+            searchBtn.disabled = true;
+            searchBtn.textContent = '🔄 搜索中...';
+            results.innerHTML = '<div class="loading">正在搜索，请稍候...</div>';
+
+            try {
+                const response = await fetch('/api/xhs/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'search',
+                        keyword: keyword,
+                        sortBy: sortBy,
+                        pageSize: pageSize,
+                        cookies: cookie || undefined
+                    })
+                });
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                results.innerHTML = `<div class="error">搜索失败：${error.message}</div>`;
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = '🔍 搜索';
+            }
+        }
+
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            
+            if (data.error) {
+                let errorHtml = '';
+                
+                // 特殊处理Cookie过期错误
+                if (data.error_type === 'cookie_expired' || data.error_code === -100) {
+                    errorHtml = `
+                        <div class="error cookie-expired-error">
+                            <h4>🔑 Cookie已过期</h4>
+                            <p class="warning-text">${data.warning || '登录状态已过期，需要重新获取Cookie'}</p>
+                            
+                            <div class="solutions-section">
+                                <h5>💡 解决方案：</h5>
+                                <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.6;">
+                                    <li><strong>使用手机浏览器</strong>登录小红书获取Cookie</li>
+                                    <li><strong>避免在电脑上登录</strong>小红书网站（会导致Cookie失效）</li>
+                                    <li>如果必须在电脑登录，请<strong>重新获取Cookie</strong></li>
+                                    <li>建议使用<strong>无痕模式</strong>获取Cookie以避免冲突</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="cookie-guide-section">
+                                <h5>📱 推荐方法：手机获取Cookie</h5>
+                                <ol style="margin: 10px 0; padding-left: 20px; line-height: 1.6;">
+                                    <li>用手机浏览器打开 <code>www.xiaohongshu.com</code></li>
+                                    <li>登录您的小红书账号</li>
+                                    <li>打开浏览器开发者工具获取Cookie</li>
+                                    <li>复制完整Cookie字符串到上方配置区域</li>
+                                </ol>
+                                
+                                <div class="tip-box">
+                                    <p><strong>⚠️ 重要提醒：</strong></p>
+                                    <p>在电脑上登录小红书会使API Cookie失效！建议只用手机获取Cookie。</p>
+                                </div>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" onclick="showCookieConfig()">🔧 重新配置Cookie</button>
+                                <button class="btn btn-warning" onclick="clearCookie(); updateCookieStatus();">🗑️ 清除过期Cookie</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (data.status === 'verification_required') {
+                    errorHtml = `
+                        <div class="error">
+                            <h4>🚫 ${data.error}</h4>
+                            <p>小红书触发了反爬虫验证机制，请：</p>
+                            <ul style="margin: 10px 0; padding-left: 20px;">
+                                <li>等待10-30分钟后重试</li>
+                                <li>在浏览器中访问小红书并完成验证</li>
+                                <li>重新获取Cookie</li>
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    errorHtml = `<div class="error">❌ ${data.error}</div>`;
+                }
+                
+                results.innerHTML = errorHtml;
+                return;
+            }
+
+            if (!data.notes || data.notes.length === 0) {
+                results.innerHTML = '<div class="error">未找到相关内容</div>';
+                return;
+            }
+
+            let html = `
+                <div class="success">
+                    ✅ 搜索成功！关键词："${data.keyword}" | 
+                    排序：${data.sort_name || data.sortBy} | 
+                    找到 ${data.notes.length} 条结果
+                    ${!getCookie() ? ' (演示数据，配置Cookie后可获取真实数据)' : ''}
+                </div>
+            `;
+
+            data.notes.forEach(note => {
+                // 为所有笔记生成链接，包括演示数据
+                const noteUrl = note.note_id && note.note_id !== 'unknown' 
+                    ? `https://www.xiaohongshu.com/explore/${note.note_id}` 
+                    : '#';
+                
+                const isClickable = noteUrl !== '#';
+                
+                // 检查是否是演示数据
+                const isDemoData = !getCookie() || note.note_id.startsWith('demo_');
+                
+                html += `
+                    <div class="note-card">
+                        <div class="note-title ${isClickable ? 'clickable-title' : ''}" ${isClickable ? `onclick="openNoteWithTip('${noteUrl}', ${isDemoData})"` : ''}>${note.title}</div>
+                        <div class="note-desc">${note.desc}</div>
+                        <div class="note-meta">
+                            <div>
+                                <strong>作者：</strong>${note.user.nickname} | 
+                                <strong>类型：</strong>${note.type}
+                                ${isClickable ? `
+                                <div class="note-actions" style="margin-top: 10px;">
+                                    <button class="btn btn-primary" onclick="copyNoteUrl('${noteUrl}', ${isDemoData})" style="padding: 5px 15px; font-size: 14px;">🔗 复制链接</button>
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="note-stats">
+                                <div class="stat">👍 ${note.interact_info.liked_count}</div>
+                                <div class="stat">💬 ${note.interact_info.comment_count}</div>
+                                <div class="stat">⭐ ${note.interact_info.collected_count}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            results.innerHTML = html;
+        }
+
+        // 复制笔记链接
+        function copyNoteUrl(url, isDemoData) {
+            if (isDemoData) {
+                alert(`📋 演示数据链接已复制!\n\n⚠️ 这是演示数据，链接指向真实的小红书页面但内容可能不匹配\n\n💡 配置Cookie后可获取真实笔记链接\n\n使用方法:\n1. 粘贴到浏览器地址栏打开\n2. 小红书网页版需要扫码登录\n3. 登录后即可查看内容`);
+            } else {
+                alert(`✅ 链接已复制!\n\n📋 使用方法:\n1. 粘贴到浏览器地址栏打开\n2. 小红书网页版需要扫码登录\n3. 登录后即可查看完整内容`);
+            }
+            
+            navigator.clipboard.writeText(url).catch(() => {
+                prompt('请手动复制链接:', url);
+            });
+        }
+
+        // 点击标题打开新窗口
+        function openNoteWithTip(url, isDemoData) {
+            if (isDemoData) {
+                alert(`💡 演示数据提示:\n\n这是演示数据，即将打开小红书网页版\n⚠️ 实际内容可能与演示不匹配\n💡 配置Cookie后可获取真实笔记\n\n网页版需要扫码登录才能查看内容\n\n点击确定继续...`);
+            } else {
+                alert(`💡 提示:\n\n即将打开小红书网页版\n网页版需要扫码登录才能查看完整内容\n\n点击确定继续...`);
+            }
+            window.open(url, '_blank');
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCookieStatus();
+            
+            // 如果已有Cookie，隐藏配置区域
+            if (getCookie()) {
+                document.getElementById('cookieConfig').classList.add('hidden');
+            }
+
+            // 回车键搜索
+            document.getElementById('keyword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchNotes();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
