@@ -12,6 +12,7 @@ function MyAssignmentsContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [studentId, setStudentId] = useState('');
+  const [studentName, setStudentName] = useState('');
   const [submissions, setSubmissions] = useState<SubmissionWithAssignment[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -24,11 +25,86 @@ function MyAssignmentsContent() {
   useEffect(() => {
     const urlStudentId = searchParams.get('studentId');
     
-    if (user) {
+    console.log('=== 用户认证调试信息 ===');
+    console.log('AuthContext user:', user);
+    console.log('URL studentId:', urlStudentId);
+    
+    // 优先使用AuthContext中的用户信息
+    if (user && user.student_id) {
+      console.log('✅ 使用AuthContext用户信息:', user);
       setStudentId(user.student_id);
+      setStudentName(user.name || '');
       fetchSubmissionsWithId(user.student_id);
-    } else if (urlStudentId) {
+      return;
+    }
+    
+    // 尝试从多个localStorage键获取用户信息
+    if (typeof window !== 'undefined') {
+      // 检查 userSession
+      const userSession = localStorage.getItem('userSession');
+      if (userSession) {
+        try {
+          const sessionData = JSON.parse(userSession);
+          console.log('localStorage userSession:', sessionData);
+          if (sessionData.user && sessionData.user.student_id) {
+            console.log('✅ 使用userSession用户信息:', sessionData.user);
+            setStudentId(sessionData.user.student_id);
+            setStudentName(sessionData.user.name || '');
+            fetchSubmissionsWithId(sessionData.user.student_id);
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing userSession:', error);
+        }
+      }
+      
+      // 检查 user
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          console.log('localStorage user:', userData);
+          if (userData.student_id) {
+            console.log('✅ 使用localStorage user信息:', userData);
+            setStudentId(userData.student_id);
+            setStudentName(userData.name || '');
+            fetchSubmissionsWithId(userData.student_id);
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing stored user data:', error);
+        }
+      }
+      
+      // 检查 lastCredentials
+      const lastCredentials = localStorage.getItem('lastCredentials');
+      if (lastCredentials) {
+        try {
+          const credData = JSON.parse(lastCredentials);
+          console.log('localStorage lastCredentials:', credData);
+          if (credData.student_id) {
+            console.log('✅ 使用lastCredentials信息:', credData);
+            setStudentId(credData.student_id);
+            setStudentName(credData.name || '');
+            fetchSubmissionsWithId(credData.student_id);
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing lastCredentials:', error);
+        }
+      }
+      
+      console.log('❌ localStorage中没有找到有效的用户信息');
+      console.log('所有localStorage键:', Object.keys(localStorage));
+    }
+    
+    // 如果URL中有学号参数，使用它
+    if (urlStudentId) {
+      console.log('✅ 使用URL参数学号:', urlStudentId);
       setStudentId(urlStudentId);
+      fetchSubmissionsWithId(urlStudentId);
+    } else {
+      console.log('❌ 没有找到任何用户信息');
     }
   }, [user, searchParams]);
 
@@ -214,8 +290,18 @@ function MyAssignmentsContent() {
             我的作业
           </h1>
 
-          {/* 学号输入 - 仅在未登录时显示 */}
-          {!user && (
+          {/* 用户信息显示 - 已登录时显示 */}
+          {(user || studentId) && (
+            <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
+              <p className="text-green-300">
+                📚 当前查询学号: <span className="font-semibold">{user?.student_id || studentId}</span>
+                {(user?.name || studentName) && <span className="ml-4">姓名: <span className="font-semibold">{user?.name || studentName}</span></span>}
+              </p>
+            </div>
+          )}
+
+          {/* 学号输入 - 仅在未登录且无学号时显示 */}
+          {!user && !studentId && (
             <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-6 mb-8">
               <div className="flex gap-4 items-end">
                 <div className="flex-1">

@@ -34,16 +34,6 @@ export default function SubmitAssignmentPage() {
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
 
-  // 初始化用户信息
-  useEffect(() => {
-    if (user) {
-      setStudentId(user.student_id);
-      setStudentName(user.name || '');
-    }
-    loadAllStudents();
-    loadAvailableDays();
-  }, [user]);
-
   // 加载所有学生数据
   const loadAllStudents = async () => {
     try {
@@ -69,6 +59,31 @@ export default function SubmitAssignmentPage() {
       console.error('Error loading available days:', error);
     }
   };
+
+  // 初始化用户信息
+  useEffect(() => {
+    // 优先使用AuthContext中的用户信息
+    if (user) {
+      setStudentId(user.student_id);
+      setStudentName(user.name || '');
+    } else {
+      // 如果AuthContext没有用户信息，尝试从localStorage获取
+      try {
+        const userSession = localStorage.getItem('userSession');
+        if (userSession) {
+          const sessionData = JSON.parse(userSession);
+          if (sessionData.user && sessionData.user.student_id) {
+            setStudentId(sessionData.user.student_id);
+            setStudentName(sessionData.user.name || '');
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing user session:', error);
+      }
+    }
+    loadAllStudents();
+    loadAvailableDays();
+  }, [user]);
 
   // 学号输入变化处理
   const handleStudentIdInput = (value: string) => {
@@ -111,15 +126,23 @@ export default function SubmitAssignmentPage() {
     
     if (dayText) {
       try {
+        console.log('查询作业，天数:', dayText);
+        
+        // 先尝试从数据库查询
         const { data, error } = await supabase
           .from('assignments')
           .select('*')
           .eq('day_text', dayText)
           .order('assignment_title');
         
-        if (data && !error) {
+        if (error) {
+          console.error('数据库查询错误:', error);
+          setAssignments([]);
+        } else if (data && data.length > 0) {
           setAssignments(data);
+          console.log('数据库查询成功:', data);
         } else {
+          console.log('数据库无数据');
           setAssignments([]);
         }
       } catch (error) {
@@ -146,67 +169,6 @@ export default function SubmitAssignmentPage() {
       setGradingResult(null);
       setShowResult(false);
     }
-  };
-
-  // 轮询检查批改结果
-  const pollGradingResult = async (studentId: string, assignmentId: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const maxAttempts = 60;
-      let attempts = 0;
-      
-      const checkResult = async (): Promise<void> => {
-        try {
-          console.log(`轮询检查批改结果 - 第${attempts + 1}次`);
-          
-          const { data, error } = await supabase
-            .from('submissions')
-            .select('status, feedback, created_at')
-            .eq('student_id', studentId)
-            .eq('assignment_id', assignmentId)
-            .order('created_at', { ascending: false })
-            .limit(1);
-          
-          if (error) {
-            console.error('查询批改结果出错:', error);
-            throw error;
-          }
-          
-          if (data && data.length > 0) {
-            const latestRecord = data[0];
-            
-            if (latestRecord.status !== '待批改' && latestRecord.status !== '批改中') {
-              setGradingResult({
-                status: latestRecord.status,
-                feedback: latestRecord.feedback || '批改完成'
-              });
-              setShowResult(true);
-              setMessage(`批改完成！结果：${latestRecord.status}`);
-              resolve();
-              return;
-            }
-          }
-          
-          attempts++;
-          if (attempts < maxAttempts) {
-            setTimeout(() => checkResult(), 3000);
-          } else {
-            setMessage('批改超时，请稍后查看结果');
-            resolve();
-          }
-        } catch (error) {
-          console.error('Error polling grading result:', error);
-          attempts++;
-          if (attempts < maxAttempts) {
-            setTimeout(() => checkResult(), 3000);
-          } else {
-            setMessage('检查批改结果时出错，请刷新页面重试');
-            resolve();
-          }
-        }
-      };
-      
-      setTimeout(() => checkResult(), 2000);
-    });
   };
 
   // 提交作业
@@ -325,63 +287,76 @@ export default function SubmitAssignmentPage() {
             提交作业
           </h1>
 
+          {/* 用户信息显示 - 已登录时显示 */}
+          {(user || studentId) && (
+            <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
+              <p className="text-green-300">
+                📚 当前用户: <span className="font-semibold">{user?.student_id || studentId}</span>
+                {(user?.name || studentName) && <span className="ml-4">姓名: <span className="font-semibold">{user?.name || studentName}</span></span>}
+              </p>
+            </div>
+          )}
+
           <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 学号输入 */}
-              <div className="relative">
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  学号 <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={studentId}
-                  onChange={(e) => handleStudentIdInput(e.target.value)}
-                  onFocus={() => {
-                    if (filteredStudents.length > 0) {
-                      setShowStudentDropdown(true);
-                    }
-                  }}
-                  onBlur={() => {
-                    setTimeout(() => setShowStudentDropdown(false), 200);
-                  }}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400/50 transition-all duration-300"
-                  placeholder="请输入学号或姓名搜索"
-                  required
-                  disabled={!!user} // 如果已登录则禁用编辑
-                />
-                
-                {/* 自动补全下拉列表 */}
-                {showStudentDropdown && filteredStudents.length > 0 && !user && (
-                  <div className="absolute z-10 w-full bg-gray-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1">
-                    {filteredStudents.slice(0, 10).map((student) => (
-                      <div
-                        key={student.student_id}
-                        onClick={() => selectStudent(student)}
-                        className="px-4 py-3 hover:bg-white/10 cursor-pointer border-b border-white/10 last:border-b-0"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-white">{student.student_id}</span>
-                          <span className="text-white/60">{student.name}</span>
+              {/* 学号输入 - 仅在未登录时显示 */}
+              {!user && !studentId && (
+                <div className="relative">
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    学号 <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={studentId}
+                    onChange={(e) => handleStudentIdInput(e.target.value)}
+                    onFocus={() => {
+                      if (filteredStudents.length > 0) {
+                        setShowStudentDropdown(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowStudentDropdown(false), 200);
+                    }}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400/50 transition-all duration-300"
+                    placeholder="请输入学号或姓名搜索"
+                    required
+                  />
+                  
+                  {/* 自动补全下拉列表 */}
+                  {showStudentDropdown && filteredStudents.length > 0 && (
+                    <div className="absolute z-10 w-full bg-gray-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1">
+                      {filteredStudents.slice(0, 10).map((student) => (
+                        <div
+                          key={student.student_id}
+                          onClick={() => selectStudent(student)}
+                          className="px-4 py-3 hover:bg-white/10 cursor-pointer border-b border-white/10 last:border-b-0"
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-white">{student.student_id}</span>
+                            <span className="text-white/60">{student.name}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {/* 学员姓名显示 */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  姓名
-                </label>
-                <input
-                  type="text"
-                  value={studentName}
-                  readOnly
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white/60"
-                  placeholder="根据学号自动显示"
-                />
-              </div>
+              {/* 学员姓名显示 - 仅在未登录时显示 */}
+              {!user && (
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    姓名
+                  </label>
+                  <input
+                    type="text"
+                    value={studentName}
+                    readOnly
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white/60"
+                    placeholder="根据学号自动显示"
+                  />
+                </div>
+              )}
 
               {/* 学习天数选择 */}
               <div>

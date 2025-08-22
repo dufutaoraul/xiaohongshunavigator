@@ -22,11 +22,11 @@ export default function Navigation() {
             <Link href="/generate" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">
               🤖 AI灵感引擎
             </Link>
+            <Link href="/homework" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">
+              📝 作业系统
+            </Link>
             <Link href="/dashboard" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">
               📊 打卡中心
-            </Link>
-            <Link href="/showcase" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">
-              🏆 优秀案例展示墙
             </Link>
             {isAdmin && (
               <Link href="/admin" className="text-white/80 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm">

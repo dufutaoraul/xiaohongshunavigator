@@ -135,16 +135,16 @@ export default function Home() {
           </div>
 
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
-            <div className="text-5xl mb-6 breathing-glow">🏆</div>
-            <h3 className="text-xl font-bold text-white mb-4 gradient-text">优秀案例</h3>
+            <div className="text-5xl mb-6 breathing-glow">📝</div>
+            <h3 className="text-xl font-bold text-white mb-4 gradient-text">作业系统</h3>
             <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
-              学习优秀学员的爆款内容和经验，在星光指引下前行。精选创富营内最具影响力的成功案例，深度解析爆款内容的创作技巧。
+              智能化作业提交与批改平台，AI助力学习进度追踪。提交创作作品，获得专业点评反馈，系统化提升内容创作能力。
             </p>
             <button
-              onClick={() => handleNavigation('/showcase')}
+              onClick={() => handleNavigation('/homework')}
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
-              灵感探索 🌠
+              提交作业 📚
             </button>
           </div>
         </div>

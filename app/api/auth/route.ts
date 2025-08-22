@@ -44,13 +44,27 @@ export async function POST(request: NextRequest) {
       // 检查密码 - 支持旧的明文密码和新的加密密码
       let passwordValid = false
       
+      console.log('Password validation:', {
+        inputPassword: password,
+        storedPassword: user.password,
+        inputLength: password.length,
+        storedLength: user.password.length
+      })
+      
       // 如果密码以$2a$或$2b$开头，说明是bcrypt加密的
-      if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+      if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
         passwordValid = await bcrypt.compare(password, user.password)
       } else {
-        // 兼容旧的明文密码
+        // 兼容旧的明文密码 - 直接比较字符串
         passwordValid = user.password === password
+        
+        // 如果直接比较失败，尝试去除空格
+        if (!passwordValid) {
+          passwordValid = user.password?.trim() === password?.trim()
+        }
       }
+      
+      console.log('Password validation result:', passwordValid)
       
       if (!passwordValid) {
         return NextResponse.json(

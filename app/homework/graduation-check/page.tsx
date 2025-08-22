@@ -24,11 +24,32 @@ function GraduationCheckContent() {
     const urlStudentId = searchParams.get('studentId');
     
     if (user) {
+      // 已登录用户，自动获取信息并查询
       setStudentId(user.student_id);
       setStudentName(user.name || '');
       checkGraduationStatus(user.student_id);
-    } else if (urlStudentId) {
-      setStudentId(urlStudentId);
+    } else {
+      // 未登录用户，尝试从localStorage获取
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          if (userData.student_id) {
+            setStudentId(userData.student_id);
+            setStudentName(userData.name || '');
+            checkGraduationStatus(userData.student_id);
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing stored user data:', error);
+        }
+      }
+      
+      // 如果URL中有学号参数，使用它
+      if (urlStudentId) {
+        setStudentId(urlStudentId);
+        checkGraduationStatus(urlStudentId);
+      }
     }
   }, [user, searchParams]);
 
@@ -165,8 +186,8 @@ function GraduationCheckContent() {
             毕业资格检查
           </h1>
 
-          {/* 学号输入 - 仅在未登录时显示 */}
-          {!user && (
+          {/* 学号输入 - 仅在未登录且无学号时显示 */}
+          {!user && !studentId && (
             <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-6 mb-8">
               <div className="flex gap-4 items-end">
                 <div className="flex-1">
@@ -189,6 +210,16 @@ function GraduationCheckContent() {
                   {loading ? '查询中...' : '查询'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* 用户信息显示 - 已登录时显示 */}
+          {(user || studentId) && (
+            <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
+              <p className="text-green-300">
+                🎓 正在查询学号: <span className="font-semibold">{user?.student_id || studentId}</span>
+                {(user?.name || studentName) && <span className="ml-4">姓名: <span className="font-semibold">{user?.name || studentName}</span></span>}
+              </p>
             </div>
           )}
 
