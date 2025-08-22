@@ -85,7 +85,7 @@ export default function DebugConnection() {
       const result = await response.json()
       console.log('Login test result:', result)
       
-      setResults(prev => ({
+      setResults((prev: any) => ({
         ...prev,
         loginTest: {
           status: response.status,
@@ -94,7 +94,7 @@ export default function DebugConnection() {
         }
       }))
     } catch (error: any) {
-      setResults(prev => ({
+      setResults((prev: any) => ({
         ...prev,
         loginTest: {
           success: false,
