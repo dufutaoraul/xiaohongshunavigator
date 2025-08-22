@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       raw: password,
       type: typeof password,
       length: password ? password.length : 0,
-      charCodes: password ? Array.from(password).map(char => ({
+      charCodes: password ? Array.from(password).map((char: string) => ({
         char: char,
         code: char.charCodeAt(0),
         isVisible: char.charCodeAt(0) >= 32 && char.charCodeAt(0) <= 126
