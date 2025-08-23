@@ -277,6 +277,12 @@ export default function SubmitAssignmentPage() {
     try {
       console.log('开始提交作业:', { currentStudentId, assignmentId, fileCount: files.length });
       
+      // 调试环境变量配置
+      console.log('Supabase配置检查:', {
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? '已配置' : '未配置',
+        key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '已配置' : '未配置'
+      });
+      
       // 模拟文件上传（实际项目中需要实现真实的文件上传）
       const attachmentUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
@@ -284,16 +290,19 @@ export default function SubmitAssignmentPage() {
         attachmentUrls.push(`https://example.com/uploads/${files[i].name}`);
       }
 
-      // 提交作业记录
+      // 提交作业记录 - 使用正确的字段名
       const submissionData = {
         student_id: currentStudentId,
-        name: currentStudentName,
+        student_name: currentStudentName, // 注意：数据库字段是student_name不是name
         assignment_id: assignmentId,
         day_text: selectedAssignment?.day_text || selectedDayText,
+        assignment_title: selectedAssignment?.assignment_title || '',
+        is_mandatory: selectedAssignment?.is_mandatory || false,
+        description: selectedAssignment?.description || '',
         attachments_url: attachmentUrls,
         status: '待批改' as const,
         feedback: null,
-        submission_date: new Date().toISOString()
+        created_at: new Date().toISOString() // 数据库字段是created_at不是submission_date
       };
       
       console.log('准备插入数据库:', submissionData);
