@@ -303,6 +303,18 @@ export default function SubmitAssignmentPage() {
             提交作业
           </h1>
 
+          {/* 调试信息 - 临时显示用于排查问题 */}
+          <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-2xl p-4 mb-6">
+            <p className="text-yellow-300 text-sm">
+              🔍 调试信息: <br/>
+              - user: {JSON.stringify(user)}<br/>
+              - studentId: {studentId}<br/>
+              - studentName: {studentName}<br/>
+              - localStorage userSession: {typeof window !== 'undefined' ? localStorage.getItem('userSession') : 'N/A'}<br/>
+              - isAuthenticated: {typeof window !== 'undefined' && user ? 'true' : 'false'}
+            </p>
+          </div>
+
           {/* 用户信息显示 - 已登录时显示 */}
           {(studentId || user?.student_id) && (
             <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
