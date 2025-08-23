@@ -69,13 +69,18 @@ export default function SubmitAssignmentPage() {
   useEffect(() => {
     console.log('初始化用户信息，user:', user);
     
+    let userFound = false;
+    
     // 优先使用AuthContext中的用户信息
     if (user && user.student_id) {
       console.log('使用AuthContext用户信息:', user.student_id, user.name);
       setStudentId(user.student_id);
       setStudentName(user.name || '');
-    } else {
-      // 如果AuthContext没有用户信息，尝试从localStorage获取
+      userFound = true;
+    }
+    
+    // 如果AuthContext没有用户信息，尝试从localStorage获取
+    if (!userFound) {
       try {
         const userSession = localStorage.getItem('userSession');
         console.log('从localStorage获取用户信息:', userSession);
@@ -88,12 +93,30 @@ export default function SubmitAssignmentPage() {
             console.log('设置localStorage中的用户信息:', sessionData.user.student_id, sessionData.user.name);
             setStudentId(sessionData.user.student_id);
             setStudentName(sessionData.user.name || '');
+            userFound = true;
           }
         }
       } catch (error) {
         console.error('Error parsing user session:', error);
       }
     }
+    
+    // 如果还是没有找到用户信息，检查lastCredentials并自动登录
+    if (!userFound) {
+      try {
+        const lastCredentials = localStorage.getItem('lastCredentials');
+        if (lastCredentials) {
+          const credentials = JSON.parse(lastCredentials);
+          console.log('发现保存的凭证，尝试自动登录:', credentials.student_id);
+          
+          // 自动登录
+          handleLogin(credentials.student_id, credentials.password);
+        }
+      } catch (error) {
+        console.error('Error with auto-login:', error);
+      }
+    }
+    
     loadAllStudents();
     loadAvailableDays();
   }, [user]);
@@ -267,9 +290,6 @@ export default function SubmitAssignmentPage() {
         name: currentStudentName,
         assignment_id: assignmentId,
         day_text: selectedAssignment?.day_text || selectedDayText,
-        assignment_title: selectedAssignment?.assignment_title || '',
-        is_mandatory: selectedAssignment?.is_mandatory || false,
-        description: selectedAssignment?.description || '',
         attachments_url: attachmentUrls,
         status: '待批改' as const,
         feedback: null,

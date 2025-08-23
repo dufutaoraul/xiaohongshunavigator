@@ -230,12 +230,13 @@ async function callGeminiAPI(
       }
     };
 
-    const apiUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+    const apiUrl = `${baseUrl}/v1beta/models/${modelId}:generateContent`;
     
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
       },
       body: JSON.stringify(requestBody),
       signal: AbortSignal.timeout(120000) // 2分钟超时
