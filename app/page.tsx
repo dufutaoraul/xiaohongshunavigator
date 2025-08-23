@@ -121,20 +121,6 @@ export default function Home() {
           </div>
 
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
-            <div className="text-5xl mb-6 breathing-glow">📊</div>
-            <h3 className="text-xl font-bold text-white mb-4 gradient-text">打卡中心</h3>
-            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
-              提交小红书链接，追踪你的创作进度，每一步都是星座的轨迹。通过智能日历热力图直观显示打卡记录，统计发布频率和互动数据。
-            </p>
-            <button
-              onClick={() => handleNavigation('/dashboard')}
-              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
-            >
-              进度追踪 📈
-            </button>
-          </div>
-
-          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">📝</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">作业系统</h3>
             <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
@@ -145,6 +131,20 @@ export default function Home() {
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               提交作业 📚
+            </button>
+          </div>
+
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
+            <div className="text-5xl mb-6 breathing-glow">📊</div>
+            <h3 className="text-xl font-bold text-white mb-4 gradient-text">打卡中心</h3>
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
+              提交小红书链接，追踪你的创作进度，每一步都是星座的轨迹。通过智能日历热力图直观显示打卡记录，统计发布频率和互动数据。
+            </p>
+            <button
+              onClick={() => handleNavigation('/dashboard')}
+              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
+            >
+              进度追踪 📈
             </button>
           </div>
         </div>

@@ -24,10 +24,10 @@ function GraduationCheckContent() {
     const urlStudentId = searchParams.get('studentId');
     
     if (user) {
-      // 已登录用户，自动获取信息并查询
+      // 已登录用户，自动获取信息但不自动查询
       setStudentId(user.student_id);
       setStudentName(user.name || '');
-      checkGraduationStatus(user.student_id);
+      // 移除自动查询：checkGraduationStatus(user.student_id);
     } else {
       // 未登录用户，尝试从localStorage获取
       const storedUser = localStorage.getItem('user');
@@ -37,7 +37,7 @@ function GraduationCheckContent() {
           if (userData.student_id) {
             setStudentId(userData.student_id);
             setStudentName(userData.name || '');
-            checkGraduationStatus(userData.student_id);
+            // 移除自动查询：checkGraduationStatus(userData.student_id);
             return;
           }
         } catch (error) {
@@ -45,10 +45,10 @@ function GraduationCheckContent() {
         }
       }
       
-      // 如果URL中有学号参数，使用它
+      // 如果URL中有学号参数，使用它但不自动查询
       if (urlStudentId) {
         setStudentId(urlStudentId);
-        checkGraduationStatus(urlStudentId);
+        // 移除自动查询：checkGraduationStatus(urlStudentId);
       }
     }
   }, [user, searchParams]);
@@ -186,32 +186,31 @@ function GraduationCheckContent() {
             毕业资格检查
           </h1>
 
-          {/* 学号输入 - 仅在未登录且无学号时显示 */}
-          {!user && !studentId && (
-            <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-6 mb-8">
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    请输入学号
-                  </label>
-                  <input
-                    type="text"
-                    value={studentId}
-                    onChange={(e) => setStudentId(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400/50 transition-all duration-300"
-                    placeholder="输入学号查询毕业资格"
-                  />
-                </div>
-                <button
-                  onClick={() => checkGraduationStatus()}
-                  disabled={loading || !studentId}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-                >
-                  {loading ? '查询中...' : '查询'}
-                </button>
+          {/* 学号确认输入 - 为所有用户显示确认界面 */}
+          <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-6 mb-8">
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  学号确认
+                </label>
+                <input
+                  type="text"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400/50 transition-all duration-300"
+                  placeholder={studentId ? "已自动识别学号，请确认后查询" : "输入学号查询毕业资格"}
+                  disabled={loading}
+                />
               </div>
+              <button
+                onClick={() => checkGraduationStatus()}
+                disabled={loading || !studentId}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+              >
+                {loading ? '查询中...' : '确认查询'}
+              </button>
             </div>
-          )}
+          </div>
 
           {/* 用户信息显示 - 已登录时显示 */}
           {(user || studentId) && (

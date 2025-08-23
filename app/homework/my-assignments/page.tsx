@@ -21,7 +21,7 @@ function MyAssignmentsContent() {
   const [deletingSubmission, setDeletingSubmission] = useState<string | null>(null);
   const [keepExistingFiles, setKeepExistingFiles] = useState(true);
 
-  // 初始化用户信息
+  // 初始化用户信息（不自动搜索）
   useEffect(() => {
     const urlStudentId = searchParams.get('studentId');
     
@@ -29,12 +29,12 @@ function MyAssignmentsContent() {
     console.log('AuthContext user:', user);
     console.log('URL studentId:', urlStudentId);
     
-    // 优先使用AuthContext中的用户信息
+    // 优先使用AuthContext中的用户信息，但不自动搜索
     if (user && user.student_id) {
       console.log('✅ 使用AuthContext用户信息:', user);
       setStudentId(user.student_id);
       setStudentName(user.name || '');
-      fetchSubmissionsWithId(user.student_id);
+      // 移除自动搜索：fetchSubmissionsWithId(user.student_id);
       return;
     }
     
@@ -50,7 +50,7 @@ function MyAssignmentsContent() {
             console.log('✅ 使用userSession用户信息:', sessionData.user);
             setStudentId(sessionData.user.student_id);
             setStudentName(sessionData.user.name || '');
-            fetchSubmissionsWithId(sessionData.user.student_id);
+            // 移除自动搜索：fetchSubmissionsWithId(sessionData.user.student_id);
             return;
           }
         } catch (error) {
@@ -68,7 +68,7 @@ function MyAssignmentsContent() {
             console.log('✅ 使用localStorage user信息:', userData);
             setStudentId(userData.student_id);
             setStudentName(userData.name || '');
-            fetchSubmissionsWithId(userData.student_id);
+            // 移除自动搜索：fetchSubmissionsWithId(userData.student_id);
             return;
           }
         } catch (error) {
@@ -86,7 +86,7 @@ function MyAssignmentsContent() {
             console.log('✅ 使用lastCredentials信息:', credData);
             setStudentId(credData.student_id);
             setStudentName(credData.name || '');
-            fetchSubmissionsWithId(credData.student_id);
+            // 移除自动搜索：fetchSubmissionsWithId(credData.student_id);
             return;
           }
         } catch (error) {
@@ -300,32 +300,31 @@ function MyAssignmentsContent() {
             </div>
           )}
 
-          {/* 学号输入 - 仅在未登录且无学号时显示 */}
-          {!user && !studentId && (
-            <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-6 mb-8">
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    请输入学号
-                  </label>
-                  <input
-                    type="text"
-                    value={studentId}
-                    onChange={(e) => setStudentId(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400/50 transition-all duration-300"
-                    placeholder="输入学号查询作业记录"
-                  />
-                </div>
-                <button
-                  onClick={fetchSubmissions}
-                  disabled={loading || !studentId}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-                >
-                  {loading ? '查询中...' : '查询'}
-                </button>
+          {/* 学号确认区域 - 为所有情况显示 */}
+          <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-6 mb-8">
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  学号确认
+                </label>
+                <input
+                  type="text"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400/50 transition-all duration-300"
+                  placeholder={studentId ? "已自动识别学号，请确认" : "请输入学号"}
+                  disabled={loading}
+                />
               </div>
+              <button
+                onClick={fetchSubmissions}
+                disabled={loading || !studentId}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+              >
+                {loading ? '查询中...' : '确认查询'}
+              </button>
             </div>
-          )}
+          </div>
 
           {/* 消息显示 */}
           {message && (

@@ -390,7 +390,6 @@ export default function SubmitAssignmentPage() {
                   disabled={!selectedDayText}
                   required
                 >
-                  <option value="">请选择作业项目</option>
                   {assignments.map(assignment => (
                     <option key={assignment.assignment_id} value={assignment.assignment_id} className="bg-gray-800">
                       {assignment.assignment_title} ({assignment.is_mandatory ? '必做' : '选做'})
