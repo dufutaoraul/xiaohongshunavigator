@@ -189,14 +189,8 @@ async function callGeminiAPI(
 现在请批改学员提交的作业图片。`;
 
   try {
-    // 构建请求体
-    const contents = [];
-    
-    // 添加文本内容
-    contents.push({
-      role: 'user',
-      parts: [{ text: prompt }]
-    });
+    // 构建请求体 - 修复TypeScript类型问题
+    const parts: any[] = [{ text: prompt }];
 
     // 添加图片内容
     for (const imageUrl of attachmentUrls) {
@@ -214,7 +208,7 @@ async function callGeminiAPI(
         // 根据URL推测MIME类型
         const mimeType = imageUrl.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg';
         
-        contents[0].parts.push({
+        parts.push({
           inlineData: {
             mimeType: mimeType,
             data: base64Image
@@ -226,7 +220,10 @@ async function callGeminiAPI(
     }
 
     const requestBody = {
-      contents: contents,
+      contents: [{
+        role: 'user',
+        parts: parts
+      }],
       generationConfig: {
         maxOutputTokens: 1000,
         temperature: 0.1,
