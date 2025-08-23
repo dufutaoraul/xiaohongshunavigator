@@ -228,31 +228,33 @@ export default function SubmitAssignmentPage() {
 
       console.log('数据库插入成功');
       setSubmitted(true);
+      setMessage('作业提交成功！正在进行AI批改...');
       
-      // 模拟AI批改过程
-      setTimeout(async () => {
-        try {
-          const { error: updateError } = await supabase
-            .from('submissions')
-            .update({
-              status: '合格',
-              feedback: '作业完成良好，符合要求。'
-            })
-            .eq('student_id', studentId)
-            .eq('assignment_id', assignmentId);
+      // 调用AI批改API
+      try {
+        const gradeResponse = await fetch('/api/homework/grade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentId,
+            assignmentId,
+            attachmentUrls
+          })
+        });
 
-          if (!updateError) {
-            setGradingResult({
-              status: '合格',
-              feedback: '作业完成良好，符合要求。'
-            });
-            setShowResult(true);
-            setMessage('批改完成！结果：合格');
-          }
-        } catch (error) {
-          console.error('Error updating grading result:', error);
+        const gradeResult = await gradeResponse.json();
+        
+        if (gradeResponse.ok && gradeResult.success) {
+          setGradingResult(gradeResult.result);
+          setShowResult(true);
+          setMessage(`批改完成！结果：${gradeResult.result.status}`);
+        } else {
+          setMessage('AI批改失败，请稍后重试');
         }
-      }, 3000);
+      } catch (error) {
+        console.error('AI批改调用失败:', error);
+        setMessage('AI批改服务暂时不可用，请稍后重试');
+      }
       
       // 重置表单状态
       setLoading(false);
@@ -288,7 +290,7 @@ export default function SubmitAssignmentPage() {
           </h1>
 
           {/* 用户信息显示 - 已登录时显示 */}
-          {(user || studentId) && (
+          {(user?.student_id || studentId) && (
             <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
               <p className="text-green-300">
                 📚 当前用户: <span className="font-semibold">{user?.student_id || studentId}</span>
@@ -299,8 +301,8 @@ export default function SubmitAssignmentPage() {
 
           <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 学号输入 - 仅在未登录时显示 */}
-              {!user && !studentId && (
+              {/* 学号输入 - 仅在未登录且无学号时显示 */}
+              {!user?.student_id && !studentId && (
                 <div className="relative">
                   <label className="block text-sm font-medium text-white/80 mb-2">
                     学号 <span className="text-red-400">*</span>
@@ -342,8 +344,8 @@ export default function SubmitAssignmentPage() {
                 </div>
               )}
 
-              {/* 学员姓名显示 - 仅在未登录时显示 */}
-              {!user && (
+              {/* 学员姓名显示 - 仅在未登录且无学号时显示 */}
+              {!user?.student_id && !studentId && (
                 <div>
                   <label className="block text-sm font-medium text-white/80 mb-2">
                     姓名
@@ -369,7 +371,7 @@ export default function SubmitAssignmentPage() {
                   className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400/50 transition-all duration-300"
                   required
                 >
-                  <option value="">请选择学习天数</option>
+                  <option value="" disabled>请选择学习天数</option>
                   {availableDays.map(dayText => (
                     <option key={dayText} value={dayText} className="bg-gray-800">
                       {dayText}
