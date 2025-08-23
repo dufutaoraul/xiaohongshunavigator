@@ -12,9 +12,10 @@ import {
   calculateTotalFileSize,
   isFileSizeOverLimit
 } from '@/utils/homework-utils';
+import LoginModal from '@/app/components/LoginModal';
 
 export default function SubmitAssignmentPage() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [studentId, setStudentId] = useState('');
   const [studentName, setStudentName] = useState('');
   const [selectedDayText, setSelectedDayText] = useState('');
@@ -28,6 +29,10 @@ export default function SubmitAssignmentPage() {
   const [message, setMessage] = useState('');
   const [gradingResult, setGradingResult] = useState<{status: string, feedback: string} | null>(null);
   const [showResult, setShowResult] = useState(false);
+  
+  // 登录相关状态
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
   
   // 学号自动补全相关状态
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -124,6 +129,48 @@ export default function SubmitAssignmentPage() {
     setStudentId(student.student_id);
     setStudentName(student.name || '');
     setShowStudentDropdown(false);
+  };
+
+  // 登录处理
+  const handleLogin = async (studentId: string, password: string): Promise<boolean> => {
+    setAuthLoading(true);
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          student_id: studentId,
+          password: password
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // 使用AuthContext的login方法
+        login(result.user);
+        
+        // 保存凭证用于自动登录
+        localStorage.setItem('lastCredentials', JSON.stringify({
+          student_id: studentId,
+          password: password
+        }));
+        
+        setShowLoginModal(false);
+        // 重新加载用户信息
+        setStudentId(result.user.student_id);
+        setStudentName(result.user.name || '');
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   // 根据选择的天数查询作业列表
@@ -303,32 +350,39 @@ export default function SubmitAssignmentPage() {
             提交作业
           </h1>
 
-          {/* 调试信息 - 临时显示用于排查问题 */}
-          <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-2xl p-4 mb-6">
-            <p className="text-yellow-300 text-sm">
-              🔍 调试信息: <br/>
-              - user: {JSON.stringify(user)}<br/>
-              - studentId: {studentId}<br/>
-              - studentName: {studentName}<br/>
-              - localStorage userSession: {typeof window !== 'undefined' ? localStorage.getItem('userSession') : 'N/A'}<br/>
-              - isAuthenticated: {typeof window !== 'undefined' && user ? 'true' : 'false'}
-            </p>
-          </div>
-
-          {/* 用户信息显示 - 已登录时显示 */}
-          {(studentId || user?.student_id) && (
+          {/* 用户认证状态显示 */}
+          {(studentId || user?.student_id) ? (
+            // 已登录用户信息
             <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
               <p className="text-green-300">
-                📚 当前用户: <span className="font-semibold">{studentId || user?.student_id || '未获取到学号'}</span>
+                📚 当前用户: <span className="font-semibold">{studentId || user?.student_id}</span>
                 {(studentName || user?.name) && <span className="ml-4">姓名: <span className="font-semibold">{studentName || user?.name}</span></span>}
               </p>
+            </div>
+          ) : (
+            // 未登录提示
+            <div className="bg-blue-500/10 border border-blue-400/30 rounded-2xl p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-300 font-medium">🔐 需要登录后才能提交作业</p>
+                  <p className="text-blue-200/70 text-sm mt-1">请先验证您的学员身份</p>
+                </div>
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  立即登录
+                </button>
+              </div>
             </div>
           )}
 
           <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 学号输入 - 仅在未获取到学号时显示 */}
-              {!studentId && !user?.student_id && (
+            {/* 只有登录后才显示表单 */}
+            {(studentId || user?.student_id) ? (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* 学号输入 - 仅在未获取到学号时显示 */}
+                {!studentId && !user?.student_id && (
                 <div className="relative">
                   <label className="block text-sm font-medium text-white/80 mb-2">
                     学号 <span className="text-red-400">*</span>
@@ -525,14 +579,30 @@ export default function SubmitAssignmentPage() {
               </div>
 
               {/* 提交按钮 */}
-              <button
-                type="submit"
-                disabled={loading || isFileSizeOverLimit(files)}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-              >
-                {loading ? (submitted ? '作业提交成功！正在进行AI批改...' : '作业提交中，请耐心等待...') : '提交作业'}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={loading || isFileSizeOverLimit(files)}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                >
+                  {loading ? (submitted ? '作业提交成功！正在进行AI批改...' : '作业提交中，请耐心等待...') : '提交作业'}
+                </button>
+              </form>
+            ) : (
+              // 未登录时的提示界面
+              <div className="text-center py-16">
+                <div className="text-6xl mb-6">🔐</div>
+                <h3 className="text-2xl font-bold text-white/80 mb-4">需要登录验证</h3>
+                <p className="text-white/60 mb-8 max-w-md mx-auto">
+                  为了确保作业提交的安全性和准确性，请先登录验证您的学员身份。
+                </p>
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-8 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium"
+                >
+                  立即登录 →
+                </button>
+              </div>
+            )}
 
             {/* 消息显示 */}
             {message && !loading && (
@@ -622,6 +692,14 @@ export default function SubmitAssignmentPage() {
           </div>
         </div>
       </div>
+
+      {/* 登录模态框 */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={handleLogin}
+        loading={authLoading}
+      />
     </div>
   );
 }
