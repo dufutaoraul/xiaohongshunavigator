@@ -62,17 +62,25 @@ export default function SubmitAssignmentPage() {
 
   // 初始化用户信息
   useEffect(() => {
+    console.log('初始化用户信息，user:', user);
+    
     // 优先使用AuthContext中的用户信息
-    if (user) {
+    if (user && user.student_id) {
+      console.log('使用AuthContext用户信息:', user.student_id, user.name);
       setStudentId(user.student_id);
       setStudentName(user.name || '');
     } else {
       // 如果AuthContext没有用户信息，尝试从localStorage获取
       try {
         const userSession = localStorage.getItem('userSession');
+        console.log('从localStorage获取用户信息:', userSession);
+        
         if (userSession) {
           const sessionData = JSON.parse(userSession);
+          console.log('解析的sessionData:', sessionData);
+          
           if (sessionData.user && sessionData.user.student_id) {
+            console.log('设置localStorage中的用户信息:', sessionData.user.student_id, sessionData.user.name);
             setStudentId(sessionData.user.student_id);
             setStudentName(sessionData.user.name || '');
           }
@@ -175,7 +183,13 @@ export default function SubmitAssignmentPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!studentId || !assignmentId || files.length === 0) {
+    // 确保使用正确的学号
+    const currentStudentId = studentId || user?.student_id;
+    const currentStudentName = studentName || user?.name;
+    
+    console.log('提交时的学号信息:', { currentStudentId, currentStudentName, studentId, user });
+    
+    if (!currentStudentId || !assignmentId || files.length === 0) {
       setMessage('请填写所有必填字段并上传至少一个文件');
       return;
     }
@@ -191,7 +205,7 @@ export default function SubmitAssignmentPage() {
     setShowResult(false);
 
     try {
-      console.log('开始提交作业:', { studentId, assignmentId, fileCount: files.length });
+      console.log('开始提交作业:', { currentStudentId, assignmentId, fileCount: files.length });
       
       // 模拟文件上传（实际项目中需要实现真实的文件上传）
       const attachmentUrls: string[] = [];
@@ -202,8 +216,8 @@ export default function SubmitAssignmentPage() {
 
       // 提交作业记录
       const submissionData = {
-        student_id: studentId,
-        name: studentName,
+        student_id: currentStudentId,
+        name: currentStudentName,
         assignment_id: assignmentId,
         day_text: selectedAssignment?.day_text || selectedDayText,
         assignment_title: selectedAssignment?.assignment_title || '',
@@ -236,7 +250,7 @@ export default function SubmitAssignmentPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            studentId,
+            studentId: currentStudentId,
             assignmentId,
             attachmentUrls
           })
@@ -290,19 +304,19 @@ export default function SubmitAssignmentPage() {
           </h1>
 
           {/* 用户信息显示 - 已登录时显示 */}
-          {(user?.student_id || studentId) && (
+          {(studentId || user?.student_id) && (
             <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
               <p className="text-green-300">
-                📚 当前用户: <span className="font-semibold">{user?.student_id || studentId}</span>
-                {(user?.name || studentName) && <span className="ml-4">姓名: <span className="font-semibold">{user?.name || studentName}</span></span>}
+                📚 当前用户: <span className="font-semibold">{studentId || user?.student_id || '未获取到学号'}</span>
+                {(studentName || user?.name) && <span className="ml-4">姓名: <span className="font-semibold">{studentName || user?.name}</span></span>}
               </p>
             </div>
           )}
 
           <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 学号输入 - 仅在未登录且无学号时显示 */}
-              {!user?.student_id && !studentId && (
+              {/* 学号输入 - 仅在未获取到学号时显示 */}
+              {!studentId && !user?.student_id && (
                 <div className="relative">
                   <label className="block text-sm font-medium text-white/80 mb-2">
                     学号 <span className="text-red-400">*</span>
@@ -344,8 +358,8 @@ export default function SubmitAssignmentPage() {
                 </div>
               )}
 
-              {/* 学员姓名显示 - 仅在未登录且无学号时显示 */}
-              {!user?.student_id && !studentId && (
+              {/* 学员姓名显示 - 仅在未获取到学号时显示 */}
+              {!studentId && !user?.student_id && (
                 <div>
                   <label className="block text-sm font-medium text-white/80 mb-2">
                     姓名
@@ -392,6 +406,9 @@ export default function SubmitAssignmentPage() {
                   disabled={!selectedDayText}
                   required
                 >
+                  <option value="" disabled className="bg-gray-800">
+                    {!selectedDayText ? '请先选择学习天数' : assignments.length === 0 ? '该天数暂无作业' : '请选择作业项目'}
+                  </option>
                   {assignments.map(assignment => (
                     <option key={assignment.assignment_id} value={assignment.assignment_id} className="bg-gray-800">
                       {assignment.assignment_title} ({assignment.is_mandatory ? '必做' : '选做'})
