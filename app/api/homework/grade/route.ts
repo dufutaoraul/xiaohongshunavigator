@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { callAIWithFallback } from '@/lib/ai-fallback';
 
 export async function POST(request: NextRequest) {
+  let requestData: any = null;
+  
   try {
     console.log('AI批改API被调用');
     
-    const requestData = await request.json();
+    // 先解析请求数据，避免在catch中重复解析
+    requestData = await request.json();
     const { studentId, assignmentId, attachmentUrls } = requestData;
     console.log('请求参数:', { studentId, assignmentId, attachmentCount: attachmentUrls?.length });
 
@@ -27,17 +31,8 @@ export async function POST(request: NextRequest) {
 
     console.log('作业信息:', { title: assignmentData.assignment_title, description: assignmentData.description });
 
-    // 2. 模拟AI批改过程 (未来可以接入真实AI服务)
-    await new Promise(resolve => setTimeout(resolve, 2000)); // 模拟处理时间
-    
-    // 简单的模拟批改逻辑
-    const isPass = Math.random() > 0.3; // 70%通过率
-    const gradingResult = {
-      status: isPass ? '合格' : '不合格',
-      feedback: isPass 
-        ? '作业完成良好，符合要求。展示了对知识点的理解和实际应用能力。'
-        : '作业存在一些问题，建议补充更多细节和说明。请重新提交改进版本。'
-    };
+    // 2. 调用AI进行批改（带后备方案）
+    const gradingResult = await callAIWithFallback(assignmentData.description, attachmentUrls, assignmentData.assignment_title);
     
     console.log('AI批改结果:', gradingResult);
 
@@ -68,8 +63,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('AI批改API错误:', error);
     
-    // 如果出错，将状态更新为批改失败
-    const requestData = await request.json().catch(() => ({}));
+    // 如果出错，将状态更新为批改失败（使用已解析的数据）
     if (requestData?.studentId && requestData?.assignmentId) {
       try {
         await supabase
