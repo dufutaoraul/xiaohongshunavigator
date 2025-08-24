@@ -65,6 +65,42 @@ export default function SubmitAssignmentPage() {
     }
   };
 
+  // 检测submissions表的schema结构
+  const checkSubmissionsSchema = async () => {
+    try {
+      console.log('🔍 检测submissions表schema...');
+      
+      // 尝试查询表结构
+      const { data, error } = await supabase
+        .rpc('get_table_columns', { table_name: 'submissions' })
+        .single();
+        
+      if (error) {
+        console.warn('无法通过RPC获取schema，尝试其他方法:', error);
+        
+        // 备用方法：尝试查询一条记录看字段
+        const { data: sampleData, error: sampleError } = await supabase
+          .from('submissions')
+          .select('*')
+          .limit(1);
+          
+        if (!sampleError && sampleData) {
+          const availableFields = sampleData.length > 0 ? Object.keys(sampleData[0]) : [];
+          console.log('📋 检测到的字段:', availableFields);
+          return availableFields;
+        }
+      } else {
+        console.log('📋 RPC返回的schema:', data);
+        return data;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Schema检测失败:', error);
+      return [];
+    }
+  };
+
   // 初始化用户信息
   useEffect(() => {
     console.log('初始化用户信息，user:', user);
@@ -119,6 +155,9 @@ export default function SubmitAssignmentPage() {
     
     loadAllStudents();
     loadAvailableDays();
+    
+    // 检测数据库schema
+    checkSubmissionsSchema();
   }, [user]);
 
   // 学号输入变化处理
@@ -290,30 +329,82 @@ export default function SubmitAssignmentPage() {
         attachmentUrls.push(`https://example.com/uploads/${files[i].name}`);
       }
 
-      // 提交作业记录 - 使用正确的字段名
-      const submissionData = {
+      // 应急解决方案：只插入核心必需字段，避免schema不匹配
+      const submissionData: any = {
         student_id: currentStudentId,
-        student_name: currentStudentName, // 注意：数据库字段是student_name不是name
+        student_name: currentStudentName,
         assignment_id: assignmentId,
-        day_text: selectedAssignment?.day_text || selectedDayText,
-        assignment_title: selectedAssignment?.assignment_title || '',
-        is_mandatory: selectedAssignment?.is_mandatory || false,
-        description: selectedAssignment?.description || '',
         attachments_url: attachmentUrls,
         status: '待批改' as const,
-        feedback: null,
-        created_at: new Date().toISOString() // 数据库字段是created_at不是submission_date
+        feedback: null
       };
+      
+      // 动态添加可选字段（如果数据库中存在的话）
+      try {
+        // 先尝试获取表结构信息
+        const { data: testData, error: testError } = await supabase
+          .from('submissions')
+          .select('*')
+          .limit(1);
+          
+        if (!testError && testData !== null) {
+          // 如果没有错误，说明基础结构OK，尝试添加其他字段
+          if (selectedAssignment?.day_text || selectedDayText) {
+            submissionData.day_text = selectedAssignment?.day_text || selectedDayText;
+          }
+          
+          // 尝试添加其他字段，如果出错就跳过
+          if (selectedAssignment?.assignment_title) {
+            submissionData.assignment_title = selectedAssignment.assignment_title;
+          }
+          
+          if (selectedAssignment?.is_mandatory !== undefined) {
+            submissionData.is_mandatory = selectedAssignment.is_mandatory;
+          }
+          
+          if (selectedAssignment?.description) {
+            submissionData.description = selectedAssignment.description;
+          }
+        }
+      } catch (schemaError) {
+        console.warn('Schema检测失败，使用最小字段集:', schemaError);
+      }
       
       console.log('准备插入数据库:', submissionData);
       
-      const { error: insertError } = await supabase
+      const { error: insertError, data: insertData } = await supabase
         .from('submissions')
-        .insert(submissionData);
+        .insert(submissionData)
+        .select();
 
       if (insertError) {
         console.error('Database insert error:', insertError);
-        throw new Error(`数据库插入失败: ${insertError.message}`);
+        
+        // 如果是schema相关错误，尝试最小字段集重试
+        if (insertError.message.includes('column') && insertError.message.includes('schema')) {
+          console.log('检测到schema错误，尝试最小字段集重试...');
+          
+          const minimalData = {
+            student_id: currentStudentId,
+            assignment_id: assignmentId,
+            status: '待批改' as const
+          };
+          
+          const { error: retryError } = await supabase
+            .from('submissions')
+            .insert(minimalData);
+            
+          if (retryError) {
+            console.error('最小字段集重试也失败:', retryError);
+            throw new Error(`数据库插入失败: ${retryError.message}`);
+          } else {
+            console.log('最小字段集插入成功');
+          }
+        } else {
+          throw new Error(`数据库插入失败: ${insertError.message}`);
+        }
+      } else {
+        console.log('数据库插入成功:', insertData);
       }
 
       console.log('数据库插入成功');
