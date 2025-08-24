@@ -192,21 +192,41 @@ async function callGeminiAPI(
     // 构建请求体 - 修复TypeScript类型问题
     const parts: any[] = [{ text: prompt }];
 
-    // 添加图片内容
+    // 添加图片内容 - 修复图片访问问题
     for (const imageUrl of attachmentUrls) {
       try {
-        // 下载图片并转换为base64
-        const imageResponse = await fetch(imageUrl);
+        console.log(`📥 尝试下载图片: ${imageUrl}`);
+        
+        // 设置更详细的请求头，解决可能的访问问题
+        const imageResponse = await fetch(imageUrl, {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; AI-Homework-Grader/1.0)',
+            'Accept': 'image/*,*/*;q=0.8',
+            'Cache-Control': 'no-cache'
+          },
+          // 添加超时控制
+          signal: AbortSignal.timeout(30000)
+        });
+        
         if (!imageResponse.ok) {
-          console.warn(`⚠️ 无法下载图片: ${imageUrl}`);
+          console.warn(`⚠️ 下载图片失败 [${imageResponse.status}]: ${imageUrl}`);
+          console.warn(`响应详情:`, {
+            status: imageResponse.status,
+            statusText: imageResponse.statusText,
+            headers: Object.fromEntries(imageResponse.headers.entries())
+          });
           continue;
         }
         
         const imageBuffer = await imageResponse.arrayBuffer();
         const base64Image = Buffer.from(imageBuffer).toString('base64');
         
-        // 根据URL推测MIME类型
-        const mimeType = imageUrl.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg';
+        // 更准确的MIME类型检测
+        const contentType = imageResponse.headers.get('content-type');
+        const mimeType = contentType || (imageUrl.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg');
+        
+        console.log(`✅ 图片处理成功: ${imageUrl} (${mimeType}, ${imageBuffer.byteLength} bytes)`);
         
         parts.push({
           inlineData: {
@@ -215,7 +235,10 @@ async function callGeminiAPI(
           }
         });
       } catch (error) {
-        console.warn(`⚠️ 处理图片失败: ${imageUrl}`, error);
+        console.error(`❌ 处理图片失败: ${imageUrl}`, {
+          error: error instanceof Error ? error.message : error,
+          stack: error instanceof Error ? error.stack : undefined
+        });
       }
     }
 

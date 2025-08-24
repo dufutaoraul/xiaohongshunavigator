@@ -73,9 +73,24 @@ class TencentCloudStorage {
 
       console.log(`文件上传成功: ${fileName}`, uploadResult);
 
-      // 构建公共访问URL
+      // 构建公共访问URL并验证可访问性
       const publicUrl = `https://${this.bucketName}.cos.${this.region}.myqcloud.com/${fileName}`;
       console.log(`公共URL: ${publicUrl}`);
+      
+      // 验证URL是否可访问
+      try {
+        const testResponse = await fetch(publicUrl, { 
+          method: 'HEAD',
+          signal: AbortSignal.timeout(10000)
+        });
+        if (testResponse.ok) {
+          console.log(`✅ URL可访问验证成功: ${publicUrl}`);
+        } else {
+          console.warn(`⚠️ URL可访问性警告 [${testResponse.status}]: ${publicUrl}`);
+        }
+      } catch (testError) {
+        console.warn(`⚠️ URL可访问性测试失败: ${publicUrl}`, testError);
+      }
       
       return publicUrl;
     } catch (error) {
