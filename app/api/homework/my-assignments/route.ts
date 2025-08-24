@@ -35,19 +35,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`查询学生提交记录: ${studentId}`);
 
-    // 查询提交记录，包含关联的作业信息
+    // 先查询提交记录
     const { data: submissionsData, error: submissionsError } = await supabaseAdmin
       .from('submissions')
-      .select(`
-        *,
-        assignments!inner(
-          assignment_id,
-          assignment_title,
-          day_text,
-          description,
-          is_mandatory
-        )
-      `)
+      .select('*')
       .eq('student_id', studentId)
       .order('created_at', { ascending: false });
 
@@ -56,11 +47,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '获取提交记录失败' }, { status: 500 });
     }
 
-    console.log(`找到 ${submissionsData?.length || 0} 条提交记录`);
+    // 如果没有提交记录，直接返回
+    if (!submissionsData || submissionsData.length === 0) {
+      console.log('没有找到提交记录');
+      return NextResponse.json({
+        success: true,
+        data: []
+      });
+    }
+
+    // 获取所有作业信息
+    const { data: assignmentsData, error: assignmentsError } = await supabaseAdmin
+      .from('assignments')
+      .select('*');
+
+    if (assignmentsError) {
+      console.error('获取作业信息失败:', assignmentsError);
+      return NextResponse.json({ error: '获取作业信息失败' }, { status: 500 });
+    }
+
+    // 合并数据
+    const mergedData = submissionsData.map(submission => {
+      const assignment = assignmentsData?.find(a => a.assignment_id === submission.assignment_id);
+      return {
+        ...submission,
+        assignments: assignment || {}
+      };
+    });
+
+    console.log(`找到 ${mergedData?.length || 0} 条提交记录`);
 
     return NextResponse.json({
       success: true,
-      data: submissionsData || []
+      data: mergedData || []
     });
 
   } catch (error) {

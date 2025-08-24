@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
+
+// 使用服务角色密钥绕过RLS
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
 
 // 验证管理员权限
 async function verifyAdminAuth(request: NextRequest) {
@@ -13,7 +26,7 @@ async function verifyAdminAuth(request: NextRequest) {
     // 这里简化处理，实际项目中应该使用JWT或session验证
     const studentId = authHeader.replace('Bearer ', '')
     
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('student_id, name, role')
       .eq('student_id', studentId)
@@ -32,13 +45,17 @@ async function verifyAdminAuth(request: NextRequest) {
 // GET - 获取所有学员列表
 export async function GET(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: '数据库连接失败' }, { status: 500 });
+    }
+
     // 暂时跳过权限验证，后续可以加上
     // const admin = await verifyAdminAuth(request)
     // if (!admin) {
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     // }
 
-    const { data: students, error } = await supabase
+    const { data: students, error } = await supabaseAdmin
       .from('users')
       .select(`
         id,
@@ -78,6 +95,10 @@ export async function GET(request: NextRequest) {
 // POST - 创建新学员
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: '数据库连接失败' }, { status: 500 });
+    }
+
     // 暂时跳过权限验证
     // const admin = await verifyAdminAuth(request)
     // if (!admin) {
@@ -86,6 +107,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { student_id, name, email, password, role = 'student' } = body
+
+    console.log('创建学员请求:', { student_id, name, email: !!email, role });
 
     // 验证必填字段
     if (!student_id || !name || !password) {
@@ -96,13 +119,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查学号是否已存在
-    const { data: existingUser, error: checkError } = await supabase
+    const { data: existingUser, error: checkError } = await supabaseAdmin
       .from('users')
       .select('student_id')
       .eq('student_id', student_id)
       .single()
 
     if (existingUser) {
+      console.log('学号已存在:', student_id);
       return NextResponse.json(
         { error: 'Student ID already exists' },
         { status: 409 }
@@ -113,7 +137,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // 创建新用户
-    const { data: newUser, error: insertError } = await supabase
+    const { data: newUser, error: insertError } = await supabaseAdmin
       .from('users')
       .insert({
         student_id,
