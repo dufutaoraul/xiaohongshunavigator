@@ -322,11 +322,45 @@ export default function SubmitAssignmentPage() {
         key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '已配置' : '未配置'
       });
       
-      // 模拟文件上传（实际项目中需要实现真实的文件上传）
-      const attachmentUrls: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        // 这里应该实现真实的文件上传逻辑
-        attachmentUrls.push(`https://example.com/uploads/${files[i].name}`);
+      // 真实文件上传到腾讯云COS
+      console.log('📤 开始上传文件...');
+      let attachmentUrls: string[] = [];
+      
+      if (files.length > 0) {
+        try {
+          const formData = new FormData();
+          
+          // 添加所有文件到FormData
+          files.forEach(file => {
+            formData.append('files', file);
+          });
+          formData.append('studentId', currentStudentId);
+          
+          console.log(`📁 准备上传 ${files.length} 个文件`);
+          
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            throw new Error(errorData.error || '文件上传失败');
+          }
+          
+          const uploadResult = await uploadResponse.json();
+          attachmentUrls = uploadResult.urls;
+          
+          console.log(`✅ 文件上传成功，共 ${attachmentUrls.length} 个URL:`, attachmentUrls);
+          
+        } catch (uploadError) {
+          console.error('❌ 文件上传失败:', uploadError);
+          setMessage(`文件上传失败: ${uploadError instanceof Error ? uploadError.message : '未知错误'}`);
+          setLoading(false);
+          return;
+        }
+      } else {
+        console.log('⚠️ 没有选择文件，继续提交...');
       }
 
       // 先确保用户已经认证到Supabase

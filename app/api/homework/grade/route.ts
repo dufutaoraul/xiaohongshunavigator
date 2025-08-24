@@ -36,17 +36,29 @@ export async function POST(request: NextRequest) {
     
     console.log('AI批改结果:', gradingResult);
 
-    // 3. 更新数据库批改结果
+    // 3. 更新数据库批改结果 - 获取最新的提交记录进行更新
+    const { data: latestSubmission, error: queryError } = await supabase
+      .from('submissions')
+      .select('submission_id')
+      .eq('student_id', studentId)
+      .eq('assignment_id', assignmentId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (queryError || !latestSubmission) {
+      console.error('无法找到最新提交记录:', queryError);
+      return NextResponse.json({ error: '无法找到提交记录' }, { status: 500 });
+    }
+
+    // 使用submission_id进行精确更新
     const { error: updateError } = await supabase
       .from('submissions')
       .update({
         status: gradingResult.status,
         feedback: gradingResult.feedback
       })
-      .eq('student_id', studentId)
-      .eq('assignment_id', assignmentId)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .eq('submission_id', latestSubmission.submission_id);
 
     if (updateError) {
       console.error('数据库更新失败:', updateError);
