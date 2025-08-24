@@ -34,7 +34,7 @@ export default function DashboardPage() {
   // 检查登录状态和小红书绑定状态
   useEffect(() => {
     checkAuthAndXiaohongshuStatus()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuthAndXiaohongshuStatus = async () => {
     try {

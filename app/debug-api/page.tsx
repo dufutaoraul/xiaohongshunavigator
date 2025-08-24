@@ -35,7 +35,7 @@ export default function DebugApiPage() {
     } else {
       router.push('/profile')
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const angles = [
     { value: '踩坑经验', label: '踩坑经验' },

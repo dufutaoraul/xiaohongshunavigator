@@ -64,11 +64,6 @@ class TencentCloudStorage {
           ContentType: contentType,
           ACL: 'public-read', // 🔧 设置为公共可读
           CacheControl: 'max-age=31536000', // 缓存1年
-          // 添加CORS支持的头部
-          Metadata: {
-            'access-control-allow-origin': '*',
-            'access-control-allow-methods': 'GET',
-          }
         }, (err, data) => {
           if (err) {
             reject(err);
