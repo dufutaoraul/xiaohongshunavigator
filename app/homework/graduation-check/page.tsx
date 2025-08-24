@@ -150,12 +150,17 @@ function GraduationCheckContent() {
       a.is_mandatory && !completedMandatoryIds.has(a.assignment_id)
     );
 
-    // 判断是否符合毕业条件
-    // 毕业条件：必须完成所有必做作业且通过，总完成率达到90%以上，总通过率达到70%以上
+    // 判断是否符合毕业条件 - 基于历史毕业要求数据
+    // 1. 必须完成所有必做作业且通过
+    // 2. 总共完成至少25个作业 
+    // 3. 至少20个作业状态为"合格" (80%通过率)
     const mandatoryCompleted = missingMandatory.length === 0;
-    const completionRateQualified = completionRate >= 90; // 完成率90%以上
-    const passRateQualified = passRate >= 70; // 通过率70%以上
-    const isEligible = mandatoryCompleted && completionRateQualified && passRateQualified;
+    const minCompletedRequired = 25; // 最少完成25个作业
+    const minPassedRequired = 20; // 最少20个合格作业
+    
+    const completedEnough = completedAssignments >= minCompletedRequired;
+    const passedEnough = passedAssignments >= minPassedRequired;
+    const isEligible = mandatoryCompleted && completedEnough && passedEnough;
 
     return {
       total_assignments: totalAssignments,
@@ -341,11 +346,14 @@ function GraduationCheckContent() {
                     </>
                   ) : (
                     <>
-                      {graduationStats.completion_rate < 90 && (
-                        <p>📈 建议完成更多作业，提高完成率至90%以上（当前 {graduationStats.completion_rate.toFixed(1)}%）</p>
+                      {graduationStats.completed_assignments < 25 && (
+                        <p>📈 建议完成更多作业，至少需要完成25个作业（当前已完成 {graduationStats.completed_assignments} 个）</p>
                       )}
-                      {graduationStats.pass_rate < 70 && graduationStats.completed_assignments > 0 && (
-                        <p>🎯 建议提高作业质量，通过率需达到70%以上（当前 {graduationStats.pass_rate.toFixed(1)}%）</p>
+                      {graduationStats.passed_assignments < 20 && graduationStats.completed_assignments > 0 && (
+                        <p>🎯 建议提高作业质量，至少需要20个作业合格（当前合格 {graduationStats.passed_assignments} 个）</p>
+                      )}
+                      {graduationStats.missing_mandatory?.length > 0 && (
+                        <p>❗ 必须完成所有必做作业（还有 {graduationStats.missing_mandatory.length} 个必做作业未完成）</p>
                       )}
                     </>
                   )}
