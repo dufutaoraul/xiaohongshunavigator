@@ -242,6 +242,18 @@ async function callGeminiAPI(
       }
     }
 
+    // 🚨 关键检查：如果没有成功加载任何图片，直接返回失败
+    const imageCount = parts.length - 1; // 减去文字prompt部分
+    if (imageCount === 0) {
+      console.error('❌ 没有成功下载任何图片，无法进行AI批改');
+      return {
+        status: '不合格',
+        feedback: '图片上传失败，无法进行批改。请检查图片格式是否正确，并重新提交作业。'
+      };
+    }
+
+    console.log(`📊 成功处理 ${imageCount} 张图片，发送给Gemini API批改`);
+
     const requestBody = {
       contents: [{
         role: 'user',

@@ -54,7 +54,7 @@ class TencentCloudStorage {
 
       console.log(`存储桶: ${this.bucketName}, 文件: ${fileName}, 大小: ${fileBuffer.length} bytes`);
 
-      // 上传文件到腾讯云COS
+      // 上传文件到腾讯云COS，设置公共读权限
       const uploadResult = await new Promise<COS.PutObjectResult>((resolve, reject) => {
         cos.putObject({
           Bucket: this.bucketName,
@@ -62,6 +62,13 @@ class TencentCloudStorage {
           Key: fileName,
           Body: fileBuffer,
           ContentType: contentType,
+          ACL: 'public-read', // 🔧 设置为公共可读
+          CacheControl: 'max-age=31536000', // 缓存1年
+          // 添加CORS支持的头部
+          Metadata: {
+            'access-control-allow-origin': '*',
+            'access-control-allow-methods': 'GET',
+          }
         }, (err, data) => {
           if (err) {
             reject(err);
