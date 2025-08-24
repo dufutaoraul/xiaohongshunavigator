@@ -419,7 +419,9 @@ export default function SubmitAssignmentPage() {
         console.error('Database insert error:', insertError);
         
         // 如果是schema相关错误，尝试最小字段集重试
-        if (insertError.message.includes('column') && insertError.message.includes('schema')) {
+        if (insertError && typeof insertError === 'object' && 'message' in insertError && 
+            typeof insertError.message === 'string' && 
+            insertError.message.includes('column') && insertError.message.includes('schema')) {
           console.log('检测到schema错误，尝试最小字段集重试...');
           
           const minimalData = {
@@ -439,7 +441,10 @@ export default function SubmitAssignmentPage() {
             console.log('最小字段集插入成功');
           }
         } else {
-          throw new Error(`数据库插入失败: ${insertError.message}`);
+          const errorMessage = insertError && typeof insertError === 'object' && 'message' in insertError 
+            ? String(insertError.message) 
+            : '未知错误';
+          throw new Error(`数据库插入失败: ${errorMessage}`);
         }
       } else {
         console.log('数据库插入成功:', insertData);
