@@ -6,6 +6,14 @@ export async function POST(request: NextRequest) {
   try {
     console.log('📤 文件上传API被调用');
 
+    // 检查环境变量配置
+    console.log('🔧 检查腾讯云配置:', {
+      TENCENT_SECRET_ID: process.env.TENCENT_SECRET_ID ? '已配置' : '未配置',
+      TENCENT_SECRET_KEY: process.env.TENCENT_SECRET_KEY ? '已配置' : '未配置', 
+      TENCENT_COS_BUCKET: process.env.TENCENT_COS_BUCKET ? '已配置' : '未配置',
+      TENCENT_COS_REGION: process.env.TENCENT_COS_REGION ? '已配置' : '未配置'
+    });
+
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
     const studentId = formData.get('studentId') as string;

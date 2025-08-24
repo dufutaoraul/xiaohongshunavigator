@@ -212,15 +212,6 @@ function GraduationCheckContent() {
             </div>
           </div>
 
-          {/* 用户信息显示 - 已登录时显示 */}
-          {(user || studentId) && (
-            <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
-              <p className="text-green-300">
-                🎓 正在查询学号: <span className="font-semibold">{user?.student_id || studentId}</span>
-                {(user?.name || studentName) && <span className="ml-4">姓名: <span className="font-semibold">{user?.name || studentName}</span></span>}
-              </p>
-            </div>
-          )}
 
           {/* 消息显示 */}
           {message && (
@@ -337,36 +328,6 @@ function GraduationCheckContent() {
                 </div>
               </div>
 
-              {/* 缺失的必做作业 */}
-              {graduationStats.missing_mandatory.length > 0 && (
-                <div className="bg-red-500/10 backdrop-blur-lg border border-red-400/30 rounded-2xl p-6">
-                  <h3 className="text-xl font-bold text-red-300 mb-4">⚠️ 缺失的必做作业</h3>
-                  <div className="space-y-3">
-                    {graduationStats.missing_mandatory.map((assignment) => (
-                      <div key={assignment.assignment_id} className="bg-white/5 rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold text-white">{assignment.assignment_title}</h4>
-                            <p className="text-red-200/80 text-sm">{getDayTextFromAssignment(assignment)}</p>
-                            <p className="text-white/60 text-sm mt-1">{assignment.description}</p>
-                          </div>
-                          <span className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs">
-                            必做
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 text-center">
-                    <Link
-                      href="/homework/submit"
-                      className="inline-block bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      立即提交作业
-                    </Link>
-                  </div>
-                </div>
-              )}
 
               {/* 毕业建议 */}
               <div className="bg-blue-500/10 backdrop-blur-lg border border-blue-400/30 rounded-2xl p-6">
@@ -379,9 +340,6 @@ function GraduationCheckContent() {
                     </>
                   ) : (
                     <>
-                      {graduationStats.missing_mandatory.length > 0 && (
-                        <p>📝 请完成所有必做作业（还需完成 {graduationStats.missing_mandatory.length} 个必做作业）</p>
-                      )}
                       {graduationStats.completion_rate < 70 && (
                         <p>📈 建议完成更多作业，提高完成率至70%以上（当前 {graduationStats.completion_rate.toFixed(1)}%）</p>
                       )}

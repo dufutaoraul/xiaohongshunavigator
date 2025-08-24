@@ -290,15 +290,6 @@ function MyAssignmentsContent() {
             我的作业
           </h1>
 
-          {/* 用户信息显示 - 已登录时显示 */}
-          {(user || studentId) && (
-            <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
-              <p className="text-green-300">
-                📚 当前查询学号: <span className="font-semibold">{user?.student_id || studentId}</span>
-                {(user?.name || studentName) && <span className="ml-4">姓名: <span className="font-semibold">{user?.name || studentName}</span></span>}
-              </p>
-            </div>
-          )}
 
           {/* 学号确认区域 - 为所有情况显示 */}
           <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-6 mb-8">
