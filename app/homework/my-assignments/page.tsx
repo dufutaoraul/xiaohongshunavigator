@@ -119,14 +119,26 @@ function MyAssignmentsContent() {
     
     setLoading(true);
     try {
-      // 查询提交记录
-      const { data: submissionsData, error: submissionsError } = await supabase
-        .from('submissions')
-        .select('*')
-        .eq('student_id', id)
-        .order('created_at', { ascending: false });
+      console.log(`📋 查询学生提交记录: ${id}`);
+      
+      // 使用API避免RLS权限问题
+      const response = await fetch('/api/homework/my-assignments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ studentId: id })
+      });
 
-      if (submissionsError) throw submissionsError;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '获取提交记录失败');
+      }
+
+      const result = await response.json();
+      const submissionsData = result.data;
+
+      console.log(`📊 获取到的提交记录:`, submissionsData);
       
       if (!submissionsData || submissionsData.length === 0) {
         setSubmissions([]);

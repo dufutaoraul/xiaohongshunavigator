@@ -151,10 +151,11 @@ function GraduationCheckContent() {
     );
 
     // 判断是否符合毕业条件
-    // 简单规则：所有必做作业都要完成且通过，总体通过率达到80%
+    // 毕业条件：必须完成所有必做作业且通过，总完成率达到90%以上，总通过率达到70%以上
     const mandatoryCompleted = missingMandatory.length === 0;
-    const passRateQualified = passRate >= 80;
-    const isEligible = mandatoryCompleted && passRateQualified && completedAssignments >= Math.ceil(totalAssignments * 0.7);
+    const completionRateQualified = completionRate >= 90; // 完成率90%以上
+    const passRateQualified = passRate >= 70; // 通过率70%以上
+    const isEligible = mandatoryCompleted && completionRateQualified && passRateQualified;
 
     return {
       total_assignments: totalAssignments,
@@ -340,11 +341,11 @@ function GraduationCheckContent() {
                     </>
                   ) : (
                     <>
-                      {graduationStats.completion_rate < 70 && (
-                        <p>📈 建议完成更多作业，提高完成率至70%以上（当前 {graduationStats.completion_rate.toFixed(1)}%）</p>
+                      {graduationStats.completion_rate < 90 && (
+                        <p>📈 建议完成更多作业，提高完成率至90%以上（当前 {graduationStats.completion_rate.toFixed(1)}%）</p>
                       )}
-                      {graduationStats.pass_rate < 80 && graduationStats.completed_assignments > 0 && (
-                        <p>🎯 建议提高作业质量，通过率需达到80%以上（当前 {graduationStats.pass_rate.toFixed(1)}%）</p>
+                      {graduationStats.pass_rate < 70 && graduationStats.completed_assignments > 0 && (
+                        <p>🎯 建议提高作业质量，通过率需达到70%以上（当前 {graduationStats.pass_rate.toFixed(1)}%）</p>
                       )}
                     </>
                   )}

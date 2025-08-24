@@ -14,8 +14,6 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
   const [formData, setFormData] = useState({
     student_id: '',
     name: '',
-    email: '',
-    password: '',
     role: 'student'
   })
   const [loading, setLoading] = useState(false)
@@ -24,13 +22,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.student_id.trim() || !formData.name.trim() || !formData.password.trim()) {
+    if (!formData.student_id.trim() || !formData.name.trim()) {
       setError('请填写所有必填字段')
-      return
-    }
-
-    if (formData.password.length < 6) {
-      setError('密码长度至少6位')
       return
     }
 
@@ -38,10 +31,17 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
     setError('')
 
     try {
+      // 默认密码就是学号
+      const submitData = {
+        ...formData,
+        password: formData.student_id, // 初始密码等于学号
+        email: '' // 不需要邮箱
+      };
+
       const response = await fetch('/api/admin/students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       })
 
       const result = await response.json()
@@ -51,8 +51,6 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
         setFormData({
           student_id: '',
           name: '',
-          email: '',
-          password: '',
           role: 'student'
         })
         onSuccess()
@@ -73,8 +71,6 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
       setFormData({
         student_id: '',
         name: '',
-        email: '',
-        password: '',
         role: 'student'
       })
       setError('')
@@ -86,7 +82,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+      <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="text-center mb-8">
           <div className="text-4xl mb-4">👥</div>
           <h2 className="text-2xl font-bold gradient-text mb-2">新增学员</h2>
@@ -114,24 +110,11 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
             disabled={loading}
           />
 
-          <Input
-            label="邮箱"
-            type="email"
-            placeholder="请输入邮箱地址（可选）"
-            value={formData.email}
-            onChange={(value) => setFormData(prev => ({ ...prev, email: value }))}
-            disabled={loading}
-          />
-
-          <Input
-            label="初始密码 *"
-            type="password"
-            placeholder="请设置初始密码（至少6位）"
-            value={formData.password}
-            onChange={(value) => setFormData(prev => ({ ...prev, password: value }))}
-            required
-            disabled={loading}
-          />
+          <div className="p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+            <p className="text-blue-300 text-sm">
+              🔐 <strong>初始密码：</strong>默认为学号，学员首次登录后请修改密码
+            </p>
+          </div>
 
           <div>
             <label className="block text-white font-medium mb-2">角色</label>
@@ -156,7 +139,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={loading || !formData.student_id.trim() || !formData.name.trim() || !formData.password.trim()}
+              disabled={loading || !formData.student_id.trim() || !formData.name.trim()}
             >
               {loading ? '创建中...' : '创建学员'}
             </Button>
@@ -176,7 +159,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
           <h4 className="text-blue-300 font-medium text-sm mb-2">💡 创建提示</h4>
           <ul className="text-blue-200/70 text-xs space-y-1">
             <li>• 学号格式建议：AXCF + 年份 + 月份 + 序号</li>
-            <li>• 初始密码将被安全加密存储</li>
+            <li>• 初始密码自动设置为学号，安全加密存储</li>
             <li>• 建议学员首次登录后修改密码</li>
             <li>• 管理员角色拥有后台管理权限</li>
           </ul>
