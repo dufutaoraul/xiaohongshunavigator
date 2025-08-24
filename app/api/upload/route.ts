@@ -4,6 +4,7 @@ import { sanitizeFileName } from '@/utils/homework-utils';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 UPLOAD API VERSION: 0a2bec8 - API route loaded');
     console.log('📤 文件上传API被调用');
 
     // 检查环境变量配置

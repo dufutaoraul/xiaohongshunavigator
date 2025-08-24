@@ -1,5 +1,8 @@
 'use client';
 
+// 🔍 部署版本验证标记 - 请检查浏览器控制台
+console.log("🚀 DEPLOY VERSION: 0a2bec8 - Submit page loaded");
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
