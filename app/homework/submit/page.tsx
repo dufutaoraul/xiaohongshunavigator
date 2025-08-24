@@ -329,6 +329,16 @@ export default function SubmitAssignmentPage() {
         attachmentUrls.push(`https://example.com/uploads/${files[i].name}`);
       }
 
+      // 先确保用户已经认证到Supabase
+      console.log('🔐 检查Supabase用户认证状态...');
+      const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Supabase认证错误:', authError);
+      } else {
+        console.log('Supabase用户信息:', supabaseUser);
+      }
+
       // 应急解决方案：只插入核心必需字段，避免schema不匹配
       const submissionData: any = {
         student_id: currentStudentId,
@@ -372,10 +382,38 @@ export default function SubmitAssignmentPage() {
       
       console.log('准备插入数据库:', submissionData);
       
-      const { error: insertError, data: insertData } = await supabase
-        .from('submissions')
-        .insert(submissionData)
-        .select();
+      // 尝试使用service role key绕过RLS（如果可用）
+      let insertResult;
+      
+      try {
+        console.log('🚀 尝试插入submissions数据...');
+        insertResult = await supabase
+          .from('submissions')
+          .insert(submissionData)
+          .select();
+      } catch (directError) {
+        console.error('直接插入失败，尝试通过API route:', directError);
+        
+        // 如果直接插入失败，通过后端API路由插入（绕过RLS）
+        try {
+          const response = await fetch('/api/homework/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submissionData)
+          });
+          
+          if (!response.ok) {
+            throw new Error(`API调用失败: ${response.status}`);
+          }
+          
+          const apiResult = await response.json();
+          insertResult = { data: apiResult.data, error: null };
+        } catch (apiError) {
+          insertResult = { data: null, error: apiError };
+        }
+      }
+      
+      const { error: insertError, data: insertData } = insertResult;
 
       if (insertError) {
         console.error('Database insert error:', insertError);

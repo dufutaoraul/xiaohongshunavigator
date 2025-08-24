@@ -8,9 +8,20 @@ if (typeof window === 'undefined' && (!supabaseUrl || supabaseUrl === 'https://p
   console.warn('Supabase URL not configured properly for build')
 }
 
-// 只有在有效的URL时才创建客户端
+// 创建Supabase客户端，确保RLS策略正确应用
 export const supabase = supabaseUrl && supabaseUrl !== 'https://placeholder.supabase.co' 
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          'x-client-info': 'supabase-js/homework-system'
+        }
+      }
+    })
   : createClient('https://placeholder.supabase.co', 'placeholder-key')
 
 // 数据类型定义
