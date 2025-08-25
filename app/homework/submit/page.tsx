@@ -536,13 +536,8 @@ export default function SubmitAssignmentPage() {
           });
           setShowResult(true);
           
-          setMessage(`🎉 AI批改完成！
-
-📚 学习天数: ${contextInfo.dayText}
-📝 作业项目: ${contextInfo.assignmentTitle}
-📊 批改结果: ${gradeResult.result.status}
-
-请查看下方详细反馈 ⬇️`);
+          // 批改完成后不显示消息，只显示结果
+          setMessage('');
         } else {
           setMessage('AI批改失败，请稍后重试');
         }
@@ -847,24 +842,6 @@ export default function SubmitAssignmentPage() {
               }`}>
                 {message}
                 
-                {(message.includes('正在进行AI批改') || message.includes('AI批改完成')) && (
-                  <div className="flex flex-col gap-3 mt-4">
-                    <div className="flex gap-3">
-                      <Link
-                        href="/homework"
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
-                      >
-                        返回作业中心
-                      </Link>
-                      <Link
-                        href={`/homework/my-assignments?studentId=${studentId || user?.student_id}`}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors"
-                      >
-                        查看我的作业
-                      </Link>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -876,6 +853,37 @@ export default function SubmitAssignmentPage() {
                 </h3>
                 
                 <div className="space-y-4">
+                  {/* 作业信息显示 */}
+                  {gradingResult.contextInfo && (
+                    <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-300 mb-2">作业详情</h4>
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <span className="font-medium text-white/80">学习天数:</span> 
+                          <span className="ml-2 text-white/70">{gradingResult.contextInfo.dayText}</span>
+                        </p>
+                        <p>
+                          <span className="font-medium text-white/80">作业项目:</span> 
+                          <span className="ml-2 text-white/70">{gradingResult.contextInfo.assignmentTitle}</span>
+                        </p>
+                        <p>
+                          <span className="font-medium text-white/80">类型:</span> 
+                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                            gradingResult.contextInfo.isMandatory 
+                              ? 'bg-red-500/20 text-red-300' 
+                              : 'bg-green-500/20 text-green-300'
+                          }`}>
+                            {gradingResult.contextInfo.isMandatory ? '必做' : '选做'}
+                          </span>
+                        </p>
+                        <p><span className="font-medium text-white/80">要求:</span></p>
+                        <div className="bg-white/5 p-3 rounded border border-white/10">
+                          <p className="text-white/70">{gradingResult.contextInfo.assignmentDescription}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* 批改状态 */}
                   <div className="text-center">
                     <span className={`inline-block px-6 py-3 rounded-full text-lg font-bold ${
@@ -906,9 +914,10 @@ export default function SubmitAssignmentPage() {
                         setShowResult(false);
                         setGradingResult(null);
                         setMessage('');
-                        setSelectedDayText('');
-                        setAssignmentId('');
-                        setSelectedAssignment(null);
+                        // 不重置选中的作业，保持作业详情显示
+                        // setSelectedDayText('');
+                        // setAssignmentId('');
+                        // setSelectedAssignment(null);
                         setFiles([]);
                       }}
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
