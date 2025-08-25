@@ -181,6 +181,10 @@ export async function POST(request: NextRequest) {
 // PUT - 更新学员信息
 export async function PUT(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: '数据库连接失败' }, { status: 500 });
+    }
+
     // 暂时跳过权限验证
     // const admin = await verifyAdminAuth(request)
     // if (!admin) {
@@ -209,7 +213,7 @@ export async function PUT(request: NextRequest) {
       updateData.password = await bcrypt.hash(password, 10)
     }
 
-    const { data: updatedUser, error: updateError } = await supabase
+    const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', id)
