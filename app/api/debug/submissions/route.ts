@@ -57,7 +57,7 @@ export async function GET() {
           submissions: submissionsError,
           assignments: assignmentsError
         },
-        availableStudentIds: [...new Set((submissions || []).map(s => s.student_id))],
+        availableStudentIds: Array.from(new Set((submissions || []).map(s => s.student_id))),
         totalSubmissions: submissions?.length || 0,
         totalAssignments: assignments?.length || 0
       }
