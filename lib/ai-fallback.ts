@@ -14,18 +14,37 @@ export async function callAIWithFallback(
   console.log('🚀 开始AI批改流程...');
   console.log('📋 作业信息:', { title: assignmentTitle, imageCount: attachmentUrls.length });
   
-  // 检查是否配置了Gemini API
+  // 优先检查豆包视觉模型API
+  const doubaoApiKey = process.env.DOUBAO_API_KEY || process.env.ARK_API_KEY;
+  const doubaoApiUrl = process.env.DOUBAO_API_URL || process.env.ARK_API_URL;
+  
+  if (doubaoApiKey && doubaoApiUrl) {
+    console.log('🥟 优先使用豆包视觉模型进行图片批改');
+    try {
+      const result = await Promise.race([
+        callDoubaoAPI(assignmentDescription, attachmentUrls, assignmentTitle),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('豆包API超时')), 90000) // 1.5分钟超时
+        )
+      ]);
+      console.log('✅ 豆包视觉模型批改成功');
+      return result;
+    } catch (error) {
+      console.error('❌ 豆包API调用失败，回退到Gemini API:', error);
+    }
+  }
+  
+  // 回退到Gemini API
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const geminiApiUrl = process.env.GEMINI_API_URL;
   
   if (geminiApiKey && geminiApiUrl) {
-    console.log('🔥 尝试使用Gemini API进行图片批改');
+    console.log('🔥 回退使用Gemini API进行图片批改');
     try {
-      // 设置更短的超时时间，快速失败
       const result = await Promise.race([
         callGeminiAPI(assignmentDescription, attachmentUrls, assignmentTitle),
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Gemini API超时')), 120000) // 2分钟超时 - 使用File API后应该更快
+          setTimeout(() => reject(new Error('Gemini API超时')), 120000) // 2分钟超时
         )
       ]);
       console.log('✅ Gemini API批改成功');
@@ -35,7 +54,7 @@ export async function callAIWithFallback(
     }
   }
   
-  // 尝试DeepSeek API
+  // 尝试DeepSeek API (文本模式)
   const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
   if (deepseekApiKey && deepseekApiKey !== 'sk-your-deepseek-key-here') {
     console.log('🔄 尝试使用DeepSeek API进行文本批改');
@@ -165,6 +184,156 @@ ${isAIToolAssignment ? `**AI工具作业特殊说明**:
 
   } catch (error) {
     console.error('💥 文本批改异常:', error);
+    throw error;
+  }
+}
+
+// 豆包视觉API调用（支持图片分析）
+async function callDoubaoAPI(
+  assignmentDescription: string,
+  attachmentUrls: string[],
+  assignmentTitle: string
+): Promise<AIGradingResult> {
+
+  const apiKey = process.env.DOUBAO_API_KEY || process.env.ARK_API_KEY;
+  const modelId = process.env.DOUBAO_MODEL_ID || 'doubao-vision-32k';
+  const apiUrl = process.env.DOUBAO_API_URL || process.env.ARK_API_URL || 'https://ark.cn-beijing.volces.com';
+
+  if (!apiKey) {
+    throw new Error('DOUBAO_API_KEY未配置');
+  }
+
+  console.log('🥟 使用豆包视觉模型进行图片批改...');
+
+  // 构建智能上下文感知提示词
+  const isAIToolAssignment = assignmentTitle.toLowerCase().includes('dify') || 
+                           assignmentTitle.toLowerCase().includes('ai') ||
+                           assignmentDescription.toLowerCase().includes('dify') ||
+                           assignmentDescription.toLowerCase().includes('智能体') ||
+                           assignmentDescription.toLowerCase().includes('机器人') ||
+                           assignmentDescription.toLowerCase().includes('对话');
+
+  let contextualInstructions = '';
+  if (isAIToolAssignment) {
+    contextualInstructions = `
+
+**AI工具作业特殊说明**:
+- 此为AI工具类作业，学员可能使用各种AI平台或工具完成作业
+- 如果作业要求使用"dify"，但学员使用了其他类似的AI工具平台（如扣子、豆包、ChatGPT、Kimi等），这通常是可以接受的，只要能达到学习目标
+- 重点关注学员是否完成了AI对话、工具使用、功能演示等核心要求
+- 对于工具平台的选择应该更加宽松，关键看是否展示了AI应用能力
+- 如果图片显示了AI工具的使用过程和对话内容，即使不是特定工具，也应该认定为合格`;
+  }
+
+  const prompt = `你是一位专业且宽松理解的作业批改老师。请根据作业要求判断学员提交的图片作业是否合格。
+
+**作业标题**: ${assignmentTitle}
+**详细作业要求**: ${assignmentDescription}${contextualInstructions}
+
+**评判原则** (按重要性排序):
+1. **学习目标达成**: 重点关注学员是否达到了作业的学习目标和能力要求
+2. **实际操作展示**: 判断学员是否真实完成了相关操作或练习
+3. **内容完整性**: 检查提交内容是否包含了关键要素
+4. **工具灵活性**: 对于技术工具类作业，允许使用同类替代工具
+5. **格式要求**: 最后才考虑格式和细节要求
+
+**评判策略**:
+- 采用鼓励性和建设性的评判方式
+- 重点看学员的学习态度和实际操作能力
+- 如果符合要求，返回"合格"并给出鼓励性反馈
+- 如果存在问题，先考虑是否是小问题，能否通过建议改进而判定合格
+- 只有在明显不符合基本要求时才判定"不合格"，并提供具体的改进建议
+
+现在请仔细查看学员提交的作业图片并进行批改。`;
+
+  try {
+    // 构建豆包ARK API请求格式
+    const messages = [{
+      role: "user" as const,
+      content: [
+        {
+          type: "text",
+          text: prompt
+        }
+      ]
+    }] as any;
+
+    // 添加图片内容
+    for (const imageUrl of attachmentUrls) {
+      try {
+        console.log(`📥 处理图片: ${imageUrl}`);
+        
+        if (imageUrl.startsWith('http')) {
+          // URL方式
+          messages[0].content.push({
+            type: "image_url",
+            image_url: {
+              url: imageUrl
+            }
+          });
+        } else if (imageUrl.startsWith('data:image')) {
+          // Base64方式
+          messages[0].content.push({
+            type: "image_url", 
+            image_url: {
+              url: imageUrl
+            }
+          });
+        }
+        
+      } catch (error) {
+        console.error(`❌ 处理图片失败: ${imageUrl}`, error);
+      }
+    }
+
+    const requestBody = {
+      model: modelId,
+      messages: messages,
+      max_tokens: 1000,
+      temperature: 0.1,
+      stream: false
+    };
+
+    const fullApiUrl = `${apiUrl}/api/v3/chat/completions`;
+    
+    console.log(`📤 发送请求到豆包ARK API: ${fullApiUrl}`);
+    
+    const response = await fetch(fullApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(90000) // 1.5分钟超时
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ 豆包API调用失败:', response.status, errorText);
+      throw new Error(`豆包API调用失败: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ 豆包视觉模型批改成功');
+
+    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+      throw new Error('豆包API返回格式异常');
+    }
+
+    const aiResponse = result.choices[0].message.content;
+    console.log('🤖 豆包AI批改回复:', aiResponse);
+
+    // 解析AI响应
+    const isQualified = aiResponse.includes('合格') && !aiResponse.includes('不合格');
+
+    return {
+      status: isQualified ? '合格' : '不合格',
+      feedback: aiResponse
+    };
+
+  } catch (error) {
+    console.error('💥 豆包API批改异常:', error);
     throw error;
   }
 }

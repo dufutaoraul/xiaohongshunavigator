@@ -22,10 +22,7 @@ export default function SimpleAITestPage() {
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [availableDays, setAvailableDays] = useState<string[]>([]);
-  const [testImageUrls, setTestImageUrls] = useState<string[]>([
-    'https://example.com/test-image-1.jpg',
-    'https://example.com/test-image-2.jpg'
-  ]);
+  const [testFiles, setTestFiles] = useState<File[]>([]);
   const [testing, setTesting] = useState(false);
   const [results, setResults] = useState<{
     gemini: AIResult | null;
@@ -77,115 +74,139 @@ export default function SimpleAITestPage() {
     setSelectedAssignment(assignment || null);
   };
 
-  // 模拟AI批改测试（不需要真实文件上传）
-  const simulateAIGrading = async (model: 'gemini' | 'doubao', assignmentDescription: string) => {
+  // 处理文件上传
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setTestFiles(Array.from(e.target.files));
+    }
+  };
+
+  // 真实AI批改测试
+  const callRealAIGrading = async (model: 'gemini' | 'doubao', assignmentDescription: string, attachmentUrls: string[]) => {
     const startTime = Date.now();
     
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 3000 + 1000));
+      const endpoint = model === 'gemini' ? '/api/test/gemini-2' : '/api/test/doubao';
       
-      // 模拟不同的批改结果
-      const isAIToolAssignment = assignmentDescription.toLowerCase().includes('dify') || 
-                               assignmentDescription.toLowerCase().includes('智能体') ||
-                               assignmentDescription.toLowerCase().includes('机器人');
-      
-      // 根据模型特点模拟不同的批改倾向
-      let passRate = 0.7;
-      if (isAIToolAssignment) {
-        passRate = model === 'gemini' ? 0.9 : 0.85; // Gemini对AI工具作业更宽松
-      } else {
-        passRate = model === 'gemini' ? 0.8 : 0.75; // 普通作业的通过率
-      }
-      
-      const isPass = Math.random() < passRate;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testImages: attachmentUrls,
+          prompt: `请根据以下作业要求批改这些图片：${assignmentDescription}`,
+          modelVersion: model === 'gemini' ? 'gemini-2.0-flash-exp' : 'doubao-vision-32k'
+        })
+      });
+
+      const result = await response.json();
       const endTime = Date.now();
       
-      let feedback = '';
-      if (isPass) {
-        if (model === 'gemini') {
-          feedback = isAIToolAssignment 
-            ? `✅ 作业合格！您成功展示了AI工具的使用能力。虽然可能使用的不是dify而是其他AI平台，但这完全符合学习目标。图片清晰地展示了与AI工具的对话过程，体现了良好的学习态度和实操能力。继续保持！`
-            : `✅ 作业合格！您按要求完成了作业提交，展示了良好的学习成果。内容符合要求，操作步骤清晰，达到了预期的学习效果。`;
-        } else {
-          feedback = isAIToolAssignment
-            ? `合格！您的作业展现了对AI工具的实际操作能力，展示了学习的积极态度。建议继续深入学习AI工具的高级功能，提升应用水平。`
-            : `合格！作业内容基本符合要求，完成度较好。建议在今后的学习中继续保持认真的态度。`;
-        }
+      if (response.ok && result.success) {
+        // 解析AI响应，判断合格状态
+        const feedback = result.result.response || 'No response';
+        const isQualified = feedback.includes('合格') && !feedback.includes('不合格');
+        
+        return {
+          model: model === 'gemini' ? 'Gemini 2.0' : '豆包视觉',
+          status: isQualified ? '合格' : '不合格',
+          feedback: feedback,
+          time: endTime - startTime,
+          isSimulated: result.result.isSimulated || false
+        } as AIResult;
       } else {
-        if (model === 'gemini') {
-          feedback = isAIToolAssignment
-            ? `❌ 作业需要改进。虽然提交了相关截图，但可能缺少关键的操作步骤展示，或者未能清晰体现AI工具的实际应用效果。建议重新截图，确保包含完整的操作流程和结果展示。`
-            : `❌ 作业不合格。提交的内容可能不完整或不符合具体要求。请仔细阅读作业要求，确保提交的材料能够充分展示学习成果。`;
-        } else {
-          feedback = `作业不合格。请根据作业要求重新提交，确保内容完整准确。如有疑问请联系老师获得指导。`;
-        }
+        return {
+          model: model === 'gemini' ? 'Gemini 2.0' : '豆包视觉',
+          status: '失败',
+          feedback: result.error || 'API调用失败',
+          time: endTime - startTime,
+          isSimulated: false
+        } as AIResult;
       }
-      
-      return {
-        model: model === 'gemini' ? 'Gemini 2.0 (模拟)' : '豆包视觉 (模拟)',
-        status: isPass ? '合格' : '不合格',
-        feedback: feedback,
-        time: endTime - startTime,
-        isSimulated: true
-      } as AIResult;
       
     } catch (error) {
       return {
-        model: model === 'gemini' ? 'Gemini 2.0 (模拟)' : '豆包视觉 (模拟)',
+        model: model === 'gemini' ? 'Gemini 2.0' : '豆包视觉',
         status: '失败' as const,
-        feedback: '模拟测试失败: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        feedback: '网络错误: ' + (error instanceof Error ? error.message : 'Unknown error'),
         time: Date.now() - startTime,
-        isSimulated: true
+        isSimulated: false
       };
     }
   };
 
   // 开始AI对比测试
   const startComparison = async () => {
-    if (!selectedAssignment) {
-      alert('请选择作业项目');
+    if (!selectedAssignment || testFiles.length === 0) {
+      alert('请选择作业项目并上传测试图片');
       return;
     }
 
     setTesting(true);
     setResults({ gemini: null, doubao: null });
 
-    // 设置测试中状态
-    setResults({
-      gemini: { model: 'Gemini 2.0 (模拟)', status: '测试中', feedback: '正在模拟Gemini 2.0 API调用...', time: 0, isSimulated: true },
-      doubao: { model: '豆包视觉 (模拟)', status: '测试中', feedback: '正在模拟豆包视觉API调用...', time: 0, isSimulated: true }
-    });
-
     try {
-      // 并发调用两个AI模型的模拟
+      // 先上传文件获取URL
+      console.log('📤 开始上传文件...');
+      const formData = new FormData();
+      testFiles.forEach(file => {
+        formData.append('files', file);
+      });
+      formData.append('studentId', 'AI_TEST_USER');
+      
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      let attachmentUrls: string[] = [];
+      if (uploadResponse.ok) {
+        const uploadResult = await uploadResponse.json();
+        attachmentUrls = uploadResult.urls;
+        console.log('✅ 文件上传成功:', attachmentUrls);
+      } else {
+        // 如果文件上传失败，使用base64编码作为备用方案
+        console.warn('⚠️ 文件上传失败，使用base64编码作为备用方案');
+        attachmentUrls = await Promise.all(
+          testFiles.map(file => new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(file);
+          }))
+        );
+      }
+
+      // 设置测试中状态
+      setResults({
+        gemini: { model: 'Gemini 2.0', status: '测试中', feedback: '正在调用Gemini 2.0 API...', time: 0 },
+        doubao: { model: '豆包视觉', status: '测试中', feedback: '正在调用豆包视觉API...', time: 0 }
+      });
+
+      // 并发调用两个AI模型
       const [geminiResult, doubaoResult] = await Promise.allSettled([
-        simulateAIGrading('gemini', selectedAssignment.description),
-        simulateAIGrading('doubao', selectedAssignment.description)
+        callRealAIGrading('gemini', selectedAssignment.description, attachmentUrls),
+        callRealAIGrading('doubao', selectedAssignment.description, attachmentUrls)
       ]);
 
       setResults({
         gemini: geminiResult.status === 'fulfilled' ? geminiResult.value : {
-          model: 'Gemini 2.0 (模拟)',
+          model: 'Gemini 2.0',
           status: '失败',
           feedback: 'Promise rejected: ' + (geminiResult.reason || 'Unknown error'),
-          time: 0,
-          isSimulated: true
+          time: 0
         },
         doubao: doubaoResult.status === 'fulfilled' ? doubaoResult.value : {
-          model: '豆包视觉 (模拟)',
+          model: '豆包视觉',
           status: '失败',
           feedback: 'Promise rejected: ' + (doubaoResult.reason || 'Unknown error'),
-          time: 0,
-          isSimulated: true
+          time: 0
         }
       });
       
     } catch (error) {
       console.error('AI对比测试失败:', error);
       setResults({
-        gemini: { model: 'Gemini 2.0 (模拟)', status: '失败', feedback: error instanceof Error ? error.message : 'Unknown error', time: 0, isSimulated: true },
-        doubao: { model: '豆包视觉 (模拟)', status: '失败', feedback: error instanceof Error ? error.message : 'Unknown error', time: 0, isSimulated: true }
+        gemini: { model: 'Gemini 2.0', status: '失败', feedback: error instanceof Error ? error.message : 'Unknown error', time: 0 },
+        doubao: { model: '豆包视觉', status: '失败', feedback: error instanceof Error ? error.message : 'Unknown error', time: 0 }
       });
     } finally {
       setTesting(false);
@@ -207,13 +228,13 @@ export default function SimpleAITestPage() {
             🧪 AI模型简化测试
           </h1>
           
-          <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-2xl p-4 mb-8">
+          <div className="bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-8">
             <div className="flex items-center">
-              <div className="text-2xl mr-3">ℹ️</div>
+              <div className="text-2xl mr-3">🎯</div>
               <div>
-                <p className="text-yellow-300 font-medium">模拟测试模式</p>
-                <p className="text-yellow-200/80 text-sm">
-                  此页面使用模拟数据进行AI批改对比测试，无需上传实际文件。选择作业后可直接对比两个AI模型的批改风格和结果差异。
+                <p className="text-green-300 font-medium">真实AI测试模式</p>
+                <p className="text-green-200/80 text-sm">
+                  上传真实图片，调用Gemini 2.0和豆包视觉API进行实际批改对比。选择作业项目并上传图片后开始测试。
                 </p>
               </div>
             </div>
@@ -276,35 +297,42 @@ export default function SimpleAITestPage() {
                   </div>
                 )}
 
-                {/* 模拟图片URL配置 */}
+                {/* 真实图片上传 */}
                 <div>
                   <label className="block text-sm font-medium text-white/80 mb-2">
-                    模拟测试图片数量
+                    上传测试图片
                   </label>
-                  <select
-                    value={testImageUrls.length}
-                    onChange={(e) => {
-                      const count = parseInt(e.target.value);
-                      const newUrls = Array(count).fill(0).map((_, i) => `https://example.com/test-image-${i+1}.jpg`);
-                      setTestImageUrls(newUrls);
-                    }}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white"
-                  >
-                    <option value="1">1张图片</option>
-                    <option value="2">2张图片</option>
-                    <option value="3">3张图片</option>
-                    <option value="5">5张图片</option>
-                  </select>
-                  <p className="text-xs text-white/60 mt-1">模拟{testImageUrls.length}张测试图片</p>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-500 file:text-white hover:file:bg-purple-600"
+                  />
+                  
+                  {testFiles.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-white/80 mb-2">已选择 {testFiles.length} 个文件:</p>
+                      <div className="space-y-1">
+                        {testFiles.map((file, index) => (
+                          <div key={index} className="text-sm text-white/70 bg-white/5 px-3 py-2 rounded">
+                            {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-white/60 mt-2">支持JPG、PNG、GIF等格式，建议每个文件不超过5MB</p>
                 </div>
 
                 {/* 开始测试按钮 */}
                 <button
                   onClick={startComparison}
-                  disabled={!selectedAssignment || testing}
+                  disabled={!selectedAssignment || testFiles.length === 0 || testing}
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                 >
-                  {testing ? '🔄 正在模拟测试...' : '🚀 开始AI对比测试'}
+                  {testing ? '🔄 正在测试中...' : '🚀 开始真实AI对比测试'}
                 </button>
               </div>
             </div>
