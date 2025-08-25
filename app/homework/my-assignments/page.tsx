@@ -387,7 +387,7 @@ function MyAssignmentsContent() {
                   <div className="mb-4">
                     <p className="text-sm font-medium text-white/80 mb-2">已提交附件:</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {submission.attachments_url.map((url, index) => (
+                      {(submission.attachments_url || []).map((url, index) => (
                         <a
                           key={index}
                           href={url}
@@ -442,11 +442,11 @@ function MyAssignmentsContent() {
                         </div>
 
                         {/* 当前文件显示 */}
-                        {keepExistingFiles && submission.attachments_url.length > 0 && (
+                        {keepExistingFiles && (submission.attachments_url || []).length > 0 && (
                           <div>
                             <p className="text-sm font-medium text-white/80 mb-2">当前文件 (将保留):</p>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              {submission.attachments_url.map((url, index) => (
+                              {(submission.attachments_url || []).map((url, index) => (
                                 <div key={index} className="relative">
                                   <img
                                     src={url}
