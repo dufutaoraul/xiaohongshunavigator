@@ -30,7 +30,16 @@ export default function SubmitAssignmentPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState('');
-  const [gradingResult, setGradingResult] = useState<{status: string, feedback: string} | null>(null);
+  const [gradingResult, setGradingResult] = useState<{
+    status: string, 
+    feedback: string,
+    contextInfo?: {
+      dayText: string;
+      assignmentTitle: string;
+      assignmentDescription: string;
+      isMandatory: boolean;
+    }
+  } | null>(null);
   const [showResult, setShowResult] = useState(false);
   
   // 登录相关状态
