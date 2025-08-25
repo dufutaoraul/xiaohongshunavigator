@@ -60,4 +60,12 @@ export interface GraduationStats {
   pass_rate: number;
   is_eligible: boolean;
   missing_mandatory: Assignment[];
+  // 新的毕业标准相关统计
+  mandatory_passed: boolean;
+  first_week_afternoon_optional_count: number;
+  first_week_afternoon_passed: number;
+  first_week_afternoon_qualified: boolean;
+  other_optional_count: number;
+  other_optional_passed: number;
+  other_optional_qualified: boolean;
 }
