@@ -18,7 +18,7 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
 // 验证管理员权限
 async function verifyAdminAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
-  if (!authHeader) {
+  if (!authHeader || !supabaseAdmin) {
     return null
   }
 
