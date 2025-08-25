@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
         .select('student_id')
         .limit(10);
       
-      const availableIds = [...new Set(availableStudents?.map(s => s.student_id) || [])];
+      const uniqueStudentIds = new Set(availableStudents?.map(s => s.student_id) || []);
+      const availableIds = Array.from(uniqueStudentIds);
       
       return NextResponse.json({
         success: true,
