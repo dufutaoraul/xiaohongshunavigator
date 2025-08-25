@@ -150,17 +150,36 @@ function GraduationCheckContent() {
       a.is_mandatory && !completedMandatoryIds.has(a.assignment_id)
     );
 
-    // 判断是否符合毕业条件 - 基于历史毕业要求数据
-    // 1. 必须完成所有必做作业且通过
-    // 2. 总共完成至少25个作业 
-    // 3. 至少20个作业状态为"合格" (80%通过率)
-    const mandatoryCompleted = missingMandatory.length === 0;
-    const minCompletedRequired = 25; // 最少完成25个作业
-    const minPassedRequired = 20; // 最少20个合格作业
+    // 判断是否符合毕业条件 - 正确的毕业标准
+    // 1. 所有必做的作业必须全部合格
+    // 2. 第一周第二天下午的四个选做作业必须至少合格一个
+    // 3. 除"第一周第二天下午"四个选做作业以外的"其他选做作业"必须至少合格一个
     
-    const completedEnough = completedAssignments >= minCompletedRequired;
-    const passedEnough = passedAssignments >= minPassedRequired;
-    const isEligible = mandatoryCompleted && completedEnough && passedEnough;
+    // 1. 检查所有必做作业是否全部合格
+    const mandatoryPassed = missingMandatory.length === 0;
+    
+    // 2. 检查"第一周第二天下午"的选做作业(假设day_text包含"第一周第二天下午")
+    const firstWeekAfternoonOptional = assignments.filter(a => 
+      !a.is_mandatory && (a.day_text?.includes('第一周第二天下午') || a.day_text?.includes('1-2下午'))
+    );
+    const passedFirstWeekAfternoon = submissions.filter(s => 
+      s.status === '合格' && 
+      firstWeekAfternoonOptional.some(a => a.assignment_id === s.assignment_id)
+    ).length;
+    const firstWeekAfternoonQualified = firstWeekAfternoonOptional.length === 0 || passedFirstWeekAfternoon >= 1;
+    
+    // 3. 检查其他选做作业(除第一周第二天下午外的所有选做作业)
+    const otherOptionalAssignments = assignments.filter(a => 
+      !a.is_mandatory && 
+      !firstWeekAfternoonOptional.some(fwa => fwa.assignment_id === a.assignment_id)
+    );
+    const passedOtherOptional = submissions.filter(s => 
+      s.status === '合格' && 
+      otherOptionalAssignments.some(a => a.assignment_id === s.assignment_id)
+    ).length;
+    const otherOptionalQualified = otherOptionalAssignments.length === 0 || passedOtherOptional >= 1;
+    
+    const isEligible = mandatoryPassed && firstWeekAfternoonQualified && otherOptionalQualified;
 
     return {
       total_assignments: totalAssignments,
@@ -173,7 +192,15 @@ function GraduationCheckContent() {
       completion_rate: completionRate,
       pass_rate: passRate,
       is_eligible: isEligible,
-      missing_mandatory: missingMandatory
+      missing_mandatory: missingMandatory,
+      // 新的毕业标准相关统计
+      mandatory_passed: mandatoryPassed,
+      first_week_afternoon_optional_count: firstWeekAfternoonOptional.length,
+      first_week_afternoon_passed: passedFirstWeekAfternoon,
+      first_week_afternoon_qualified: firstWeekAfternoonQualified,
+      other_optional_count: otherOptionalAssignments.length,
+      other_optional_passed: passedOtherOptional,
+      other_optional_qualified: otherOptionalQualified
     };
   };
 
@@ -346,14 +373,14 @@ function GraduationCheckContent() {
                     </>
                   ) : (
                     <>
-                      {graduationStats.completed_assignments < 25 && (
-                        <p>📈 建议完成更多作业，至少需要完成25个作业（当前已完成 {graduationStats.completed_assignments} 个）</p>
+                      {!graduationStats.mandatory_passed && (
+                        <p>❗ <strong>必做作业要求：</strong>所有必做作业必须全部合格（还有 {graduationStats.missing_mandatory?.length || 0} 个必做作业未完成）</p>
                       )}
-                      {graduationStats.passed_assignments < 20 && graduationStats.completed_assignments > 0 && (
-                        <p>🎯 建议提高作业质量，至少需要20个作业合格（当前合格 {graduationStats.passed_assignments} 个）</p>
+                      {!graduationStats.first_week_afternoon_qualified && (
+                        <p>📅 <strong>第一周第二天下午选做作业：</strong>四个选做作业中至少需要1个合格（当前合格 {graduationStats.first_week_afternoon_passed} 个）</p>
                       )}
-                      {graduationStats.missing_mandatory?.length > 0 && (
-                        <p>❗ 必须完成所有必做作业（还有 {graduationStats.missing_mandatory.length} 个必做作业未完成）</p>
+                      {!graduationStats.other_optional_qualified && (
+                        <p>📚 <strong>其他选做作业：</strong>除第一周第二天下午外的选做作业中至少需要1个合格（当前合格 {graduationStats.other_optional_passed} 个）</p>
                       )}
                     </>
                   )}
