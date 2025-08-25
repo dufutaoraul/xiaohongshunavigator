@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     console.log(`🔥 使用 ${modelVersion} 进行测试，图片数量: ${testImages.length}`);
 
     // 构建请求体
-    const parts = [{ text: prompt }];
+    const parts: any[] = [{ text: prompt }];
 
     // 模拟添加图片（在真实环境中需要下载图片并转换为base64）
     for (let i = 0; i < testImages.length; i++) {
