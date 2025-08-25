@@ -876,31 +876,6 @@ export default function SubmitAssignmentPage() {
                 </h3>
                 
                 <div className="space-y-4">
-                  {/* 作业上下文信息 */}
-                  {gradingResult.contextInfo && (
-                    <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
-                      <h4 className="font-medium text-blue-300 mb-3">📚 作业信息</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-white/80 mb-1">学习天数：</p>
-                          <p className="text-white font-medium">{gradingResult.contextInfo.dayText}</p>
-                        </div>
-                        <div>
-                          <p className="text-white/80 mb-1">作业项目：</p>
-                          <p className="text-white font-medium">{gradingResult.contextInfo.assignmentTitle}</p>
-                        </div>
-                      </div>
-                      {gradingResult.contextInfo.assignmentDescription && (
-                        <div className="mt-3">
-                          <p className="text-white/80 mb-1">作业要求：</p>
-                          <div className="bg-white/5 p-3 rounded border border-white/10">
-                            <p className="text-white/70 text-sm">{gradingResult.contextInfo.assignmentDescription}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
                   {/* 批改状态 */}
                   <div className="text-center">
                     <span className={`inline-block px-6 py-3 rounded-full text-lg font-bold ${
