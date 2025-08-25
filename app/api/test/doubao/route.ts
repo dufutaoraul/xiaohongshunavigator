@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
           text: prompt
         }
       ]
-    }];
+    }] as any;
 
     // 添加图片内容（豆包支持URL和base64两种方式）
     for (let i = 0; i < testImages.length; i++) {
