@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       // 验证用户登录
       const { data: user, error } = await supabase
         .from('users')
-        .select('student_id, name, password, persona, keywords, vision')
+        .select('student_id, name, password, persona, keywords, vision, password_hash, first_login')
         .eq('student_id', student_id)
         .single()
 
@@ -29,16 +30,38 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // 检查密码
-      if (user.password !== password) {
+      // 检查密码 - 支持旧的明文密码和新的哈希密码
+      let isPasswordValid = false
+
+      if (user.password_hash) {
+        // 使用哈希密码验证
+        isPasswordValid = await bcrypt.compare(password, user.password_hash)
+      } else if (user.password) {
+        // 兼容旧的明文密码
+        isPasswordValid = user.password === password
+
+        // 如果明文密码验证成功，立即转换为哈希密码
+        if (isPasswordValid) {
+          const hashedPassword = await bcrypt.hash(password, 12)
+          await supabase
+            .from('users')
+            .update({
+              password_hash: hashedPassword,
+              password: null // 清除明文密码
+            })
+            .eq('student_id', student_id)
+        }
+      }
+
+      if (!isPasswordValid) {
         return NextResponse.json(
           { error: 'Invalid credentials' },
           { status: 401 }
         )
       }
 
-      // 登录成功，返回用户信息和是否需要修改密码
-      const needsPasswordChange = user.password === user.student_id
+      // 检查是否需要强制改密
+      const needsPasswordChange = user.first_login !== false || user.password === user.student_id
 
       return NextResponse.json({
         success: true,
@@ -78,7 +101,7 @@ export async function POST(request: NextRequest) {
       // 先验证当前密码
       const { data: user, error: fetchError } = await supabase
         .from('users')
-        .select('password')
+        .select('password, password_hash')
         .eq('student_id', student_id)
         .single()
 
@@ -89,17 +112,32 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      if (user.password !== password) {
+      // 验证当前密码
+      let isCurrentPasswordValid = false
+      if (user.password_hash) {
+        isCurrentPasswordValid = await bcrypt.compare(password, user.password_hash)
+      } else if (user.password) {
+        isCurrentPasswordValid = user.password === password
+      }
+
+      if (!isCurrentPasswordValid) {
         return NextResponse.json(
           { error: 'Invalid current password' },
           { status: 401 }
         )
       }
 
+      // 哈希新密码
+      const hashedNewPassword = await bcrypt.hash(new_password, 12)
+
       // 更新密码
       const { error: updateError } = await supabase
         .from('users')
-        .update({ password: new_password })
+        .update({
+          password_hash: hashedNewPassword,
+          password: null, // 清除明文密码
+          first_login: false // 标记已完成首次登录
+        })
         .eq('student_id', student_id)
 
       if (updateError) {

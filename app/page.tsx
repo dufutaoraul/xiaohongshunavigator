@@ -7,11 +7,13 @@ import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
 import { createClient } from '@supabase/supabase-js'
 
-// 创建Supabase客户端
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// 创建Supabase客户端 - 添加安全检查
+const supabase = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY 
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+  : null
 
 export default function Home() {
   const router = useRouter()
@@ -108,7 +110,7 @@ export default function Home() {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 items-stretch">
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">🧑‍💼</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">个人IP资料库</h3>
@@ -134,6 +136,20 @@ export default function Home() {
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               智慧生成 🚀
+            </button>
+          </div>
+
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
+            <div className="text-5xl mb-6 breathing-glow">🔍</div>
+            <h3 className="text-xl font-bold text-white mb-4 gradient-text">内容搜索</h3>
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
+              搜索小红书热门内容和笔记，发现创作灵感。智能分析热门趋势，为你的内容创作提供数据支持和参考素材。
+            </p>
+            <button
+              onClick={() => handleNavigation('/search')}
+              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
+            >
+              探索内容 🔎
             </button>
           </div>
 

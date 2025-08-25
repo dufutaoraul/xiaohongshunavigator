@@ -35,8 +35,8 @@ print(json.dumps(result, ensure_ascii=False, indent=None, separators=(',', ':'))
         try {
           const jsonResult = JSON.parse(output.trim());
           resolve(jsonResult);
-        } catch (parseError) {
-          reject(new Error(`JSON解析错误: ${parseError.message}`));
+        } catch (parseError: any) {
+          reject(new Error(`JSON解析错误: ${parseError?.message ?? String(parseError)}`));
         }
       } else {
         reject(new Error(`Python脚本执行失败: ${error}`));
@@ -89,10 +89,10 @@ export async function GET(request: NextRequest) {
         const result = await executePythonFunction('test');
         return NextResponse.json(result);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('XHS API错误:', error);
     return NextResponse.json(
-      { error: '小红书爬虫API执行失败', details: error.message },
+      { error: '小红书爬虫API执行失败', details: error?.message ?? String(error) },
       { status: 500 }
     );
   }
@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
               1,
               testCookies,
               'general'
-            ]);
-            
+            ]) as any;
+
             if (testResult.error && testResult.status === 'verification_required') {
               return NextResponse.json({
                 status: 'verification_required',
@@ -184,10 +184,10 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('XHS POST API错误:', error);
     return NextResponse.json(
-      { error: '小红书爬虫API执行失败', details: error.message },
+      { error: '小红书爬虫API执行失败', details: error?.message ?? String(error) },
       { status: 500 }
     );
   }
