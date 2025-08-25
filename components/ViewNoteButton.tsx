@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { QRCodeModal } from './QRCodeModal'
 import { useViewNote } from '@/app/hooks/useViewNote'
 
@@ -122,15 +123,17 @@ export function ViewNoteButton({
                 <div className="mb-4">
                   <div className="grid grid-cols-2 gap-2">
                     {proxyContent.images.slice(0, 4).map((img: string, index: number) => (
-                      <img
-                        key={index}
-                        src={img}
-                        alt={`图片 ${index + 1}`}
-                        className="w-full h-32 object-cover rounded"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none'
-                        }}
-                      />
+                      <div key={index} className="relative w-full h-32">
+                        <Image
+                          src={img}
+                          alt={`图片 ${index + 1}`}
+                          fill
+                          className="object-cover rounded"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none'
+                          }}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>

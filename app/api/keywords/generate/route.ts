@@ -1,10 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import Segment from 'segment'
 
-// 初始化中文分词器
-const segment = new Segment()
-segment.useDefault()
+// 简单的中文分词实现（替代 segment 库）
+function simpleChineseSegment(text: string): string[] {
+  // 移除标点符号和特殊字符
+  const cleanText = text.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, ' ')
+
+  // 按空格分割
+  const words = cleanText.split(/\s+/).filter(word => word.length > 0)
+
+  // 简单的中文词汇分割（基于常见词汇模式）
+  const result: string[] = []
+
+  words.forEach(word => {
+    if (/^[\u4e00-\u9fa5]+$/.test(word)) {
+      // 中文词汇，尝试分割
+      if (word.length <= 4) {
+        result.push(word)
+      } else {
+        // 长词汇分割为2-4字的子词
+        for (let i = 0; i < word.length; i++) {
+          for (let len = 2; len <= Math.min(4, word.length - i); len++) {
+            const subWord = word.substr(i, len)
+            if (subWord.length >= 2) {
+              result.push(subWord)
+            }
+          }
+        }
+      }
+    } else if (/^[a-zA-Z]+$/.test(word) && word.length >= 2) {
+      // 英文词汇
+      result.push(word.toLowerCase())
+    }
+  })
+
+  return Array.from(new Set(result))
+}
 
 // 停用词列表
 const STOP_WORDS = new Set([
@@ -49,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const personaKeywords = user?.persona ? extractKeywordsFromText(user.persona) : []
-    const existingKeywords = user?.keywords ? user.keywords.split(',').map(k => k.trim()).filter(k => k) : []
+    const existingKeywords = user?.keywords ? user.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : []
 
     // 2. 从主题文本提取关键词
     const themeKeywords = extractKeywordsFromText(theme_text)
@@ -67,27 +98,27 @@ export async function POST(request: NextRequest) {
     const keywordScores = new Map<string, KeywordScore>()
 
     // 添加人设关键词（高权重）
-    personaKeywords.forEach(keyword => {
+    personaKeywords.forEach((keyword: string) => {
       addKeywordScore(keywordScores, keyword, 2.0, 'persona')
     })
 
     // 添加现有关键词（高权重）
-    existingKeywords.forEach(keyword => {
+    existingKeywords.forEach((keyword: string) => {
       addKeywordScore(keywordScores, keyword, 1.8, 'existing')
     })
 
     // 添加主题关键词（中权重）
-    themeKeywords.forEach(keyword => {
+    themeKeywords.forEach((keyword: string) => {
       addKeywordScore(keywordScores, keyword, 1.0, 'theme')
     })
 
     // 添加历史热门关键词（低权重）
-    historicalKeywords.forEach(keyword => {
+    historicalKeywords.forEach((keyword: string) => {
       addKeywordScore(keywordScores, keyword, 0.5, 'historical')
     })
 
     // 添加平台热门关键词权重
-    keywordScores.forEach((scoreObj, keyword) => {
+    keywordScores.forEach((scoreObj: KeywordScore, keyword: string) => {
       if (POPULAR_KEYWORDS.has(keyword)) {
         scoreObj.score *= POPULAR_KEYWORDS.get(keyword)!
         scoreObj.sources.push('popular')
@@ -112,7 +143,7 @@ export async function POST(request: NextRequest) {
         .from('xhs_search_logs')
         .insert({
           student_id,
-          keywords: finalKeywords.map(k => k.keyword),
+          keywords: finalKeywords.map((k: KeywordScore) => k.keyword),
           sort_type: 'general',
           result_count: 0
         })
@@ -120,13 +151,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      keywords: finalKeywords.map(k => k.keyword),
+      keywords: finalKeywords.map((k: KeywordScore) => k.keyword),
       meta: {
         personaKeywords,
         themeKeywords,
         historicalKeywords,
         source: 'persona+theme+historical+popular',
-        scores: finalKeywords.map(k => ({
+        scores: finalKeywords.map((k: KeywordScore) => ({
           keyword: k.keyword,
           score: k.score,
           sources: k.sources
@@ -147,26 +178,22 @@ export async function POST(request: NextRequest) {
 function extractKeywordsFromText(text: string): string[] {
   if (!text) return []
 
-  // 使用中文分词
-  const words = segment.doSegment(text, {
-    simple: true
-  })
+  // 使用简单中文分词
+  const words = simpleChineseSegment(text)
 
   // 过滤和处理
   const keywords = words
-    .map(word => word.w || word) // 兼容不同版本的返回格式
-    .filter(word => {
+    .filter((word: string) => {
       // 过滤条件
       if (typeof word !== 'string') return false
       if (word.length < 2) return false // 至少2个字符
       if (word.length > 10) return false // 最多10个字符
       if (STOP_WORDS.has(word)) return false // 不在停用词列表
       if (/^[0-9]+$/.test(word)) return false // 不是纯数字
-      if (/^[a-zA-Z]+$/.test(word)) return false // 不是纯英文
       return true
     })
-    .map(word => word.trim())
-    .filter(word => word.length > 0)
+    .map((word: string) => word.trim())
+    .filter((word: string) => word.length > 0)
 
   // 去重并返回
   return Array.from(new Set(keywords))
@@ -176,7 +203,7 @@ function extractKeywordsFromText(text: string): string[] {
 function getHistoricalPopularKeywords(searchLogs: any[]): string[] {
   const keywordCount = new Map<string, number>()
 
-  searchLogs.forEach(log => {
+  searchLogs.forEach((log: any) => {
     if (log.keywords && Array.isArray(log.keywords)) {
       log.keywords.forEach((keyword: string) => {
         keywordCount.set(keyword, (keywordCount.get(keyword) || 0) + 1)
@@ -187,7 +214,7 @@ function getHistoricalPopularKeywords(searchLogs: any[]): string[] {
   return Array.from(keywordCount.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
-    .map(([keyword]) => keyword)
+    .map(([keyword]: [string, number]) => keyword)
 }
 
 // 添加关键词分数
@@ -229,7 +256,7 @@ function getDefaultKeywords(themeText: string): KeywordScore[] {
     defaults.unshift('护肤', '美妆')
   }
 
-  return defaults.map(keyword => ({
+  return defaults.map((keyword: string) => ({
     keyword,
     score: 0.5,
     sources: ['default']

@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import Image from 'next/image'
 import QRCode from 'qrcode'
 
 interface QRCodeModalProps {
@@ -15,13 +16,7 @@ export function QRCodeModal({ isOpen, onClose, url, title }: QRCodeModalProps) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    if (isOpen && url) {
-      generateQRCode()
-    }
-  }, [isOpen, url])
-
-  const generateQRCode = async () => {
+  const generateQRCode = useCallback(async () => {
     try {
       setIsLoading(true)
       const dataUrl = await QRCode.toDataURL(url, {
@@ -38,7 +33,13 @@ export function QRCodeModal({ isOpen, onClose, url, title }: QRCodeModalProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [url])
+
+  useEffect(() => {
+    if (isOpen && url) {
+      generateQRCode()
+    }
+  }, [isOpen, url, generateQRCode])
 
   const copyToClipboard = async () => {
     try {
@@ -65,9 +66,11 @@ export function QRCodeModal({ isOpen, onClose, url, title }: QRCodeModalProps) {
             </div>
           ) : qrCodeDataUrl ? (
             <div className="bg-white p-4 rounded-lg shadow-sm">
-              <img 
-                src={qrCodeDataUrl} 
-                alt="QR Code" 
+              <Image
+                src={qrCodeDataUrl}
+                alt="QR Code"
+                width={256}
+                height={256}
                 className="w-64 h-64"
               />
             </div>
