@@ -35,10 +35,13 @@ export async function POST(request: NextRequest) {
 
     console.log(`查询学生提交记录: ${studentId}`);
 
-    // 先查询提交记录
+    // 使用JOIN查询提交记录和作业信息
     const { data: submissionsData, error: submissionsError } = await supabaseAdmin
       .from('submissions')
-      .select('*')
+      .select(`
+        *,
+        assignment:assignment_id(*)
+      `)
       .eq('student_id', studentId)
       .order('created_at', { ascending: false });
 
@@ -47,31 +50,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '获取提交记录失败' }, { status: 500 });
     }
 
-    // 如果没有提交记录，直接返回
+    // 如果没有提交记录，查询并提示可用的学号
     if (!submissionsData || submissionsData.length === 0) {
       console.log('没有找到提交记录');
+      
+      // 查询数据库中存在的学号
+      const { data: availableStudents } = await supabaseAdmin
+        .from('submissions')
+        .select('student_id')
+        .limit(10);
+      
+      const availableIds = [...new Set(availableStudents?.map(s => s.student_id) || [])];
+      
       return NextResponse.json({
         success: true,
-        data: []
+        data: [],
+        message: availableIds.length > 0 
+          ? `学号 ${studentId} 没有找到提交记录。数据库中存在的学号: ${availableIds.join(', ')}`
+          : `学号 ${studentId} 没有找到提交记录，数据库中暂无任何提交记录。`
       });
     }
 
-    // 获取所有作业信息
-    const { data: assignmentsData, error: assignmentsError } = await supabaseAdmin
-      .from('assignments')
-      .select('*');
-
-    if (assignmentsError) {
-      console.error('获取作业信息失败:', assignmentsError);
-      return NextResponse.json({ error: '获取作业信息失败' }, { status: 500 });
-    }
-
-    // 合并数据
+    // 数据已经通过JOIN合并了，直接使用
     const mergedData = submissionsData.map(submission => {
-      const assignment = assignmentsData?.find(a => a.assignment_id === submission.assignment_id);
       return {
         ...submission,
-        assignments: assignment || {}
+        assignment: submission.assignment || {
+          assignment_id: submission.assignment_id,
+          assignment_title: submission.assignment_title || '未知作业',
+          day_text: submission.day_text || '未知天数',
+          is_mandatory: submission.is_mandatory || false,
+          description: submission.description || ''
+        }
       };
     });
 

@@ -489,7 +489,14 @@ export default function SubmitAssignmentPage() {
 
       console.log('数据库插入成功');
       setSubmitted(true);
-      setMessage('作业提交成功！正在进行AI批改...');
+      const dayText = selectedAssignment?.day_text || selectedDayText;
+      const assignmentTitle = selectedAssignment?.assignment_title || '作业';
+      setMessage(`✅ 作业提交成功！
+      
+📚 学习天数: ${dayText}
+📝 作业项目: ${assignmentTitle}
+      
+🤖 正在进行AI批改，请稍后查看结果...`);
       
       // 调用AI批改API
       try {
@@ -508,7 +515,15 @@ export default function SubmitAssignmentPage() {
         if (gradeResponse.ok && gradeResult.success) {
           setGradingResult(gradeResult.result);
           setShowResult(true);
-          setMessage(`批改完成！结果：${gradeResult.result.status}`);
+          const dayText = selectedAssignment?.day_text || selectedDayText;
+          const assignmentTitle = selectedAssignment?.assignment_title || '作业';
+          setMessage(`🎉 AI批改完成！
+
+📚 学习天数: ${dayText}
+📝 作业项目: ${assignmentTitle}
+📊 批改结果: ${gradeResult.result.status}
+
+请查看下方详细反馈 ⬇️`);
         } else {
           setMessage('AI批改失败，请稍后重试');
         }
@@ -813,20 +828,22 @@ export default function SubmitAssignmentPage() {
               }`}>
                 {message}
                 
-                {message.includes('正在进行AI批改') && (
-                  <div className="flex gap-3 mt-4">
-                    <Link
-                      href="/homework"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
-                    >
-                      返回作业中心
-                    </Link>
-                    <Link
-                      href="/homework/my-assignments"
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors"
-                    >
-                      查看我的作业
-                    </Link>
+                {(message.includes('正在进行AI批改') || message.includes('AI批改完成')) && (
+                  <div className="flex flex-col gap-3 mt-4">
+                    <div className="flex gap-3">
+                      <Link
+                        href="/homework"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm transition-colors"
+                      >
+                        返回作业中心
+                      </Link>
+                      <Link
+                        href={`/homework/my-assignments?studentId=${studentId || user?.student_id}`}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors"
+                      >
+                        查看我的作业
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>
