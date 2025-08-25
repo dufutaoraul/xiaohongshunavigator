@@ -4,10 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase environment variables');
-}
-
 const supabaseAdmin = supabaseUrl && supabaseServiceKey 
   ? createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
@@ -20,40 +16,58 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
 export async function GET() {
   try {
     if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+      return NextResponse.json({ error: '数据库连接失败' }, { status: 500 });
     }
 
     // 查询所有提交记录
-    const { data: submissionsData, error: submissionsError } = await supabaseAdmin
+    const { data: submissions, error: submissionsError } = await supabaseAdmin
       .from('submissions')
       .select('*')
-      .limit(10);
+      .limit(20);
 
-    if (submissionsError) {
-      console.error('查询失败:', submissionsError);
-      return NextResponse.json({ error: submissionsError.message }, { status: 500 });
-    }
-
-    // 查询所有作业
-    const { data: assignmentsData, error: assignmentsError } = await supabaseAdmin
+    // 查询所有作业记录
+    const { data: assignments, error: assignmentsError } = await supabaseAdmin
       .from('assignments')
       .select('*')
-      .limit(10);
+      .limit(20);
 
-    if (assignmentsError) {
-      console.error('查询作业失败:', assignmentsError);
-      return NextResponse.json({ error: assignmentsError.message }, { status: 500 });
-    }
+    // 查询数据库表结构
+    const { data: submissionsSchema } = await supabaseAdmin
+      .from('information_schema.columns')
+      .select('column_name, data_type')
+      .eq('table_name', 'submissions')
+      .eq('table_schema', 'public');
+
+    const { data: assignmentsSchema } = await supabaseAdmin
+      .from('information_schema.columns')
+      .select('column_name, data_type')
+      .eq('table_name', 'assignments')
+      .eq('table_schema', 'public');
 
     return NextResponse.json({
-      submissions: submissionsData || [],
-      assignments: assignmentsData || [],
-      submissions_count: submissionsData?.length || 0,
-      assignments_count: assignmentsData?.length || 0
+      success: true,
+      data: {
+        submissions: submissions || [],
+        assignments: assignments || [],
+        schemas: {
+          submissions: submissionsSchema || [],
+          assignments: assignmentsSchema || []
+        },
+        errors: {
+          submissions: submissionsError,
+          assignments: assignmentsError
+        },
+        availableStudentIds: [...new Set((submissions || []).map(s => s.student_id))],
+        totalSubmissions: submissions?.length || 0,
+        totalAssignments: assignments?.length || 0
+      }
     });
 
   } catch (error) {
-    console.error('Debug API error:', error);
-    return NextResponse.json({ error: 'Server internal error' }, { status: 500 });
+    console.error('调试API错误:', error);
+    return NextResponse.json({ 
+      error: '调试API失败', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 }

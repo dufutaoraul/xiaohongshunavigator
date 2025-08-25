@@ -513,14 +513,24 @@ export default function SubmitAssignmentPage() {
         const gradeResult = await gradeResponse.json();
         
         if (gradeResponse.ok && gradeResult.success) {
-          setGradingResult(gradeResult.result);
+          // 保存批改结果时，同时保存上下文信息
+          const contextInfo = {
+            dayText: selectedAssignment?.day_text || selectedDayText,
+            assignmentTitle: selectedAssignment?.assignment_title || '作业',
+            assignmentDescription: selectedAssignment?.description || '',
+            isMandatory: selectedAssignment?.is_mandatory || false
+          };
+          
+          setGradingResult({
+            ...gradeResult.result,
+            contextInfo: contextInfo
+          });
           setShowResult(true);
-          const dayText = selectedAssignment?.day_text || selectedDayText;
-          const assignmentTitle = selectedAssignment?.assignment_title || '作业';
+          
           setMessage(`🎉 AI批改完成！
 
-📚 学习天数: ${dayText}
-📝 作业项目: ${assignmentTitle}
+📚 学习天数: ${contextInfo.dayText}
+📝 作业项目: ${contextInfo.assignmentTitle}
 📊 批改结果: ${gradeResult.result.status}
 
 请查看下方详细反馈 ⬇️`);
@@ -857,6 +867,31 @@ export default function SubmitAssignmentPage() {
                 </h3>
                 
                 <div className="space-y-4">
+                  {/* 作业上下文信息 */}
+                  {gradingResult.contextInfo && (
+                    <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-300 mb-3">📚 作业信息</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-white/80 mb-1">学习天数：</p>
+                          <p className="text-white font-medium">{gradingResult.contextInfo.dayText}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/80 mb-1">作业项目：</p>
+                          <p className="text-white font-medium">{gradingResult.contextInfo.assignmentTitle}</p>
+                        </div>
+                      </div>
+                      {gradingResult.contextInfo.assignmentDescription && (
+                        <div className="mt-3">
+                          <p className="text-white/80 mb-1">作业要求：</p>
+                          <div className="bg-white/5 p-3 rounded border border-white/10">
+                            <p className="text-white/70 text-sm">{gradingResult.contextInfo.assignmentDescription}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   {/* 批改状态 */}
                   <div className="text-center">
                     <span className={`inline-block px-6 py-3 rounded-full text-lg font-bold ${
