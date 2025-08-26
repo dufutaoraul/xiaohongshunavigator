@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import { QRCodeModal } from '../../components/QRCodeModal'
+import { ViewNoteButton } from '../../components/ViewNoteButton'
 
 interface GeneratedContent {
   titles: Array<{ id?: number, content: string }>
@@ -25,6 +27,17 @@ function ResultPageContent() {
   const [copyFeedback, setCopyFeedback] = useState<string>('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [inputParams, setInputParams] = useState<any>(null)
+
+  // 新增关键词和搜索相关状态
+  const [generatedKeywords, setGeneratedKeywords] = useState<string[]>([])
+  const [editableKeywords, setEditableKeywords] = useState<string[]>([])
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [keywordLoading, setKeywordLoading] = useState(false)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [showKeywords, setShowKeywords] = useState(false)
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [studentId, setStudentId] = useState('')
+
   const searchParams = useSearchParams()
   const router = useRouter()
   
@@ -32,6 +45,19 @@ function ResultPageContent() {
   const requiredTags = ['#爱学AI社区', '#爱学AI创富营', '#爱学AI90天打卡陪跑', '#爱学AI深潜计划']
 
   useEffect(() => {
+    // 获取用户信息
+    const userSession = localStorage.getItem('userSession')
+    if (userSession) {
+      try {
+        const session = JSON.parse(userSession)
+        if (session.isAuthenticated) {
+          setStudentId(session.student_id)
+        }
+      } catch {
+        // 忽略解析错误
+      }
+    }
+
     // 从URL参数中获取数据或从localStorage中读取
     const dataParam = searchParams.get('data')
     if (dataParam) {
@@ -150,6 +176,104 @@ function ResultPageContent() {
 
   const handleBackHome = () => {
     router.push('/')
+  }
+
+  // 生成关键词
+  const handleGenerateKeywords = async () => {
+    if (!inputParams?.user_input) {
+      alert('无法获取生成内容的主题信息')
+      return
+    }
+
+    setKeywordLoading(true)
+    try {
+      const response = await fetch('/api/keywords/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          student_id: studentId,
+          theme_text: inputParams.user_input
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('关键词生成失败')
+      }
+
+      const result = await response.json()
+      if (result.success) {
+        setGeneratedKeywords(result.keywords)
+        setEditableKeywords([...result.keywords])
+        setShowKeywords(true)
+      } else {
+        throw new Error(result.error || '关键词生成失败')
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '关键词生成失败')
+    } finally {
+      setKeywordLoading(false)
+    }
+  }
+
+  // 搜索相关内容
+  const handleSearchContent = async () => {
+    if (editableKeywords.length === 0) {
+      alert('请先生成关键词')
+      return
+    }
+
+    setSearchLoading(true)
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          keywords: editableKeywords,
+          page: 1,
+          page_size: 6,
+          sort: 'like',
+          student_id: studentId
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('搜索失败')
+      }
+
+      const result = await response.json()
+      if (result.success) {
+        setSearchResults(result.data.notes || [])
+        setShowSearchResults(true)
+      } else {
+        throw new Error(result.error || '搜索失败')
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '搜索失败')
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  // 编辑关键词
+  const handleKeywordEdit = (index: number, newValue: string) => {
+    const newKeywords = [...editableKeywords]
+    newKeywords[index] = newValue
+    setEditableKeywords(newKeywords)
+  }
+
+  // 删除关键词
+  const handleKeywordDelete = (index: number) => {
+    const newKeywords = editableKeywords.filter((_, i) => i !== index)
+    setEditableKeywords(newKeywords)
+  }
+
+  // 添加关键词
+  const handleKeywordAdd = () => {
+    setEditableKeywords([...editableKeywords, ''])
   }
 
   if (!data) {
@@ -518,6 +642,111 @@ function ResultPageContent() {
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* 关键词生成和搜索功能 */}
+        <section className="mb-12">
+          <div className="glass-effect p-6 rounded-lg">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+              <span className="text-2xl mr-2">🔍</span>
+              智能搜索相关爆款
+              <span className="ml-2 text-xs text-white/40">基于生成内容</span>
+            </h2>
+
+            {/* 关键词生成按钮 */}
+            <div className="mb-6">
+              <Button
+                onClick={handleGenerateKeywords}
+                disabled={keywordLoading || !studentId}
+                className="px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+              >
+                {keywordLoading ? '生成中...' : '🔑 生成搜索关键词'}
+              </Button>
+              {!studentId && (
+                <p className="text-yellow-300 text-sm mt-2">请先登录后使用此功能</p>
+              )}
+            </div>
+
+            {/* 关键词编辑区域 */}
+            {showKeywords && (
+              <div className="mb-6">
+                <h3 className="text-white font-medium mb-3">编辑关键词</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {editableKeywords.map((keyword, index) => (
+                    <div key={index} className="flex items-center space-x-2 bg-blue-500/20 border border-blue-400/30 rounded-lg px-3 py-2">
+                      <input
+                        type="text"
+                        value={keyword}
+                        onChange={(e) => handleKeywordEdit(index, e.target.value)}
+                        className="bg-transparent text-white text-sm border-none outline-none min-w-0 flex-1"
+                        placeholder="输入关键词"
+                      />
+                      <button
+                        onClick={() => handleKeywordDelete(index)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={handleKeywordAdd}
+                    className="flex items-center space-x-2 bg-gray-500/20 border border-gray-400/30 rounded-lg px-3 py-2 text-white/70 hover:text-white hover:bg-gray-500/30 transition-colors"
+                  >
+                    <span>+</span>
+                    <span className="text-sm">添加关键词</span>
+                  </button>
+                </div>
+
+                <Button
+                  onClick={handleSearchContent}
+                  disabled={searchLoading || editableKeywords.length === 0}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                >
+                  {searchLoading ? '搜索中...' : '🔍 搜索相关爆款'}
+                </Button>
+              </div>
+            )}
+
+            {/* 搜索结果区域 */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div>
+                <h3 className="text-white font-medium mb-4">相关爆款内容 ({searchResults.length}条)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {searchResults.map((note, index) => (
+                    <div key={note.note_id || index} className="bg-black/20 border border-white/10 rounded-lg p-4 hover:border-white/20 transition-colors">
+                      <div className="space-y-3">
+                        <h4 className="text-white font-medium text-sm line-clamp-2">
+                          {note.title || '无标题'}
+                        </h4>
+                        <div className="flex items-center space-x-4 text-xs text-white/60">
+                          <span>👤 {note.nickname || note.author || '匿名'}</span>
+                          <span>❤️ {note.liked_count || 0}</span>
+                          <span>💬 {note.comment_count || 0}</span>
+                        </div>
+                        <div className="flex space-x-2">
+                          <ViewNoteButton
+                            note_id={note.note_id}
+                            url={note.url}
+                            title={note.title}
+                            className="flex-1 text-xs py-2"
+                          >
+                            查看原文
+                          </ViewNoteButton>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(note.url)}
+                            className="px-3 py-2 text-xs bg-gray-500/20 hover:bg-gray-500/30 text-white rounded-md transition-colors"
+                          >
+                            复制链接
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

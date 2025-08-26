@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
+import UserMenu from './components/UserMenu'
+import HotContentCarousel from './components/HotContentCarousel'
 import { createClient } from '@supabase/supabase-js'
 
 // 创建Supabase客户端 - 添加安全检查
@@ -96,7 +98,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center relative">
+      {/* 用户菜单 - 右上角 */}
+      <UserMenu className="absolute top-6 right-6 z-50" />
+
       <div className="max-w-6xl mx-auto py-20 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="text-6xl font-bold gradient-text mb-8 fade-in-up">
@@ -175,6 +180,11 @@ export default function Home() {
             </p>
           </div>
           
+        </div>
+
+        {/* 热门爆款轮播 */}
+        <div className="mt-16 max-w-4xl mx-auto">
+          <HotContentCarousel />
         </div>
 
         {/* 调试入口 - 仅开发环境显示 */}

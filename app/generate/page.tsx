@@ -127,6 +127,16 @@ export default function GeneratePage() {
       return
     }
 
+    // 检查人设信息是否完整
+    if (!userProfile.persona || !userProfile.keywords || !userProfile.vision) {
+      setMessage('请先完善人设信息后再生成内容')
+      // 3秒后自动跳转到人设页面
+      setTimeout(() => {
+        router.push('/profile')
+      }, 3000)
+      return
+    }
+
     setLoading(true)
     setMessage('')
     setGeneratedContent('')
@@ -412,19 +422,61 @@ export default function GeneratePage() {
         <div className="space-y-6">
           {/* 显示已登录的用户信息 */}
           <div className="p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-400/30 rounded-lg">
-            <div className="flex items-center">
-              <span className="text-xl mr-3">👤</span>
-              <div>
-                <p className="text-white font-medium">
-                  欢迎{userName || '学员'}
-                </p>
-                <p className="text-green-300 text-sm">
-                  学号：{studentId}
-                </p>
-                <p className="text-green-300/70 text-xs mt-1">
-                  已通过身份验证，可使用AI内容生成功能
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <span className="text-xl mr-3">👤</span>
+                <div>
+                  <p className="text-white font-medium">
+                    欢迎{userName || '学员'}
+                  </p>
+                  <p className="text-green-300 text-sm">
+                    学号：{studentId}
+                  </p>
+                  <p className="text-green-300/70 text-xs mt-1">
+                    已通过身份验证，可使用AI内容生成功能
+                  </p>
+                </div>
               </div>
+            </div>
+          </div>
+
+          {/* 人设信息显示 */}
+          <div className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-400/30 rounded-lg">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-3">
+                  <span className="text-xl mr-3">🎭</span>
+                  <h3 className="text-white font-medium">当前人设信息</h3>
+                </div>
+
+                {userProfile.persona && userProfile.keywords && userProfile.vision ? (
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-purple-300 font-medium">人设定位：</span>
+                      <span className="text-white/80 ml-2">{userProfile.persona}</span>
+                    </div>
+                    <div>
+                      <span className="text-purple-300 font-medium">关键词：</span>
+                      <span className="text-white/80 ml-2">{userProfile.keywords}</span>
+                    </div>
+                    <div>
+                      <span className="text-purple-300 font-medium">90天愿景：</span>
+                      <span className="text-white/80 ml-2">{userProfile.vision}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-yellow-300 text-sm">
+                    ⚠️ 尚未完善人设信息，请先设置人设后再生成内容
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => router.push('/profile')}
+                className="ml-4 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 rounded-lg text-purple-300 hover:text-purple-200 transition-colors text-sm"
+              >
+                {userProfile.persona ? '修改人设' : '设置人设'}
+              </button>
             </div>
           </div>
 
