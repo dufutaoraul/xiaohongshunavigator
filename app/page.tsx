@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
 import UserMenu from './components/UserMenu'
+import HotContentCarousel from './components/HotContentCarousel'
 
 import { createClient } from '@supabase/supabase-js'
 

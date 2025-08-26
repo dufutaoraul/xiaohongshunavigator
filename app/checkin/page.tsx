@@ -40,6 +40,7 @@ export default function CheckinPage() {
   const [selectedStartDate, setSelectedStartDate] = useState('')
   const [todayUrl, setTodayUrl] = useState('')
   const [showSubmitModal, setShowSubmitModal] = useState(false)
+  const [isAccountValid, setIsAccountValid] = useState<boolean | null>(null)
 
   // 检查用户认证状态
   useEffect(() => {
@@ -67,6 +68,8 @@ export default function CheckinPage() {
   useEffect(() => {
     if (isAuthenticated && studentId) {
       fetchCheckinData()
+      // 检查账号有效期
+      checkAccountValidity().then(setIsAccountValid)
     }
   }, [isAuthenticated, studentId])
 
@@ -102,14 +105,36 @@ export default function CheckinPage() {
   }
 
   // 检查账号有效期
-  const checkAccountValidity = () => {
-    // 假设用户创建时间存储在某个地方，这里简化处理
-    // 实际应该从用户表中获取创建时间
-    const accountCreateTime = new Date('2024-01-01') // 示例时间
-    const sixMonthsLater = new Date(accountCreateTime.getTime() + 6 * 30 * 24 * 60 * 60 * 1000)
-    const now = new Date()
-    
-    return now <= sixMonthsLater
+  const checkAccountValidity = async () => {
+    try {
+      // 获取用户创建时间
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('created_at')
+        .eq('student_id', studentId)
+        .single()
+
+      if (error || !user) {
+        console.error('获取用户信息失败:', error)
+        return false
+      }
+
+      const accountCreateTime = new Date(user.created_at)
+      const sixMonthsLater = new Date(accountCreateTime.getTime() + 6 * 30 * 24 * 60 * 60 * 1000)
+      const now = new Date()
+
+      console.log('账号有效期检查:', {
+        创建时间: accountCreateTime.toLocaleDateString(),
+        有效期至: sixMonthsLater.toLocaleDateString(),
+        当前时间: now.toLocaleDateString(),
+        是否有效: now <= sixMonthsLater
+      })
+
+      return now <= sixMonthsLater
+    } catch (error) {
+      console.error('检查账号有效期失败:', error)
+      return false // 出错时默认无效
+    }
   }
 
   // 开始打卡计划
@@ -163,8 +188,49 @@ export default function CheckinPage() {
 
     try {
       const today = new Date().toISOString().split('T')[0]
-      
-      // 检查今天是否已经打卡
+
+      // 1. 先爬取帖子数据
+      console.log('🕷️ 开始爬取帖子数据...')
+      const crawlResponse = await fetch('/api/crawler', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'crawl_post',
+          student_id: studentId,
+          post_url: todayUrl
+        })
+      })
+
+      const crawlResult = await crawlResponse.json()
+
+      if (!crawlResult.success) {
+        console.error('爬取帖子数据失败:', crawlResult.error)
+        // 即使爬取失败也继续打卡流程
+      }
+
+      // 2. 检查帖子发布时间是否在24小时内
+      let isValidPost = true
+      let postPublishTime = null
+
+      if (crawlResult.success && crawlResult.data) {
+        postPublishTime = crawlResult.data.publish_time
+        const publishTime = new Date(postPublishTime)
+        const now = new Date()
+        const timeDiff = now.getTime() - publishTime.getTime()
+        const hoursDiff = timeDiff / (1000 * 60 * 60)
+
+        isValidPost = hoursDiff <= 24
+        console.log('📅 帖子时间检查:', {
+          发布时间: publishTime.toLocaleString(),
+          当前时间: now.toLocaleString(),
+          时间差: `${hoursDiff.toFixed(1)}小时`,
+          是否有效: isValidPost
+        })
+      }
+
+      // 3. 检查今天是否已经打卡
       const { data: existingRecord } = await supabase
         .from('checkin_records')
         .select('*')
@@ -173,14 +239,17 @@ export default function CheckinPage() {
         .eq('checkin_date', today)
         .single()
 
+      const recordData = {
+        xhs_url: todayUrl,
+        post_publish_time: postPublishTime,
+        status: isValidPost ? 'valid' : 'invalid'
+      }
+
       if (existingRecord) {
         // 更新今天的打卡记录
         const { error } = await supabase
           .from('checkin_records')
-          .update({
-            xhs_url: todayUrl,
-            status: 'pending'
-          })
+          .update(recordData)
           .eq('id', existingRecord.id)
 
         if (error) throw error
@@ -192,8 +261,7 @@ export default function CheckinPage() {
             student_id: studentId,
             plan_id: checkinPlan?.id,
             checkin_date: today,
-            xhs_url: todayUrl,
-            status: 'pending'
+            ...recordData
           })
 
         if (error) throw error
@@ -202,14 +270,19 @@ export default function CheckinPage() {
       setTodayUrl('')
       setShowSubmitModal(false)
       fetchCheckinData()
-      alert('打卡提交成功！')
+
+      if (isValidPost) {
+        alert('打卡提交成功！帖子时间有效。')
+      } else {
+        alert('打卡已提交，但帖子发布时间超过24小时，此次打卡无效。')
+      }
     } catch (error) {
       console.error('提交打卡失败:', error)
       alert('提交打卡失败，请重试')
     }
   }
 
-  if (loading) {
+  if (loading || isAccountValid === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-xl">加载中...</div>
@@ -232,8 +305,6 @@ export default function CheckinPage() {
       </div>
     )
   }
-
-  const isAccountValid = checkAccountValidity()
 
   return (
     <div className="min-h-screen relative">
