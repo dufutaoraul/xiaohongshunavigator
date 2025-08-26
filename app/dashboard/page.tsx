@@ -237,13 +237,30 @@ export default function DashboardPage() {
             </p>
           </div>
           
-          <div className="space-y-4 text-white/60">
-            <p className="text-lg">🚀 此功能正在研发中，敬请期待~</p>
-            <p className="text-sm">我们正在全力以赴为您打造更完美的体验</p>
-          </div>
+          {isAuthenticated ? (
+            <div className="space-y-4 text-white/60">
+              <p className="text-lg">📊 打卡中心已上线！</p>
+              <p className="text-sm">90天打卡挑战，坚持就是胜利</p>
+            </div>
+          ) : (
+            <div className="space-y-4 text-white/60">
+              <p className="text-lg">🚀 此功能正在研发中，敬请期待~</p>
+              <p className="text-sm">我们正在全力以赴为您打造更完美的体验</p>
+            </div>
+          )}
 
           {/* 按钮组 */}
           <div className="mt-8 space-y-4">
+            {/* 打卡中心按钮 - 仅登录用户可见 */}
+            {isAuthenticated && (
+              <button
+                onClick={() => router.push('/checkin')}
+                className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold rounded-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                📊 进入打卡中心
+              </button>
+            )}
+
             {/* 修改小红书链接按钮 */}
             <button
               onClick={() => {
@@ -253,7 +270,7 @@ export default function DashboardPage() {
             >
               🔗 修改我的小红书主页链接
             </button>
-            
+
             {/* 返回首页按钮 */}
             <button
               onClick={() => router.push('/')}
@@ -269,6 +286,8 @@ export default function DashboardPage() {
             <div className="w-3 h-3 bg-pink-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
             <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
           </div>
+        </div>
+
         </div>
 
         {/* 优秀学员作品轮播 */}
