@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
+import { QRCodeModal } from '@/components/QRCodeModal'
+import { ViewNoteButton } from '@/components/ViewNoteButton'
 
 export default function GeneratePage() {
   const [studentId, setStudentId] = useState('')
@@ -18,6 +20,15 @@ export default function GeneratePage() {
   const [message, setMessage] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userProfile, setUserProfile] = useState({ persona: '', keywords: '', vision: '' })
+
+  // 新增搜索相关状态
+  const [currentStep, setCurrentStep] = useState(1) // 1: 生成模板, 2: 生成关键词, 3: 搜索内容
+  const [generatedKeywords, setGeneratedKeywords] = useState<string[]>([])
+  const [editableKeywords, setEditableKeywords] = useState<string[]>([])
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [keywordLoading, setKeywordLoading] = useState(false)
+
   const router = useRouter()
   
   // 检查认证状态并获取用户信息
@@ -268,13 +279,133 @@ export default function GeneratePage() {
     )
   }
 
+  // 生成关键词
+  const handleGenerateKeywords = async () => {
+    if (!generatedContent) {
+      setMessage('请先生成内容模板')
+      return
+    }
+
+    setKeywordLoading(true)
+    try {
+      const response = await fetch('/api/keywords/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          student_id: studentId,
+          theme_text: userInput
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('关键词生成失败')
+      }
+
+      const result = await response.json()
+      if (result.success) {
+        setGeneratedKeywords(result.keywords)
+        setEditableKeywords([...result.keywords])
+        setCurrentStep(2)
+        setMessage('关键词生成成功！您可以编辑关键词后进行搜索')
+      } else {
+        throw new Error(result.error || '关键词生成失败')
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '关键词生成失败')
+    } finally {
+      setKeywordLoading(false)
+    }
+  }
+
+  // 搜索相关内容
+  const handleSearchContent = async () => {
+    if (editableKeywords.length === 0) {
+      setMessage('请先生成关键词')
+      return
+    }
+
+    setSearchLoading(true)
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          keywords: editableKeywords,
+          page: 1,
+          page_size: 6,
+          sort: 'like',
+          student_id: studentId
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('搜索失败')
+      }
+
+      const result = await response.json()
+      if (result.success) {
+        setSearchResults(result.data.notes || [])
+        setCurrentStep(3)
+        setMessage(`搜索成功！找到 ${result.data.notes?.length || 0} 条相关内容`)
+      } else {
+        throw new Error(result.error || '搜索失败')
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '搜索失败')
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  // 编辑关键词
+  const handleKeywordEdit = (index: number, newValue: string) => {
+    const newKeywords = [...editableKeywords]
+    newKeywords[index] = newValue
+    setEditableKeywords(newKeywords)
+  }
+
+  // 删除关键词
+  const handleKeywordDelete = (index: number) => {
+    const newKeywords = editableKeywords.filter((_, i) => i !== index)
+    setEditableKeywords(newKeywords)
+  }
+
+  // 添加关键词
+  const handleKeywordAdd = () => {
+    setEditableKeywords([...editableKeywords, ''])
+  }
+
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center fade-in-up">
         <h1 className="text-4xl font-bold gradient-text mb-6">🤖 AI灵感内容引擎</h1>
         <p className="text-xl text-white/80">
-          输入你的学习主题和灵感，AI将基于你的个人IP设定生成专属内容 🚀
+          一站式创作工具：生成模板 → 智能关键词 → 搜索爆款 🚀
         </p>
+      </div>
+
+      {/* 步骤指示器 */}
+      <div className="mb-8">
+        <div className="flex items-center justify-center space-x-4">
+          <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${currentStep >= 1 ? 'bg-blue-500/20 border border-blue-400/30' : 'bg-gray-500/20 border border-gray-400/30'}`}>
+            <span className="text-2xl">📝</span>
+            <span className="text-white font-medium">生成模板</span>
+          </div>
+          <div className="w-8 h-0.5 bg-gray-400/30"></div>
+          <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${currentStep >= 2 ? 'bg-blue-500/20 border border-blue-400/30' : 'bg-gray-500/20 border border-gray-400/30'}`}>
+            <span className="text-2xl">🔑</span>
+            <span className="text-white font-medium">生成关键词</span>
+          </div>
+          <div className="w-8 h-0.5 bg-gray-400/30"></div>
+          <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${currentStep >= 3 ? 'bg-blue-500/20 border border-blue-400/30' : 'bg-gray-500/20 border border-gray-400/30'}`}>
+            <span className="text-2xl">🔍</span>
+            <span className="text-white font-medium">搜索爆款</span>
+          </div>
+        </div>
       </div>
 
       <Card title="内容生成设置" icon="⚡" className="mb-8">
@@ -381,12 +512,17 @@ export default function GeneratePage() {
                 {generatedContent || '✨ 内容生成中，请稍候...'}
               </pre>
             </div>
-            <Button variant="outline" className="mt-4" onClick={() => navigator.clipboard.writeText(generatedContent)}>
-              📋 复制文案
-            </Button>
+            <div className="flex space-x-4 mt-4">
+              <Button variant="outline" onClick={() => navigator.clipboard.writeText(generatedContent)}>
+                📋 复制文案
+              </Button>
+              <Button onClick={handleGenerateKeywords} disabled={keywordLoading}>
+                {keywordLoading ? '生成中...' : '🔑 生成关键词'}
+              </Button>
+            </div>
           </Card>
 
-          <Card title="配图/视频建议" icon="🎨">
+          <Card title="配图/视频建议" icon="🎨" className="mb-8">
             <div className="glass-effect p-6 rounded-lg border border-white/10">
               <pre className="whitespace-pre-wrap text-sm text-white/90 leading-relaxed">
                 {visualSuggestions || '🎨 视觉建议生成中，请稍候...'}
@@ -394,6 +530,84 @@ export default function GeneratePage() {
             </div>
           </Card>
         </>
+      )}
+
+      {/* 关键词编辑区域 */}
+      {currentStep >= 2 && (
+        <Card title="智能关键词" icon="🔑" className="mb-8">
+          <div className="space-y-4">
+            <p className="text-white/70 text-sm">
+              基于您的内容和人设生成的关键词，您可以编辑后进行搜索
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {editableKeywords.map((keyword, index) => (
+                <div key={index} className="flex items-center space-x-2 bg-blue-500/20 border border-blue-400/30 rounded-lg px-3 py-2">
+                  <input
+                    type="text"
+                    value={keyword}
+                    onChange={(e) => handleKeywordEdit(index, e.target.value)}
+                    className="bg-transparent text-white text-sm border-none outline-none min-w-0 flex-1"
+                    placeholder="输入关键词"
+                  />
+                  <button
+                    onClick={() => handleKeywordDelete(index)}
+                    className="text-red-400 hover:text-red-300 text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={handleKeywordAdd}
+                className="flex items-center space-x-2 bg-gray-500/20 border border-gray-400/30 rounded-lg px-3 py-2 text-white/70 hover:text-white hover:bg-gray-500/30 transition-colors"
+              >
+                <span>+</span>
+                <span className="text-sm">添加关键词</span>
+              </button>
+            </div>
+            <Button onClick={handleSearchContent} disabled={searchLoading || editableKeywords.length === 0}>
+              {searchLoading ? '搜索中...' : '🔍 搜索相关爆款'}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* 搜索结果区域 */}
+      {currentStep >= 3 && searchResults.length > 0 && (
+        <Card title="相关爆款内容" icon="🔥" className="mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {searchResults.map((note, index) => (
+              <div key={note.note_id || index} className="glass-effect p-4 rounded-lg border border-white/10 hover:border-white/20 transition-colors">
+                <div className="space-y-3">
+                  <h3 className="text-white font-medium text-sm line-clamp-2">
+                    {note.title || '无标题'}
+                  </h3>
+                  <div className="flex items-center space-x-4 text-xs text-white/60">
+                    <span>👤 {note.nickname || note.author || '匿名'}</span>
+                    <span>❤️ {note.liked_count || 0}</span>
+                    <span>💬 {note.comment_count || 0}</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <ViewNoteButton
+                      note_id={note.note_id}
+                      url={note.url}
+                      title={note.title}
+                      className="flex-1 text-xs py-2"
+                    >
+                      查看原文
+                    </ViewNoteButton>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(note.url)}
+                      className="px-3 py-2 text-xs bg-gray-500/20 hover:bg-gray-500/30 text-white rounded-md transition-colors"
+                    >
+                      复制链接
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
     </div>
   )

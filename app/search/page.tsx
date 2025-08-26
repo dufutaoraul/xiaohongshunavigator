@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Card from '@/app/components/Card'
 import Button from '@/app/components/Button'
 import Input from '@/app/components/Input'
@@ -39,6 +40,7 @@ interface SearchResult {
 }
 
 export default function SearchPage() {
+  const router = useRouter()
   const [keyword, setKeyword] = useState('美食')
   const [sort, setSort] = useState('general')
   const [page, setPage] = useState(1)
@@ -46,8 +48,30 @@ export default function SearchPage() {
   const [error, setError] = useState('')
   const [results, setResults] = useState<Note[]>([])
   const [result, setResult] = useState<SearchResult | null>(null)
-  
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [studentId, setStudentId] = useState('')
+
   const cookieManager = useCookieManager()
+
+  // 检查身份验证
+  useEffect(() => {
+    const userSession = localStorage.getItem('userSession')
+    if (userSession) {
+      try {
+        const session = JSON.parse(userSession)
+        if (session.isAuthenticated) {
+          setIsAuthenticated(true)
+          setStudentId(session.student_id)
+          return
+        }
+      } catch {
+        // 忽略解析错误
+      }
+    }
+
+    // 未认证，跳转到首页
+    router.push('/')
+  }, [router])
 
   const handleSearch = async () => {
     if (!keyword.trim()) {
@@ -79,11 +103,12 @@ export default function SearchPage() {
         page,
         page_size: 10,
         sort,
-        cookie: savedCookie
+        cookie: savedCookie,
+        student_id: studentId
       }
       console.log('📤 [DEBUG] 发送的请求体:', { ...requestBody, cookie: requestBody.cookie ? `${requestBody.cookie.substring(0, 50)}...` : 'null' })
       
-      const response = await fetch('http://localhost:8002/search', {
+      const response = await fetch('/api/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,22 +122,52 @@ export default function SearchPage() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
-      const data: SearchResult = await response.json()
+      const data = await response.json()
       console.log('📊 响应数据:', data)
-      
-      setResult(data)
-      
+
       if (data.success && data.data?.notes) {
-        setResults(data.data.notes)
-        console.log(`✅ 搜索成功，获得 ${data.data.notes.length} 条结果`)
-        
+        // 转换数据格式以适配前端组件
+        const convertedNotes = data.data.notes.map((note: any) => ({
+          note_id: note.note_id,
+          title: note.title,
+          desc: note.title, // 使用标题作为描述
+          type: 'normal',
+          user: {
+            nickname: note.nickname || note.author_name || '匿名用户',
+            user_id: note.author || note.author_id || ''
+          },
+          interact_info: {
+            liked_count: String(note.liked_count || 0),
+            comment_count: String(note.comment_count || 0),
+            collected_count: '0'
+          },
+          cover: note.cover_image || note.cover_url || ''
+        }))
+
+        setResults(convertedNotes)
+        console.log(`✅ 搜索成功，获得 ${convertedNotes.length} 条结果`)
+
+        // 构造兼容的结果对象
+        setResult({
+          success: true,
+          data: {
+            message: data.data.message || '搜索成功',
+            keyword: data.data.keyword || keyword,
+            page: data.data.page || page,
+            page_size: data.data.page_size || 10,
+            status: data.data.source === 'demo' ? 'demo' : 'success',
+            total_count: convertedNotes.length,
+            notes: convertedNotes
+          }
+        })
+
         // 如果返回的是演示数据，提示用户更新Cookie
-        if (data.data.status === 'demo') {
-          setError('Cookie可能已过期，请点击"配置Cookie"按钮重新设置')
+        if (data.data.source === 'demo') {
+          setError('当前显示演示数据，请配置有效的Cookie获取真实数据')
         }
       } else {
         setError(data.error || '搜索失败')
-        
+
         // 如果是Cookie相关错误，显示Cookie配置对话框
         if (data.error?.includes('cookie') || data.error?.includes('Cookie')) {
           cookieManager.handleApiError(data)
@@ -148,6 +203,18 @@ export default function SearchPage() {
       case 'like': return '点赞'
       default: return '综合'
     }
+  }
+
+  // 如果未认证，显示加载状态
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen cosmic-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔄</div>
+          <p className="text-white/80">正在验证身份...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -220,13 +287,7 @@ export default function SearchPage() {
                 {loading ? '🔄 搜索中...' : '🔍 开始搜索'}
               </Button>
 
-              <Button
-                onClick={cookieManager.openCookieModal}
-                variant="outline"
-                className="border-white/40 hover:bg-white/10"
-              >
-                🍪 配置Cookie
-              </Button>
+
 
               <div className="flex items-center gap-2">
                 <Button

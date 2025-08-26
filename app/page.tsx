@@ -110,7 +110,7 @@ export default function Home() {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">🧑‍💼</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">个人IP资料库</h3>
@@ -129,27 +129,13 @@ export default function Home() {
             <div className="text-5xl mb-6 breathing-glow">🤖</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">AI灵感引擎</h3>
             <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
-              基于你的人设，AI生成高质量小红书内容，让创意如星河般闪耀。智能分析你的特色定位，自动生成吸引人的标题和正文内容。
+              基于你的人设，AI生成高质量小红书内容模板，并智能搜索相关爆款内容。一站式创作工具，从模板生成到热门搜索，让创意如星河般闪耀。
             </p>
             <button
               onClick={() => handleNavigation('/generate')}
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               智慧生成 🚀
-            </button>
-          </div>
-
-          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
-            <div className="text-5xl mb-6 breathing-glow">🔍</div>
-            <h3 className="text-xl font-bold text-white mb-4 gradient-text">内容搜索</h3>
-            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
-              搜索小红书热门内容和笔记，发现创作灵感。智能分析热门趋势，为你的内容创作提供数据支持和参考素材。
-            </p>
-            <button
-              onClick={() => handleNavigation('/search')}
-              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
-            >
-              探索内容 🔎
             </button>
           </div>
 

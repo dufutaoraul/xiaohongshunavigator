@@ -20,6 +20,18 @@ export default function CookieModal({ isOpen, onClose, onCookieSaved }: CookieMo
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
+  // 当模态框打开时，加载已保存的 Cookie
+  useEffect(() => {
+    if (isOpen) {
+      const savedCookie = localStorage.getItem('xhs_cookie')
+      if (savedCookie) {
+        setCookie(savedCookie)
+      }
+      setError('')
+      setSuccess(false)
+    }
+  }, [isOpen])
+
   const handleSaveCookie = async () => {
     if (!cookie.trim()) {
       setError('请输入 Cookie')
@@ -42,7 +54,7 @@ export default function CookieModal({ isOpen, onClose, onCookieSaved }: CookieMo
         }
         onClose()
         setSuccess(false)
-        setCookie('')
+        // 不清空 cookie，保持显示已保存的值
       }, 1500)
     } catch (error) {
       console.error('Cookie 保存失败:', error)
