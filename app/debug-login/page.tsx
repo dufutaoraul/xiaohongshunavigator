@@ -4,30 +4,30 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 export default function DebugLoginPage() {
-  const [studentId, setStudentId] = useState('test001')
-  const [password, setPassword] = useState('123456')
-  const [name, setName] = useState('测试学员')
+  const [studentId, setStudentId] = useState('AXCF2025010001')
+  const [password, setPassword] = useState('')
   const [result, setResult] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // 创建测试用户
-  const createTestUser = async () => {
+
+
+  // 调试认证
+  const debugAuth = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/test-user', {
+      const response = await fetch('/api/debug-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           student_id: studentId,
-          password: password,
-          name: name
+          password: password
         })
       })
 
       const data = await response.json()
-      setResult(`创建用户结果: ${JSON.stringify(data, null, 2)}`)
+      setResult(`调试结果: ${JSON.stringify(data, null, 2)}`)
     } catch (error) {
-      setResult(`创建用户错误: ${error}`)
+      setResult(`调试错误: ${error}`)
     } finally {
       setLoading(false)
     }
@@ -60,12 +60,12 @@ export default function DebugLoginPage() {
   const viewUsers = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/test-user', {
+      const response = await fetch('/api/debug-auth', {
         method: 'GET'
       })
 
       const data = await response.json()
-      setResult(`现有用户: ${JSON.stringify(data, null, 2)}`)
+      setResult(`用户列表: ${JSON.stringify(data, null, 2)}`)
     } catch (error) {
       setResult(`查看用户错误: ${error}`)
     } finally {
@@ -80,7 +80,7 @@ export default function DebugLoginPage() {
         
         <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">测试用户信息</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-white text-sm font-medium mb-2">学号</label>
               <input
@@ -94,46 +94,36 @@ export default function DebugLoginPage() {
             <div>
               <label className="block text-white text-sm font-medium mb-2">密码</label>
               <input
-                type="text"
+                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 bg-white/20 border border-white/30 rounded-md text-white placeholder-white/50"
                 placeholder="密码"
               />
             </div>
-            <div>
-              <label className="block text-white text-sm font-medium mb-2">姓名</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 bg-white/20 border border-white/30 rounded-md text-white placeholder-white/50"
-                placeholder="姓名"
-              />
-            </div>
           </div>
-          
+
           <div className="flex space-x-4">
             <button
-              onClick={createTestUser}
+              onClick={debugAuth}
               disabled={loading}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50"
             >
-              {loading ? '处理中...' : '创建测试用户'}
+              {loading ? '处理中...' : '🔍 调试认证'}
             </button>
             <button
               onClick={testLogin}
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md disabled:opacity-50"
             >
-              {loading ? '处理中...' : '测试登录'}
+              {loading ? '处理中...' : '🚀 测试正式登录'}
             </button>
             <button
               onClick={viewUsers}
               disabled={loading}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md disabled:opacity-50"
             >
-              {loading ? '处理中...' : '查看现有用户'}
+              {loading ? '处理中...' : '👥 查看用户列表'}
             </button>
           </div>
         </div>

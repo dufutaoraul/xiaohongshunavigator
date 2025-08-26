@@ -15,12 +15,23 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'login') {
-      // 验证用户登录
+      console.log('🔍 Login attempt for student_id:', student_id)
+
+      // 验证用户登录 - 只查询存在的字段
       const { data: user, error } = await supabase
         .from('users')
-        .select('student_id, name, password, persona, keywords, vision, password_hash, first_login')
+        .select('student_id, name, password, persona, keywords, vision')
         .eq('student_id', student_id)
         .single()
+
+      console.log('🔍 Database query result:', {
+        error: error?.message,
+        user: user ? {
+          student_id: user.student_id,
+          name: user.name,
+          has_password: !!user.password
+        } : null
+      })
 
       if (error || !user) {
         console.error('User not found:', error)
@@ -33,35 +44,31 @@ export async function POST(request: NextRequest) {
       // 检查密码 - 支持旧的明文密码和新的哈希密码
       let isPasswordValid = false
 
-      if (user.password_hash) {
-        // 使用哈希密码验证
-        isPasswordValid = await bcrypt.compare(password, user.password_hash)
-      } else if (user.password) {
-        // 兼容旧的明文密码
-        isPasswordValid = user.password === password
+      console.log('🔍 Password validation:', {
+        input_password: password,
+        db_password: user.password
+      })
 
-        // 如果明文密码验证成功，立即转换为哈希密码
-        if (isPasswordValid) {
-          const hashedPassword = await bcrypt.hash(password, 12)
-          await supabase
-            .from('users')
-            .update({
-              password_hash: hashedPassword,
-              password: null // 清除明文密码
-            })
-            .eq('student_id', student_id)
-        }
+      if (user.password) {
+        // 使用明文密码验证
+        isPasswordValid = user.password === password
+        console.log('🔍 Plaintext password check result:', isPasswordValid)
+      } else {
+        console.log('🔍 No password found in database')
       }
 
       if (!isPasswordValid) {
+        console.log('🔍 Password validation failed')
         return NextResponse.json(
           { error: 'Invalid credentials' },
           { status: 401 }
         )
       }
 
-      // 检查是否需要强制改密
-      const needsPasswordChange = user.first_login !== false || user.password === user.student_id
+      console.log('🔍 Password validation successful')
+
+      // 检查是否需要强制改密（简化版本）
+      const needsPasswordChange = user.password === user.student_id
 
       return NextResponse.json({
         success: true,
