@@ -4,8 +4,8 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Button from '../components/Button'
-import { QRCodeModal } from '../../components/QRCodeModal'
-import { ViewNoteButton } from '../../components/ViewNoteButton'
+// import { QRCodeModal } from '../../components/QRCodeModal'
+// import { ViewNoteButton } from '../../components/ViewNoteButton'
 
 interface GeneratedContent {
   titles: Array<{ id?: number, content: string }>
@@ -726,14 +726,14 @@ function ResultPageContent() {
                           <span>💬 {note.comment_count || 0}</span>
                         </div>
                         <div className="flex space-x-2">
-                          <ViewNoteButton
-                            note_id={note.note_id}
-                            url={note.url}
-                            title={note.title}
-                            className="flex-1 text-xs py-2"
+                          <a
+                            href={note.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 text-xs py-2 px-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-md transition-colors text-center"
                           >
                             查看原文
-                          </ViewNoteButton>
+                          </a>
                           <button
                             onClick={() => navigator.clipboard.writeText(note.url)}
                             className="px-3 py-2 text-xs bg-gray-500/20 hover:bg-gray-500/30 text-white rounded-md transition-colors"

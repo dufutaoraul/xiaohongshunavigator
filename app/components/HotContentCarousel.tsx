@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ViewNoteButton } from '../../components/ViewNoteButton'
+// import { ViewNoteButton } from '../../components/ViewNoteButton'
 
 interface HotNote {
   note_id: string
@@ -215,14 +215,14 @@ export default function HotContentCarousel({ className = '' }: HotContentCarouse
                 ))}
               </div>
             )}
-            <ViewNoteButton
-              note_id={currentNote.note_id}
-              url={currentNote.url}
-              title={currentNote.title}
-              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm rounded-lg transition-all"
+            <a
+              href={currentNote.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm rounded-lg transition-all"
             >
               查看详情 →
-            </ViewNoteButton>
+            </a>
           </div>
         </div>
       </div>
