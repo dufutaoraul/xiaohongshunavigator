@@ -182,6 +182,11 @@ export default function Home() {
           
         </div>
 
+        {/* 热门爆款轮播 - 在AI灵感引擎和打卡中心下面 */}
+        <div className="mt-16 max-w-4xl mx-auto">
+          <HotContentCarousel />
+        </div>
+
 
 
         {/* 调试入口 - 仅开发环境显示 */}

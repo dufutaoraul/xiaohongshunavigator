@@ -4,8 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Button from '../components/Button'
-// import { QRCodeModal } from '../../components/QRCodeModal'
-// import { ViewNoteButton } from '../../components/ViewNoteButton'
+import QRCode from 'qrcode'
 
 interface GeneratedContent {
   titles: Array<{ id?: number, content: string }>
@@ -40,6 +39,10 @@ function ResultPageContent() {
   const [studentId, setStudentId] = useState('')
   const [userCookie, setUserCookie] = useState('')
   const [showCookieModal, setShowCookieModal] = useState(false)
+  const [searchSort, setSearchSort] = useState<'general' | 'time' | 'like'>('like')
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [currentNoteUrl, setCurrentNoteUrl] = useState('')
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('')
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -258,7 +261,7 @@ function ResultPageContent() {
           keywords: [finalKeyword],
           page: 1,
           page_size: 10,
-          sort: 'like',
+          sort: searchSort,
           student_id: studentId,
           cookie: userCookie
         })
@@ -287,6 +290,56 @@ function ResultPageContent() {
     localStorage.setItem('xhs_cookie', cookie)
     setUserCookie(cookie)
     setShowCookieModal(false)
+  }
+
+  // 三种链接打开方法
+  const handleOpenLink = (url: string) => {
+    // 方法1: 直接window.open
+    try {
+      const newWindow = window.open(url, '_blank', 'noopener,noreferrer')
+      if (newWindow) {
+        console.log('方法1成功: window.open')
+        return
+      }
+    } catch (error) {
+      console.log('方法1失败:', error)
+    }
+
+    // 方法2: 新窗口location.href
+    try {
+      const newWindow = window.open('', '_blank')
+      if (newWindow) {
+        newWindow.location.href = url
+        console.log('方法2成功: 新窗口location.href')
+        return
+      }
+    } catch (error) {
+      console.log('方法2失败:', error)
+    }
+
+    // 方法3: 显示二维码模态框
+    console.log('前两种方法都失败，显示二维码')
+    setCurrentNoteUrl(url)
+    generateQRCode(url)
+  }
+
+  // 生成二维码
+  const generateQRCode = async (url: string) => {
+    try {
+      const qrDataUrl = await QRCode.toDataURL(url, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+      setQrCodeDataUrl(qrDataUrl)
+      setShowQRModal(true)
+    } catch (error) {
+      console.error('生成二维码失败:', error)
+      alert('生成二维码失败，请手动复制链接')
+    }
   }
 
   if (!data) {
@@ -729,11 +782,38 @@ function ResultPageContent() {
                   />
                 </div>
 
+                {/* 排序方式选择 */}
+                <div className="mb-4">
+                  <h4 className="text-white/80 text-sm mb-2">排序方式：</h4>
+                  <div className="flex space-x-2">
+                    {[
+                      { value: 'like', label: '最多点赞' },
+                      { value: 'time', label: '最新发布' },
+                      { value: 'general', label: '综合排序' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setSearchSort(option.value as any)}
+                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                          searchSort === option.value
+                            ? 'bg-purple-500 text-white border border-purple-400'
+                            : 'bg-purple-500/20 text-purple-300 border border-purple-400/30 hover:bg-purple-500/30'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* 当前选择显示 */}
                 {(selectedKeyword || customKeyword) && (
                   <div className="mb-4 p-3 bg-green-500/10 border border-green-400/30 rounded-lg">
                     <p className="text-green-300 text-sm">
                       将搜索关键词：<span className="font-medium">{selectedKeyword || customKeyword}</span>
+                      <span className="ml-2 text-green-400">
+                        ({searchSort === 'like' ? '按点赞排序' : searchSort === 'time' ? '按时间排序' : '综合排序'})
+                      </span>
                     </p>
                   </div>
                 )}
@@ -765,14 +845,12 @@ function ResultPageContent() {
                           <span>💬 {note.comment_count || 0}</span>
                         </div>
                         <div className="flex space-x-2">
-                          <a
-                            href={note.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 text-xs py-2 px-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-md transition-colors text-center"
+                          <button
+                            onClick={() => handleOpenLink(note.url)}
+                            className="flex-1 text-xs py-2 px-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-md transition-colors"
                           >
                             查看原文
-                          </a>
+                          </button>
                           <button
                             onClick={() => navigator.clipboard.writeText(note.url)}
                             className="px-3 py-2 text-xs bg-gray-500/20 hover:bg-gray-500/30 text-white rounded-md transition-colors"
@@ -842,6 +920,46 @@ function ResultPageContent() {
                     取消
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 二维码模态框 */}
+        {showQRModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 max-w-sm mx-4 text-center">
+              <h3 className="text-white font-medium text-lg mb-4">
+                📱 扫码查看小红书内容
+              </h3>
+              <p className="text-white/80 text-sm mb-4">
+                由于浏览器限制，请使用手机扫描二维码查看内容
+              </p>
+              {qrCodeDataUrl && (
+                <div className="mb-4 flex justify-center">
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="小红书链接二维码"
+                    className="rounded-lg bg-white p-2"
+                  />
+                </div>
+              )}
+              <div className="text-white/60 text-xs mb-4 break-all">
+                {currentNoteUrl}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => navigator.clipboard.writeText(currentNoteUrl)}
+                  className="flex-1 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg transition-colors text-sm"
+                >
+                  复制链接
+                </button>
+                <button
+                  onClick={() => setShowQRModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-500/20 hover:bg-gray-500/30 text-white rounded-lg transition-colors text-sm"
+                >
+                  关闭
+                </button>
               </div>
             </div>
           </div>
