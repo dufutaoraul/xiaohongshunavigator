@@ -30,13 +30,16 @@ function ResultPageContent() {
 
   // 新增关键词和搜索相关状态
   const [generatedKeywords, setGeneratedKeywords] = useState<string[]>([])
-  const [editableKeywords, setEditableKeywords] = useState<string[]>([])
+  const [selectedKeyword, setSelectedKeyword] = useState<string>('')
+  const [customKeyword, setCustomKeyword] = useState<string>('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [keywordLoading, setKeywordLoading] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
   const [showKeywords, setShowKeywords] = useState(false)
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [studentId, setStudentId] = useState('')
+  const [userCookie, setUserCookie] = useState('')
+  const [showCookieModal, setShowCookieModal] = useState(false)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -205,8 +208,11 @@ function ResultPageContent() {
       const result = await response.json()
       if (result.success) {
         setGeneratedKeywords(result.keywords)
-        setEditableKeywords([...result.keywords])
         setShowKeywords(true)
+        // 默认选择第一个关键词
+        if (result.keywords.length > 0) {
+          setSelectedKeyword(result.keywords[0])
+        }
       } else {
         throw new Error(result.error || '关键词生成失败')
       }
@@ -217,10 +223,27 @@ function ResultPageContent() {
     }
   }
 
+  // 检查Cookie
+  const checkCookie = () => {
+    const savedCookie = localStorage.getItem('xhs_cookie')
+    if (savedCookie) {
+      setUserCookie(savedCookie)
+      return true
+    }
+    return false
+  }
+
   // 搜索相关内容
   const handleSearchContent = async () => {
-    if (editableKeywords.length === 0) {
-      alert('请先生成关键词')
+    const finalKeyword = selectedKeyword || customKeyword
+    if (!finalKeyword.trim()) {
+      alert('请选择一个关键词或输入自定义关键词')
+      return
+    }
+
+    // 检查Cookie
+    if (!checkCookie()) {
+      setShowCookieModal(true)
       return
     }
 
@@ -232,11 +255,12 @@ function ResultPageContent() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          keywords: editableKeywords,
+          keywords: [finalKeyword],
           page: 1,
-          page_size: 6,
+          page_size: 10,
           sort: 'like',
-          student_id: studentId
+          student_id: studentId,
+          cookie: userCookie
         })
       })
 
@@ -258,22 +282,11 @@ function ResultPageContent() {
     }
   }
 
-  // 编辑关键词
-  const handleKeywordEdit = (index: number, newValue: string) => {
-    const newKeywords = [...editableKeywords]
-    newKeywords[index] = newValue
-    setEditableKeywords(newKeywords)
-  }
-
-  // 删除关键词
-  const handleKeywordDelete = (index: number) => {
-    const newKeywords = editableKeywords.filter((_, i) => i !== index)
-    setEditableKeywords(newKeywords)
-  }
-
-  // 添加关键词
-  const handleKeywordAdd = () => {
-    setEditableKeywords([...editableKeywords, ''])
+  // 保存Cookie
+  const handleSaveCookie = (cookie: string) => {
+    localStorage.setItem('xhs_cookie', cookie)
+    setUserCookie(cookie)
+    setShowCookieModal(false)
   }
 
   if (!data) {
@@ -668,43 +681,69 @@ function ResultPageContent() {
               )}
             </div>
 
-            {/* 关键词编辑区域 */}
+            {/* 关键词选择区域 */}
             {showKeywords && (
               <div className="mb-6">
-                <h3 className="text-white font-medium mb-3">编辑关键词</h3>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {editableKeywords.map((keyword, index) => (
-                    <div key={index} className="flex items-center space-x-2 bg-blue-500/20 border border-blue-400/30 rounded-lg px-3 py-2">
-                      <input
-                        type="text"
-                        value={keyword}
-                        onChange={(e) => handleKeywordEdit(index, e.target.value)}
-                        className="bg-transparent text-white text-sm border-none outline-none min-w-0 flex-1"
-                        placeholder="输入关键词"
-                      />
+                <h3 className="text-white font-medium mb-3">选择搜索关键词</h3>
+                <p className="text-white/60 text-sm mb-4">
+                  由于搜索功能一次只能搜一个词，请从推荐的AI关键词中选择一个，或自己手动输入：
+                </p>
+
+                {/* 推荐关键词选择 */}
+                <div className="mb-4">
+                  <h4 className="text-white/80 text-sm mb-2">推荐的AI关键词：</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {generatedKeywords.map((keyword, index) => (
                       <button
-                        onClick={() => handleKeywordDelete(index)}
-                        className="text-red-400 hover:text-red-300 text-sm"
+                        key={index}
+                        onClick={() => {
+                          setSelectedKeyword(keyword)
+                          setCustomKeyword('')
+                        }}
+                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                          selectedKeyword === keyword
+                            ? 'bg-blue-500 text-white border border-blue-400'
+                            : 'bg-blue-500/20 text-blue-300 border border-blue-400/30 hover:bg-blue-500/30'
+                        }`}
                       >
-                        ✕
+                        {keyword}
                       </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={handleKeywordAdd}
-                    className="flex items-center space-x-2 bg-gray-500/20 border border-gray-400/30 rounded-lg px-3 py-2 text-white/70 hover:text-white hover:bg-gray-500/30 transition-colors"
-                  >
-                    <span>+</span>
-                    <span className="text-sm">添加关键词</span>
-                  </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* 自定义关键词输入 */}
+                <div className="mb-4">
+                  <h4 className="text-white/80 text-sm mb-2">或输入自定义关键词：</h4>
+                  <input
+                    type="text"
+                    value={customKeyword}
+                    onChange={(e) => {
+                      setCustomKeyword(e.target.value)
+                      if (e.target.value) {
+                        setSelectedKeyword('')
+                      }
+                    }}
+                    placeholder="输入你想搜索的关键词..."
+                    className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:outline-none"
+                  />
+                </div>
+
+                {/* 当前选择显示 */}
+                {(selectedKeyword || customKeyword) && (
+                  <div className="mb-4 p-3 bg-green-500/10 border border-green-400/30 rounded-lg">
+                    <p className="text-green-300 text-sm">
+                      将搜索关键词：<span className="font-medium">{selectedKeyword || customKeyword}</span>
+                    </p>
+                  </div>
+                )}
 
                 <Button
                   onClick={handleSearchContent}
-                  disabled={searchLoading || editableKeywords.length === 0}
+                  disabled={searchLoading || (!selectedKeyword && !customKeyword.trim())}
                   className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 >
-                  {searchLoading ? '搜索中...' : '🔍 搜索相关爆款'}
+                  {searchLoading ? '搜索中...' : '🔍 确认搜索'}
                 </Button>
               </div>
             )}
@@ -765,6 +804,48 @@ function ResultPageContent() {
             🔄 不满意，重新生成
           </Button>
         </div>
+
+        {/* Cookie设置模态框 */}
+        {showCookieModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 max-w-md mx-4">
+              <div className="text-center">
+                <h3 className="text-white font-medium text-lg mb-4">
+                  🍪 设置小红书Cookie
+                </h3>
+                <p className="text-white/80 text-sm mb-4">
+                  为了获取真实的小红书数据，需要设置您的小红书Cookie。请按以下步骤操作：
+                </p>
+                <div className="text-left text-white/70 text-xs mb-4 space-y-2">
+                  <p>1. 打开小红书网页版并登录</p>
+                  <p>2. 按F12打开开发者工具</p>
+                  <p>3. 在Network标签页中找到请求</p>
+                  <p>4. 复制Cookie值并粘贴到下方</p>
+                </div>
+                <textarea
+                  placeholder="请粘贴您的小红书Cookie..."
+                  className="w-full h-24 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 text-xs resize-none focus:border-blue-400 focus:outline-none"
+                  onChange={(e) => setUserCookie(e.target.value)}
+                />
+                <div className="flex space-x-3 mt-4">
+                  <button
+                    onClick={() => handleSaveCookie(userCookie)}
+                    disabled={!userCookie.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg transition-colors text-sm disabled:opacity-50"
+                  >
+                    保存并搜索
+                  </button>
+                  <button
+                    onClick={() => setShowCookieModal(false)}
+                    className="flex-1 px-4 py-2 bg-gray-500/20 hover:bg-gray-500/30 text-white rounded-lg transition-colors text-sm"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

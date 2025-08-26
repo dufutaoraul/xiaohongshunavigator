@@ -23,6 +23,8 @@ export default function HotContentCarousel({ className = '' }: HotContentCarouse
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [selectedNote, setSelectedNote] = useState<HotNote | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // 获取热门内容
@@ -122,6 +124,34 @@ export default function HotContentCarousel({ className = '' }: HotContentCarouse
     goToSlide(newIndex)
   }
 
+  // 处理查看笔记
+  const handleViewNote = (note: HotNote) => {
+    // 尝试三种不同的方法打开小红书链接
+
+    // 方法1: 直接打开链接
+    try {
+      window.open(note.url, '_blank')
+      return
+    } catch (error) {
+      console.log('方法1失败:', error)
+    }
+
+    // 方法2: 使用location.href
+    try {
+      const newWindow = window.open()
+      if (newWindow) {
+        newWindow.location.href = note.url
+        return
+      }
+    } catch (error) {
+      console.log('方法2失败:', error)
+    }
+
+    // 方法3: 如果都失败，显示二维码
+    setSelectedNote(note)
+    setShowQRModal(true)
+  }
+
   useEffect(() => {
     fetchHotContent()
   }, [])
@@ -215,14 +245,12 @@ export default function HotContentCarousel({ className = '' }: HotContentCarouse
                 ))}
               </div>
             )}
-            <a
-              href={currentNote.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm rounded-lg transition-all"
+            <button
+              onClick={() => handleViewNote(currentNote)}
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm rounded-lg transition-all"
             >
               查看详情 →
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -245,6 +273,52 @@ export default function HotContentCarousel({ className = '' }: HotContentCarouse
       {/* 背景装饰 */}
       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
       <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-pink-500/10 to-transparent rounded-full translate-y-8 -translate-x-8"></div>
+
+      {/* 二维码模态框 */}
+      {showQRModal && selectedNote && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 max-w-md mx-4">
+            <div className="text-center">
+              <h3 className="text-white font-medium text-lg mb-4">
+                扫码查看小红书内容
+              </h3>
+              <div className="bg-white p-4 rounded-lg mb-4">
+                <div className="w-48 h-48 mx-auto bg-gray-200 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">📱</div>
+                    <div className="text-sm text-gray-600">
+                      小红书二维码
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      请用小红书APP扫码
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-white/80 text-sm mb-4">
+                {selectedNote.title}
+              </p>
+              <p className="text-white/60 text-xs mb-4">
+                由于浏览器限制，无法直接打开小红书链接。请使用小红书APP扫描上方二维码查看内容。
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => navigator.clipboard.writeText(selectedNote.url)}
+                  className="flex-1 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg transition-colors text-sm"
+                >
+                  复制链接
+                </button>
+                <button
+                  onClick={() => setShowQRModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-500/20 hover:bg-gray-500/30 text-white rounded-lg transition-colors text-sm"
+                >
+                  关闭
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -6,6 +6,8 @@ import { createClient } from '@supabase/supabase-js'
 import ComingSoon from '../components/ComingSoon'
 import LoginModal from '../components/LoginModal'
 import XiaohongshuProfileModal from '../components/XiaohongshuProfileModal'
+import HotContentCarousel from '../components/HotContentCarousel'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 
 // 创建Supabase客户端
 const supabase = createClient(
@@ -211,8 +213,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-2xl mx-auto py-20 px-4 sm:px-6 lg:px-8 text-center">
+    <div className="min-h-screen relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="max-w-2xl mx-auto py-20 px-4 sm:px-6 lg:px-8 text-center">
         <div className="glass-effect p-12 rounded-3xl border border-white/20 backdrop-blur-lg">
           <div className="text-8xl mb-8 animate-pulse">📊</div>
           <h1 className="text-4xl font-bold gradient-text mb-6">自动化打卡与进度可视系统</h1>
@@ -263,6 +269,11 @@ export default function DashboardPage() {
             <div className="w-3 h-3 bg-pink-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
             <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
           </div>
+        </div>
+
+        {/* 优秀学员作品轮播 */}
+        <div className="max-w-4xl mx-auto mt-16 px-4 sm:px-6 lg:px-8">
+          <HotContentCarousel />
         </div>
       </div>
       
