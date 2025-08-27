@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
 import UserMenu from './components/UserMenu'
-import HotContentCarousel from './components/HotContentCarousel'
+import DualCarousel from './components/DualCarousel'
 import GlobalUserMenu from './components/GlobalUserMenu'
 
 import { createClient } from '@supabase/supabase-js'
@@ -186,7 +186,7 @@ export default function Home() {
 
         {/* 热门爆款轮播 - 在AI灵感引擎和打卡中心下面 */}
         <div className="mt-16 max-w-4xl mx-auto">
-          <HotContentCarousel />
+          <DualCarousel />
         </div>
 
 
