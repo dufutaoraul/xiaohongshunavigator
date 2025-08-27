@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
+
+// 使用服务角色密钥创建Supabase客户端
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key'
+
+// 在构建时检查环境变量
+if (typeof window === 'undefined' && (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co')) {
+  console.warn('Supabase URL not configured properly for build in auth route')
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +31,7 @@ export async function POST(request: NextRequest) {
       // 验证用户登录 - 只查询存在的字段
       const { data: user, error } = await supabase
         .from('users')
-        .select('student_id, name, password, persona, keywords, vision')
+        .select('student_id, name, password, persona, keywords, vision, role')
         .eq('student_id', student_id)
         .single()
 
@@ -41,6 +52,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
+<<<<<<< HEAD
       // 检查密码 - 支持旧的明文密码和新的哈希密码
       let isPasswordValid = false
 
@@ -59,6 +71,34 @@ export async function POST(request: NextRequest) {
 
       if (!isPasswordValid) {
         console.log('🔍 Password validation failed')
+=======
+      // 检查密码 - 支持旧的明文密码和新的加密密码
+      let passwordValid = false
+      
+      console.log('Password validation:', {
+        inputPassword: password,
+        storedPassword: user.password,
+        inputLength: password.length,
+        storedLength: user.password.length
+      })
+      
+      // 如果密码以$2a$或$2b$开头，说明是bcrypt加密的
+      if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
+        passwordValid = await bcrypt.compare(password, user.password)
+      } else {
+        // 兼容旧的明文密码 - 直接比较字符串
+        passwordValid = user.password === password
+        
+        // 如果直接比较失败，尝试去除空格
+        if (!passwordValid) {
+          passwordValid = user.password?.trim() === password?.trim()
+        }
+      }
+      
+      console.log('Password validation result:', passwordValid)
+      
+      if (!passwordValid) {
+>>>>>>> development
         return NextResponse.json(
           { error: 'Invalid credentials' },
           { status: 401 }
@@ -75,6 +115,7 @@ export async function POST(request: NextRequest) {
         user: {
           student_id: user.student_id,
           name: user.name,
+          role: user.role || 'student',
           persona: user.persona,
           keywords: user.keywords,
           vision: user.vision
@@ -134,6 +175,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
+<<<<<<< HEAD
       // 哈希新密码
       const hashedNewPassword = await bcrypt.hash(new_password, 12)
 
@@ -145,6 +187,15 @@ export async function POST(request: NextRequest) {
           password: null, // 清除明文密码
           first_login: false // 标记已完成首次登录
         })
+=======
+      // 加密新密码
+      const hashedPassword = await bcrypt.hash(new_password, 10)
+      
+      // 更新密码
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ password: hashedPassword })
+>>>>>>> development
         .eq('student_id', student_id)
 
       if (updateError) {

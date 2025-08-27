@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import bcrypt from 'bcryptjs'
+import { createClient } from '@supabase/supabase-js'
+
+// 使用服务角色密钥创建Supabase客户端
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key'
+
+// 在构建时检查环境变量
+if (typeof window === 'undefined' && (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co')) {
+  console.warn('Supabase URL not configured properly for build in debug-auth route')
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(request: NextRequest) {
   try {

@@ -39,3 +39,6 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Temp reference directory (embedded git repo)
+temp-homework-reference/zuoyepigai

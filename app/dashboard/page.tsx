@@ -9,10 +9,17 @@ import XiaohongshuProfileModal from '../components/XiaohongshuProfileModal'
 import DualCarousel from '../components/DualCarousel'
 import GlobalUserMenu from '../components/GlobalUserMenu'
 
-// 创建Supabase客户端
+// 创建Supabase客户端 - 添加环境变量检查
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase environment variables')
+}
+
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseKey || 'placeholder-key'
 )
 
 export default function DashboardPage() {
@@ -30,7 +37,7 @@ export default function DashboardPage() {
   // 检查登录状态和小红书绑定状态
   useEffect(() => {
     checkAuthAndXiaohongshuStatus()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuthAndXiaohongshuStatus = useCallback(async () => {
     try {

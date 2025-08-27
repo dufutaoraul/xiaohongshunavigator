@@ -5,45 +5,27 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
-import UserMenu from './components/UserMenu'
+import { useAuth } from './contexts/AuthContext'
 import DualCarousel from './components/DualCarousel'
 import GlobalUserMenu from './components/GlobalUserMenu'
 
-import { createClient } from '@supabase/supabase-js'
-
-// 创建Supabase客户端 - 添加安全检查
-const supabase = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY 
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
-  : null
-
 export default function Home() {
   const router = useRouter()
+  const { isAuthenticated, login } = useAuth()
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
 
   // 检查认证并导航
   const handleNavigation = (path: string) => {
-    const userSession = localStorage.getItem('userSession')
-    const lastCredentials = localStorage.getItem('lastCredentials')
-    
     if (path === '/profile' || path === '/generate') {
       // 这两个页面需要认证
-      if (userSession) {
-        try {
-          const { isAuthenticated } = JSON.parse(userSession)
-          if (isAuthenticated) {
-            router.push(path)
-            return
-          }
-        } catch {
-          // 忽略解析错误
-        }
+      if (isAuthenticated) {
+        router.push(path)
+        return
       }
       
-      // 如果有保存的凭证，直接跳转到对应页面（会触发登录）
+      // 检查是否有保存的凭证
+      const lastCredentials = localStorage.getItem('lastCredentials')
       if (lastCredentials) {
         router.push(path)
       } else {
@@ -73,13 +55,10 @@ export default function Home() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // 保存认证状态
-        localStorage.setItem('userSession', JSON.stringify({
-          student_id: studentId,
-          name: result.user.name,
-          isAuthenticated: true
-        }))
+        // 使用AuthContext的login方法
+        login(result.user)
         
+        // 保存凭证用于自动登录
         localStorage.setItem('lastCredentials', JSON.stringify({
           student_id: studentId,
           password: password
@@ -147,6 +126,20 @@ export default function Home() {
           </div>
 
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
+            <div className="text-5xl mb-6 breathing-glow">📝</div>
+            <h3 className="text-xl font-bold text-white mb-4 gradient-text">作业系统</h3>
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
+              智能化作业提交与批改平台，AI助力学习进度追踪。提交创作作品，获得专业点评反馈，系统化提升内容创作能力。
+            </p>
+            <button
+              onClick={() => handleNavigation('/homework')}
+              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
+            >
+              提交作业 📚
+            </button>
+          </div>
+
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">📊</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">打卡中心</h3>
             <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
@@ -157,20 +150,6 @@ export default function Home() {
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               进度追踪 📈
-            </button>
-          </div>
-
-          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
-            <div className="text-5xl mb-6 breathing-glow">🏆</div>
-            <h3 className="text-xl font-bold text-white mb-4 gradient-text">优秀案例</h3>
-            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
-              学习优秀学员的爆款内容和经验，在星光指引下前行。精选创富营内最具影响力的成功案例，深度解析爆款内容的创作技巧。
-            </p>
-            <button
-              onClick={() => handleNavigation('/showcase')}
-              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
-            >
-              灵感探索 🌠
             </button>
           </div>
         </div>
