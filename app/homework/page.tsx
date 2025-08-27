@@ -25,69 +25,10 @@ export default function HomeworkPage() {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* 提交作业 */}
-            <Link href="/homework/submit">
-              <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/30 transition-colors">
-                    <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    提交作业
-                  </h3>
-                  <p className="text-white/60">
-                    选择作业并上传附件进行提交
-                  </p>
-                </div>
-              </div>
-            </Link>
-
-            {/* 查询我的作业 */}
-            <Link href="/homework/my-assignments">
-              <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-500/30 transition-colors">
-                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    查询我的作业
-                  </h3>
-                  <p className="text-white/60">
-                    查看作业提交历史和批改结果
-                  </p>
-                </div>
-              </div>
-            </Link>
-
-            {/* 查询毕业资格 */}
-            <Link href="/homework/graduation-check">
-              <div className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/30 transition-colors">
-                    <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    查询毕业资格
-                  </h3>
-                  <p className="text-white/60">
-                    检查是否满足毕业条件
-                  </p>
-                </div>
-              </div>
-            </Link>
-          </div>
-
-          {/* 飞书作业系统 - 快速链接 */}
+          {/* 作业系统 - 快速链接 */}
           <div className="mt-12">
             <h2 className="text-2xl font-bold text-center mb-8 gradient-text">
-              飞书作业系统 - 快速链接
+              作业系统 - 快速链接
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* 提交作业 */}

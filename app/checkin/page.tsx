@@ -41,6 +41,9 @@ export default function CheckinPage() {
   const [todayUrl, setTodayUrl] = useState('')
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [isAccountValid, setIsAccountValid] = useState<boolean | null>(null)
+  const [xiaohongshuUrl, setXiaohongshuUrl] = useState('')
+  const [showXiaohongshuModal, setShowXiaohongshuModal] = useState(false)
+  const [hasXiaohongshuProfile, setHasXiaohongshuProfile] = useState(false)
 
   // 检查用户认证状态
   useEffect(() => {
@@ -67,9 +70,13 @@ export default function CheckinPage() {
   // 获取打卡计划和记录
   useEffect(() => {
     if (isAuthenticated && studentId) {
-      fetchCheckinData()
-      // 检查账号有效期
-      checkAccountValidity().then(setIsAccountValid)
+      checkXiaohongshuProfile(studentId).then(hasProfile => {
+        if (hasProfile) {
+          fetchCheckinData()
+          // 检查账号有效期
+          checkAccountValidity().then(setIsAccountValid)
+        }
+      })
     }
   }, [isAuthenticated, studentId])
 
@@ -102,6 +109,121 @@ export default function CheckinPage() {
     } catch (error) {
       console.error('获取打卡数据失败:', error)
     }
+  }
+
+  // 检查小红书主页绑定
+  const checkXiaohongshuProfile = async (studentId: string) => {
+    try {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('xiaohongshu_url')
+        .eq('student_id', studentId)
+        .single()
+
+      if (error || !user) {
+        console.error('获取用户信息失败:', error)
+        setHasXiaohongshuProfile(false)
+        return false
+      }
+
+      if (user.xiaohongshu_url) {
+        setXiaohongshuUrl(user.xiaohongshu_url)
+        setHasXiaohongshuProfile(true)
+        return true
+      } else {
+        setHasXiaohongshuProfile(false)
+        return false
+      }
+    } catch (error) {
+      console.error('检查小红书主页失败:', error)
+      setHasXiaohongshuProfile(false)
+      return false
+    }
+  }
+
+  // 更新小红书主页链接
+  const updateXiaohongshuProfile = async (url: string) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ xiaohongshu_url: url })
+        .eq('student_id', studentId)
+
+      if (error) {
+        console.error('更新小红书主页失败:', error)
+        alert('更新失败，请重试')
+        return false
+      }
+
+      setXiaohongshuUrl(url)
+      setHasXiaohongshuProfile(true)
+      setShowXiaohongshuModal(false)
+      alert('小红书主页绑定成功！')
+      return true
+    } catch (error) {
+      console.error('更新小红书主页失败:', error)
+      alert('更新失败，请重试')
+      return false
+    }
+  }
+
+  // 生成日历天数
+  const generateCalendarDays = () => {
+    const today = new Date()
+    const currentMonth = today.getMonth()
+    const currentYear = today.getFullYear()
+
+    // 获取当月第一天和最后一天
+    const firstDay = new Date(currentYear, currentMonth, 1)
+    const lastDay = new Date(currentYear, currentMonth + 1, 0)
+
+    // 获取第一天是星期几（0=周日）
+    const firstDayWeek = firstDay.getDay()
+
+    // 获取当月天数
+    const daysInMonth = lastDay.getDate()
+
+    const days = []
+
+    // 添加上个月的天数（填充）
+    const prevMonth = new Date(currentYear, currentMonth - 1, 0)
+    for (let i = firstDayWeek - 1; i >= 0; i--) {
+      days.push({
+        date: prevMonth.getDate() - i,
+        isCurrentMonth: false,
+        isToday: false,
+        hasCheckin: false,
+        isInvalid: false
+      })
+    }
+
+    // 添加当月的天数
+    for (let date = 1; date <= daysInMonth; date++) {
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`
+      const record = checkinRecords.find(r => r.checkin_date === dateStr)
+
+      days.push({
+        date,
+        isCurrentMonth: true,
+        isToday: date === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear(),
+        hasCheckin: record?.status === 'valid',
+        isInvalid: record?.status === 'invalid'
+      })
+    }
+
+    // 添加下个月的天数（填充到42天，6周）
+    const remainingDays = 42 - days.length
+    for (let date = 1; date <= remainingDays; date++) {
+      days.push({
+        date,
+        isCurrentMonth: false,
+        isToday: false,
+        hasCheckin: false,
+        isInvalid: false
+      })
+    }
+
+    return days
   }
 
   // 检查账号有效期
@@ -171,6 +293,77 @@ export default function CheckinPage() {
     } catch (error) {
       console.error('创建打卡计划失败:', error)
       alert('创建打卡计划失败，请重试')
+    }
+  }
+
+  // 检查毕业条件
+  const checkGraduationCondition = async () => {
+    try {
+      // 获取最新的打卡记录
+      const { data: records, error } = await supabase
+        .from('checkin_records')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('plan_id', checkinPlan?.id)
+        .eq('status', 'valid')
+
+      if (error) {
+        console.error('获取打卡记录失败:', error)
+        return
+      }
+
+      const validCheckins = records?.length || 0
+      console.log(`当前有效打卡天数: ${validCheckins}/90`)
+
+      // 检查是否达到90天
+      if (validCheckins >= 90) {
+        // 更新打卡计划状态为已完成
+        const { error: updateError } = await supabase
+          .from('checkin_plans')
+          .update({
+            status: 'completed',
+            completed_days: validCheckins
+          })
+          .eq('id', checkinPlan?.id)
+
+        if (updateError) {
+          console.error('更新打卡计划状态失败:', updateError)
+          return
+        }
+
+        // 发送通知给管理员
+        await notifyAdminGraduation()
+
+        // 显示恭喜消息
+        alert(`🎉 恭喜您！您已完成90天打卡挑战！\n\n✅ 有效打卡天数: ${validCheckins}天\n🏆 您已获得毕业资格\n📧 管理员已收到通知，将为您颁发证书`)
+      }
+    } catch (error) {
+      console.error('检查毕业条件失败:', error)
+    }
+  }
+
+  // 通知管理员学员毕业
+  const notifyAdminGraduation = async () => {
+    try {
+      // 这里可以发送邮件或其他通知方式
+      // 暂时记录到数据库
+      const { error } = await supabase
+        .from('graduation_notifications')
+        .insert({
+          student_id: studentId,
+          student_name: userName,
+          graduation_date: new Date().toISOString(),
+          checkin_plan_id: checkinPlan?.id,
+          message: `学员 ${userName} (${studentId}) 已完成90天打卡挑战，请颁发毕业证书。`
+        })
+
+      if (error) {
+        console.error('发送毕业通知失败:', error)
+      } else {
+        console.log('毕业通知已发送给管理员')
+      }
+    } catch (error) {
+      console.error('发送毕业通知失败:', error)
     }
   }
 
@@ -269,7 +462,12 @@ export default function CheckinPage() {
 
       setTodayUrl('')
       setShowSubmitModal(false)
-      fetchCheckinData()
+
+      // 重新获取打卡数据
+      await fetchCheckinData()
+
+      // 检查是否达到毕业条件
+      await checkGraduationCondition()
 
       if (isValidPost) {
         alert('打卡提交成功！帖子时间有效。')
@@ -319,7 +517,27 @@ export default function CheckinPage() {
           </p>
         </div>
 
-        {!isAccountValid ? (
+        {!hasXiaohongshuProfile ? (
+          <div className="glass-effect p-8 rounded-lg text-center">
+            <div className="text-6xl mb-4">🔗</div>
+            <h2 className="text-2xl font-bold text-yellow-400 mb-4">需要绑定小红书主页</h2>
+            <p className="text-white/80 mb-6">
+              请先绑定您的小红书主页链接，才能开始打卡挑战。
+            </p>
+            <button
+              onClick={() => setShowXiaohongshuModal(true)}
+              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg mr-4"
+            >
+              绑定小红书主页
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+            >
+              返回首页
+            </button>
+          </div>
+        ) : !isAccountValid ? (
           <div className="glass-effect p-8 rounded-lg text-center">
             <div className="text-6xl mb-4">⏰</div>
             <h2 className="text-2xl font-bold text-red-400 mb-4">账号有效期已过</h2>
@@ -385,10 +603,46 @@ export default function CheckinPage() {
               </button>
             </div>
 
-            {/* 打卡日历 - 这里可以添加日历组件 */}
+            {/* 打卡日历 */}
             <div className="glass-effect p-6 rounded-lg">
               <h3 className="text-xl font-bold text-white mb-4">打卡日历</h3>
-              <p className="text-white/60">日历组件开发中...</p>
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {['日', '一', '二', '三', '四', '五', '六'].map(day => (
+                  <div key={day} className="text-center text-white/60 text-sm font-medium py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {generateCalendarDays().map((day, index) => (
+                  <div
+                    key={index}
+                    className={`
+                      aspect-square flex items-center justify-center text-sm rounded-lg
+                      ${day.isCurrentMonth ? 'text-white' : 'text-white/30'}
+                      ${day.isToday ? 'bg-blue-500/30 border border-blue-400' : ''}
+                      ${day.hasCheckin ? 'bg-green-500/30 border border-green-400' : 'bg-white/5'}
+                      ${day.isInvalid ? 'bg-red-500/30 border border-red-400' : ''}
+                    `}
+                  >
+                    {day.date}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-green-500/30 border border-green-400 rounded"></div>
+                  <span className="text-white/60">已打卡</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-red-500/30 border border-red-400 rounded"></div>
+                  <span className="text-white/60">无效打卡</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-blue-500/30 border border-blue-400 rounded"></div>
+                  <span className="text-white/60">今天</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -452,6 +706,39 @@ export default function CheckinPage() {
               </button>
               <button
                 onClick={() => setShowSubmitModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 小红书主页绑定模态框 */}
+      {showXiaohongshuModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-white font-bold text-lg mb-4">绑定小红书主页</h3>
+            <p className="text-white/80 text-sm mb-4">
+              请输入您的小红书主页链接：
+            </p>
+            <input
+              type="url"
+              value={xiaohongshuUrl}
+              onChange={(e) => setXiaohongshuUrl(e.target.value)}
+              placeholder="https://www.xiaohongshu.com/user/profile/..."
+              className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 mb-4"
+            />
+            <div className="flex space-x-3">
+              <button
+                onClick={() => updateXiaohongshuProfile(xiaohongshuUrl)}
+                className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+              >
+                确认绑定
+              </button>
+              <button
+                onClick={() => setShowXiaohongshuModal(false)}
                 className="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
               >
                 取消

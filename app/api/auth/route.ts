@@ -52,53 +52,32 @@ export async function POST(request: NextRequest) {
         )
       }
 
-<<<<<<< HEAD
-      // 检查密码 - 支持旧的明文密码和新的哈希密码
-      let isPasswordValid = false
-
-      console.log('🔍 Password validation:', {
-        input_password: password,
-        db_password: user.password
-      })
-
-      if (user.password) {
-        // 使用明文密码验证
-        isPasswordValid = user.password === password
-        console.log('🔍 Plaintext password check result:', isPasswordValid)
-      } else {
-        console.log('🔍 No password found in database')
-      }
-
-      if (!isPasswordValid) {
-        console.log('🔍 Password validation failed')
-=======
       // 检查密码 - 支持旧的明文密码和新的加密密码
       let passwordValid = false
-      
+
       console.log('Password validation:', {
         inputPassword: password,
         storedPassword: user.password,
         inputLength: password.length,
         storedLength: user.password.length
       })
-      
+
       // 如果密码以$2a$或$2b$开头，说明是bcrypt加密的
       if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
         passwordValid = await bcrypt.compare(password, user.password)
       } else {
         // 兼容旧的明文密码 - 直接比较字符串
         passwordValid = user.password === password
-        
+
         // 如果直接比较失败，尝试去除空格
         if (!passwordValid) {
           passwordValid = user.password?.trim() === password?.trim()
         }
       }
-      
+
       console.log('Password validation result:', passwordValid)
-      
+
       if (!passwordValid) {
->>>>>>> development
         return NextResponse.json(
           { error: 'Invalid credentials' },
           { status: 401 }
@@ -175,27 +154,13 @@ export async function POST(request: NextRequest) {
         )
       }
 
-<<<<<<< HEAD
-      // 哈希新密码
-      const hashedNewPassword = await bcrypt.hash(new_password, 12)
+      // 加密新密码
+      const hashedPassword = await bcrypt.hash(new_password, 10)
 
       // 更新密码
       const { error: updateError } = await supabase
         .from('users')
-        .update({
-          password_hash: hashedNewPassword,
-          password: null, // 清除明文密码
-          first_login: false // 标记已完成首次登录
-        })
-=======
-      // 加密新密码
-      const hashedPassword = await bcrypt.hash(new_password, 10)
-      
-      // 更新密码
-      const { error: updateError } = await supabase
-        .from('users')
         .update({ password: hashedPassword })
->>>>>>> development
         .eq('student_id', student_id)
 
       if (updateError) {
