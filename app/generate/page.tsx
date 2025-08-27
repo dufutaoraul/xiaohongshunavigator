@@ -6,6 +6,7 @@ import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
 import GlobalUserMenu from '../components/GlobalUserMenu'
+import DualCarousel from '../components/DualCarousel'
 import { QRCodeModal } from '@/components/QRCodeModal'
 import { ViewNoteButton } from '@/components/ViewNoteButton'
 
@@ -666,6 +667,11 @@ export default function GeneratePage() {
           </div>
         </Card>
       )}
+
+      {/* 轮播区域 */}
+      <div className="mt-12">
+        <DualCarousel />
+      </div>
       </div>
     </div>
   )

@@ -1,17 +1,18 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-// import { ViewNoteButton } from '../../components/ViewNoteButton'
 
 interface HotNote {
   note_id: string
   title: string
   author: string
+  nickname?: string
   liked_count: number
   comment_count: number
   url: string
   cover_image?: string
   tags?: string[]
+  source?: 'ai_industry' | 'student_posts'
 }
 
 interface HotContentCarouselProps {
@@ -19,13 +20,16 @@ interface HotContentCarouselProps {
 }
 
 export default function HotContentCarousel({ className = '' }: HotContentCarouselProps) {
-  const [hotNotes, setHotNotes] = useState<HotNote[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [aiIndustryNotes, setAiIndustryNotes] = useState<HotNote[]>([])
+  const [studentNotes, setStudentNotes] = useState<HotNote[]>([])
+  const [aiCurrentIndex, setAiCurrentIndex] = useState(0)
+  const [studentCurrentIndex, setStudentCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showQRModal, setShowQRModal] = useState(false)
   const [selectedNote, setSelectedNote] = useState<HotNote | null>(null)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const aiIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const studentIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // 获取热门内容
   const fetchHotContent = async () => {

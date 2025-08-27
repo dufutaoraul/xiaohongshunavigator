@@ -36,23 +36,34 @@ export function ViewNoteButton({
       return
     }
 
-    const result = await viewNote({
-      note_id,
-      url,
-      use_proxy: enableProxy,
-      cookie
-    })
+    const noteUrl = url || (note_id ? `https://www.xiaohongshu.com/explore/${note_id}` : '')
 
-    if (result) {
-      if (result.view_type === 'proxy' && result.data.content) {
-        // 显示代理获取的内容
-        setProxyContent(result.data.content)
-        setShowProxyContent(true)
-      } else {
-        // 显示二维码
-        setShowQRModal(true)
+    // 尝试三种打开方式
+    console.log('🔗 尝试打开小红书链接:', noteUrl)
+
+    // 方法1: 直接在新窗口打开
+    try {
+      const newWindow = window.open(noteUrl, '_blank', 'noopener,noreferrer')
+      if (newWindow) {
+        console.log('✅ 方法1成功: 新窗口打开')
+        return
       }
+    } catch (error) {
+      console.log('❌ 方法1失败:', error)
     }
+
+    // 方法2: 使用location.href跳转
+    try {
+      window.location.href = noteUrl
+      console.log('✅ 方法2: 当前窗口跳转')
+      return
+    } catch (error) {
+      console.log('❌ 方法2失败:', error)
+    }
+
+    // 方法3: 显示二维码（兜底方案）
+    console.log('🔄 使用兜底方案: 显示二维码')
+    setShowQRModal(true)
   }
 
   const noteUrl = url || (note_id ? `https://www.xiaohongshu.com/explore/${note_id}` : '')

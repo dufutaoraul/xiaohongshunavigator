@@ -7,6 +7,7 @@ import Button from '@/app/components/Button'
 import Input from '@/app/components/Input'
 import CookieModal from '@/app/components/CookieModal'
 import { useCookieManager } from '@/app/hooks/useCookieManager'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 
 interface Note {
   note_id: string
@@ -218,31 +219,68 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen cosmic-bg p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen cosmic-bg p-4 relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
+      <div className="max-w-6xl mx-auto space-y-6 pt-16">
         {/* Cookie状态指示器 */}
         {!cookieManager.isLoading && (
           <Card className="backdrop-blur-md">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  cookieManager.hasCookie 
-                    ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
-                    : 'bg-red-500/20 text-red-300 border border-red-500/30'
-                }`}>
-                  {cookieManager.hasCookie ? '✅ Cookie已配置' : '❌ 未配置Cookie'}
-                </span>
-                <span className="text-white/70 text-sm">
-                  {cookieManager.hasCookie ? '可以正常搜索' : '请先配置Cookie后再搜索'}
-                </span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    cookieManager.hasCookie
+                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                      : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  }`}>
+                    {cookieManager.hasCookie ? '✅ Cookie已配置' : '❌ 未配置Cookie'}
+                  </span>
+                  <span className="text-white/70 text-sm">
+                    {cookieManager.hasCookie ? '可以正常搜索' : '请先配置Cookie后再搜索'}
+                  </span>
+                </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={cookieManager.openCookieModal}
+                  variant="outline"
+                  className="h-9 rounded-md px-3 border-white/40 hover:bg-white/10"
+                >
+                  🍪 {cookieManager.hasCookie ? '更新Cookie' : '配置Cookie'}
+                </Button>
+                <Button
+                  onClick={() => window.open('https://tcnlkdeey4g8.feishu.cn/wiki/VvEmw2j33izxorkdUClck50en9b', '_blank')}
+                  variant="outline"
+                  className="h-9 rounded-md px-3 border-blue-400/30 hover:bg-blue-500/20 text-blue-300"
+                >
+                  📖 获取教程
+                </Button>
               </div>
-              <Button
-                onClick={cookieManager.openCookieModal}
-                variant="outline"
-                className="h-9 rounded-md px-3 border-white/40 hover:bg-white/10"
-              >
-                🍪 {cookieManager.hasCookie ? '更新Cookie' : '配置Cookie'}
-              </Button>
+
+              {/* Cookie预览 */}
+              {cookieManager.hasCookie && (
+                <div className="p-3 bg-gray-500/10 border border-gray-400/20 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/80 text-sm font-medium">当前Cookie:</span>
+                    <button
+                      onClick={() => {
+                        const cookie = cookieManager.getCookie()
+                        if (cookie) {
+                          navigator.clipboard.writeText(cookie)
+                          alert('Cookie已复制到剪贴板')
+                        }
+                      }}
+                      className="text-xs text-blue-300 hover:text-blue-200 underline"
+                    >
+                      复制
+                    </button>
+                  </div>
+                  <div className="text-xs text-white/60 font-mono bg-black/20 p-2 rounded border max-h-20 overflow-y-auto">
+                    {cookieManager.getCookie()?.substring(0, 200)}...
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         )}

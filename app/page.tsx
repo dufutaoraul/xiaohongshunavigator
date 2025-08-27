@@ -7,6 +7,7 @@ import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
 import UserMenu from './components/UserMenu'
 import HotContentCarousel from './components/HotContentCarousel'
+import GlobalUserMenu from './components/GlobalUserMenu'
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -100,8 +101,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      {/* 用户菜单 - 左上角 */}
-      <UserMenu className="absolute top-6 left-6 z-50" />
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
 
       <div className="max-w-6xl mx-auto py-20 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">

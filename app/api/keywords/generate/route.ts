@@ -81,40 +81,119 @@ function generateAIKeywords(themeText: string): string[] {
   const text = themeText.toLowerCase()
   const matchedKeywords: string[] = []
 
-  // 检查主题文本中是否包含AI相关内容
+  console.log('🔍 分析用户输入:', themeText)
+
+  // 1. 直接提取用户输入中的关键词
+  const userKeywords = extractKeywordsFromText(themeText)
+  console.log('📝 用户关键词:', userKeywords)
+
+  // 2. 检查是否包含AI相关内容
   const hasAIContent = AI_KEYWORDS.some(keyword =>
     text.includes(keyword.toLowerCase()) ||
     text.includes(keyword.replace(/[A-Z]/g, '').toLowerCase())
   )
 
-  if (hasAIContent) {
-    // 如果包含AI内容，从AI关键词库中选择相关的
+  // 3. 特殊处理一些常见的AI工具名称
+  const specialAITerms = {
+    'augment': 'Augment',
+    'claude': 'Claude',
+    'chatgpt': 'ChatGPT',
+    'gpt': 'ChatGPT',
+    'midjourney': 'Midjourney',
+    'stable diffusion': 'Stable Diffusion',
+    'dall-e': 'DALL-E',
+    'copilot': 'Copilot',
+    'gemini': 'Gemini',
+    'bard': 'Bard'
+  }
+
+  // 4. 检查特殊AI术语
+  Object.entries(specialAITerms).forEach(([term, keyword]) => {
+    if (text.includes(term)) {
+      matchedKeywords.push(keyword)
+      console.log(`✅ 匹配到AI工具: ${term} -> ${keyword}`)
+    }
+  })
+
+  // 5. 如果用户输入包含AI相关内容，优先使用用户的关键词
+  if (hasAIContent || matchedKeywords.length > 0) {
+    // 添加用户的关键词（如果与AI相关）
+    userKeywords.forEach(keyword => {
+      if (keyword.length >= 2 && !matchedKeywords.includes(keyword)) {
+        matchedKeywords.push(keyword)
+      }
+    })
+
+    // 从AI关键词库中选择相关的
     AI_KEYWORDS.forEach(keyword => {
       const keywordLower = keyword.toLowerCase()
       if (text.includes(keywordLower) ||
           text.includes(keywordLower.replace(/[^a-z0-9]/g, '')) ||
           // 模糊匹配
           (keyword.length > 3 && text.includes(keyword.substring(0, 3).toLowerCase()))) {
-        matchedKeywords.push(keyword)
+        if (!matchedKeywords.includes(keyword)) {
+          matchedKeywords.push(keyword)
+        }
       }
     })
-
-    // 如果匹配的关键词少于3个，添加热门AI关键词
-    if (matchedKeywords.length < 3) {
-      const hotAIKeywords = ['ChatGPT', 'AI工具', 'AI绘画', 'AI写作', 'AI办公', 'Midjourney', 'AI创作']
-      hotAIKeywords.forEach(keyword => {
-        if (!matchedKeywords.includes(keyword) && matchedKeywords.length < 3) {
+  } else {
+    // 6. 如果不包含AI内容，但用户有输入关键词，尝试找相关的AI关键词
+    if (userKeywords.length > 0) {
+      // 添加用户的关键词
+      userKeywords.forEach(keyword => {
+        if (keyword.length >= 2) {
           matchedKeywords.push(keyword)
         }
       })
+
+      // 根据用户输入的主题，推荐相关的AI关键词
+      const themeBasedAI = getThemeBasedAIKeywords(themeText)
+      themeBasedAI.forEach(keyword => {
+        if (!matchedKeywords.includes(keyword)) {
+          matchedKeywords.push(keyword)
+        }
+      })
+    } else {
+      // 7. 完全没有相关内容，推荐最热门的AI关键词
+      const recommendedKeywords = ['ChatGPT', 'AI工具', 'AI创作']
+      matchedKeywords.push(...recommendedKeywords)
     }
-  } else {
-    // 如果不包含AI内容，推荐最热门的AI关键词
-    const recommendedKeywords = ['ChatGPT', 'AI工具', 'AI创作']
-    matchedKeywords.push(...recommendedKeywords)
   }
 
-  return matchedKeywords.slice(0, 3)
+  console.log('🎯 最终关键词:', matchedKeywords)
+  return matchedKeywords.slice(0, 5) // 增加到5个关键词
+}
+
+// 根据主题推荐AI关键词
+function getThemeBasedAIKeywords(themeText: string): string[] {
+  const text = themeText.toLowerCase()
+  const recommendations: string[] = []
+
+  if (text.includes('写作') || text.includes('文章') || text.includes('内容')) {
+    recommendations.push('AI写作', 'ChatGPT', 'Claude')
+  }
+  if (text.includes('绘画') || text.includes('画画') || text.includes('设计') || text.includes('图片')) {
+    recommendations.push('AI绘画', 'Midjourney', 'Stable Diffusion')
+  }
+  if (text.includes('视频') || text.includes('剪辑')) {
+    recommendations.push('AI视频', 'Runway', 'Luma AI')
+  }
+  if (text.includes('音乐') || text.includes('声音')) {
+    recommendations.push('AI音乐', 'Suno AI', 'ElevenLabs')
+  }
+  if (text.includes('办公') || text.includes('工作') || text.includes('效率')) {
+    recommendations.push('AI办公', 'Notion AI', 'Copilot')
+  }
+  if (text.includes('学习') || text.includes('教育')) {
+    recommendations.push('AI教育', 'ChatGPT', 'AI学习')
+  }
+
+  // 如果没有匹配到特定主题，返回通用AI关键词
+  if (recommendations.length === 0) {
+    recommendations.push('AI工具', 'ChatGPT', 'AI创作')
+  }
+
+  return recommendations.slice(0, 3)
 }
 
 export async function POST(request: NextRequest) {

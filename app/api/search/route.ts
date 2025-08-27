@@ -78,57 +78,71 @@ export async function POST(request: NextRequest) {
     let searchResults: NoteResult[] = []
     let resultSource = 'demo'
 
-    // 尝试调用 FastAPI 后端
+    // 尝试直接调用小红书API
     if (xhsCookie) {
       try {
-        const fastApiUrl = process.env.NEXT_PUBLIC_XHS_API_BASE_URL || 'http://localhost:8002'
-        console.log(`🚀 [Search API] 调用 FastAPI: ${fastApiUrl}/search`)
+        console.log(`🚀 [Search API] 直接调用小红书API`)
 
-        const response = await fetch(`${fastApiUrl}/search`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-xhs-cookie': xhsCookie
-          },
-          body: JSON.stringify({
-            keyword: primaryKeyword,
-            page,
-            page_size,
-            sort: SORT_MAPPING[sort] || sort,
-            cookie: xhsCookie
-          })
+        // 构建小红书搜索URL
+        const searchUrl = `https://edith.xiaohongshu.com/api/sns/web/v1/search/notes`
+        const params = new URLSearchParams({
+          keyword: primaryKeyword,
+          page: page.toString(),
+          page_size: page_size.toString(),
+          search_id: Date.now().toString(),
+          sort: SORT_MAPPING[sort] || sort
+        })
+
+        const response = await fetch(`${searchUrl}?${params}`, {
+          method: 'GET',
+          headers: {
+            'Cookie': xhsCookie,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://www.xiaohongshu.com/',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         })
 
         if (response.ok) {
           const data = await response.json()
-          console.log(`✅ [Search API] FastAPI 响应成功`)
-          
-          if (data.success && data.data && data.data.notes) {
-            searchResults = data.data.notes.map((note: any) => ({
-              note_id: note.note_id || note.id || '',
-              title: note.title || '',
-              author: note.user?.user_id || note.author_id || '',
-              nickname: note.user?.nickname || note.author_name || '',
-              liked_count: parseInt(note.interact_info?.liked_count || note.liked_count || '0'),
-              comment_count: parseInt(note.interact_info?.comment_count || note.comment_count || '0'),
-              cover_image: note.cover || note.cover_image || note.cover_url,
-              url: note.url || `https://www.xiaohongshu.com/explore/${note.note_id}`,
-              published_at: note.published_at,
-              source: 'real' as const
-            }))
+          console.log(`✅ [Search API] 小红书API 响应成功`)
+
+          if (data.success && data.data && data.data.items) {
+            searchResults = data.data.items.map((item: any) => {
+              const note = item.note_card || item
+              return {
+                note_id: note.note_id || '',
+                title: note.display_title || note.title || '',
+                author: note.user?.user_id || '',
+                nickname: note.user?.nickname || '',
+                liked_count: parseInt(note.interact_info?.liked_count || '0'),
+                comment_count: parseInt(note.interact_info?.comment_count || '0'),
+                cover_image: note.cover?.url_default || note.cover?.url,
+                url: `https://www.xiaohongshu.com/explore/${note.note_id}`,
+                published_at: note.time,
+                source: 'real' as const
+              }
+            }).filter((note: any) => note.note_id) // 过滤掉无效数据
+
             resultSource = 'real'
-            
+
             // 应用二次排序兜底
             searchResults = applySecondarySort(searchResults, sort)
-            
+
             // 限制返回数量
             searchResults = searchResults.slice(0, page_size)
+
+            console.log(`📊 [Search API] 获取到 ${searchResults.length} 条真实数据`)
           }
         } else {
-          console.warn(`⚠️ [Search API] FastAPI 响应失败: ${response.status}`)
+          console.warn(`⚠️ [Search API] 小红书API 响应失败: ${response.status}`)
+          const errorText = await response.text()
+          console.warn(`错误详情: ${errorText}`)
         }
       } catch (error) {
-        console.error(`❌ [Search API] FastAPI 调用失败:`, error)
+        console.error(`❌ [Search API] 小红书API 调用失败:`, error)
       }
     }
 

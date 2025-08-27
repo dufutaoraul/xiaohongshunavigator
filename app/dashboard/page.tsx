@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import ComingSoon from '../components/ComingSoon'
 import LoginModal from '../components/LoginModal'
 import XiaohongshuProfileModal from '../components/XiaohongshuProfileModal'
-import HotContentCarousel from '../components/HotContentCarousel'
+import DualCarousel from '../components/DualCarousel'
 import GlobalUserMenu from '../components/GlobalUserMenu'
 
 // 创建Supabase客户端
@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [currentXiaohongshuUrl, setCurrentXiaohongshuUrl] = useState('')
   const [currentStudentId, setCurrentStudentId] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   // 检查登录状态和小红书绑定状态
@@ -31,16 +32,17 @@ export default function DashboardPage() {
     checkAuthAndXiaohongshuStatus()
   }, [])
 
-  const checkAuthAndXiaohongshuStatus = async () => {
+  const checkAuthAndXiaohongshuStatus = useCallback(async () => {
     try {
       const userSession = localStorage.getItem('userSession')
       const lastCredentials = localStorage.getItem('lastCredentials')
       
       if (userSession) {
         try {
-          const { student_id, isAuthenticated } = JSON.parse(userSession)
-          if (isAuthenticated && student_id) {
+          const { student_id, isAuthenticated: authStatus } = JSON.parse(userSession)
+          if (authStatus && student_id) {
             setIsLoggedIn(true)
+            setIsAuthenticated(true)
             setCurrentStudentId(student_id)
             
             // 检查是否已绑定小红书链接
@@ -72,7 +74,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   const checkXiaohongshuProfile = async (studentId: string, forceShow = false) => {
     try {
@@ -129,6 +131,7 @@ export default function DashboardPage() {
         }))
         
         setIsLoggedIn(true)
+        setIsAuthenticated(true)
         setCurrentStudentId(studentId)
         setShowLoginModal(false)
         
@@ -200,14 +203,6 @@ export default function DashboardPage() {
           loading={authLoading}
         />
         
-        {/* 小红书主页绑定模态框 */}
-        <XiaohongshuProfileModal
-          isOpen={showXiaohongshuModal}
-          onClose={() => router.push('/')}
-          onUpdate={handleUpdateXiaohongshuProfile}
-          currentUrl={currentXiaohongshuUrl}
-          loading={profileLoading}
-        />
       </div>
     )
   }
@@ -292,7 +287,7 @@ export default function DashboardPage() {
 
         {/* 优秀学员作品轮播 */}
         <div className="max-w-4xl mx-auto mt-16 px-4 sm:px-6 lg:px-8">
-          <HotContentCarousel />
+          <DualCarousel />
         </div>
       </div>
       
