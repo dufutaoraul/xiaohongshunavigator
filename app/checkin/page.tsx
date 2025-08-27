@@ -74,9 +74,9 @@ export default function CheckinPage() {
       checkXiaohongshuProfile(studentId).then(hasProfile => {
         if (hasProfile) {
           fetchCheckinData()
-          // 检查账号有效期
-          checkAccountValidity().then(setIsAccountValid)
         }
+        // 无论是否有小红书主页，都要检查账号有效期
+        checkAccountValidity().then(setIsAccountValid)
       })
     }
   }, [isAuthenticated, studentId])

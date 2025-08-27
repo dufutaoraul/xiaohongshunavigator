@@ -241,7 +241,7 @@ export default function SearchPage() {
                     {cookieManager.hasCookie ? '可以正常搜索' : '请先配置Cookie后再搜索'}
                   </span>
                 </div>
-              <div className="flex gap-2">
+                <div className="flex gap-2">
                 <Button
                   onClick={cookieManager.openCookieModal}
                   variant="outline"
@@ -256,6 +256,7 @@ export default function SearchPage() {
                 >
                   📖 获取教程
                 </Button>
+                </div>
               </div>
 
               {/* Cookie预览 */}
@@ -265,10 +266,12 @@ export default function SearchPage() {
                     <span className="text-white/80 text-sm font-medium">当前Cookie:</span>
                     <button
                       onClick={() => {
-                        const cookie = cookieManager.getCookie()
-                        if (cookie) {
-                          navigator.clipboard.writeText(cookie)
-                          alert('Cookie已复制到剪贴板')
+                        if (typeof window !== 'undefined') {
+                          const cookie = localStorage.getItem('xhs_cookie')
+                          if (cookie) {
+                            navigator.clipboard.writeText(cookie)
+                            alert('Cookie已复制到剪贴板')
+                          }
                         }
                       }}
                       className="text-xs text-blue-300 hover:text-blue-200 underline"
@@ -277,7 +280,7 @@ export default function SearchPage() {
                     </button>
                   </div>
                   <div className="text-xs text-white/60 font-mono bg-black/20 p-2 rounded border max-h-20 overflow-y-auto">
-                    {cookieManager.getCookie()?.substring(0, 200)}...
+                    {typeof window !== 'undefined' ? localStorage.getItem('xhs_cookie')?.substring(0, 200) + '...' : '加载中...'}
                   </div>
                 </div>
               )}

@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
 // 获取AI相关的热门帖子
 async function getAIRelatedPosts(limit: number) {
   try {
-    // 从小红书搜索结果表中获取AI相关的热门帖子
+    // 从热门帖子表中获取AI相关的热门帖子
     const { data: posts, error } = await supabase
-      .from('xhs_search_results')
+      .from('hot_posts')
       .select('*')
       .or('title.ilike.%AI%,title.ilike.%人工智能%,title.ilike.%ChatGPT%,title.ilike.%机器学习%')
-      .order('liked_count', { ascending: false })
+      .order('like_count', { ascending: false })
       .limit(limit)
 
     if (error) {
@@ -68,8 +68,8 @@ async function getAIRelatedPosts(limit: number) {
     const formattedPosts = posts.map(post => ({
       id: post.note_id || post.id,
       title: post.title || '无标题',
-      author: post.nickname || post.author || '匿名用户',
-      likes: post.liked_count || 0,
+      author: post.author || '匿名用户',
+      likes: post.like_count || 0,
       comments: post.comment_count || 0,
       url: post.url || '#',
       tags: extractTags(post.title || ''),
@@ -94,13 +94,10 @@ async function getAIRelatedPosts(limit: number) {
 // 获取学员优秀帖子
 async function getStudentPosts(limit: number) {
   try {
-    // 从用户表和打卡记录表中获取学员的优秀帖子
+    // 从打卡记录表中获取学员的优秀帖子，然后手动关联用户信息
     const { data: records, error } = await supabase
       .from('checkin_records')
-      .select(`
-        *,
-        users!inner(name, xiaohongshu_url)
-      `)
+      .select('*')
       .eq('status', 'valid')
       .not('xhs_url', 'is', null)
       .order('created_at', { ascending: false })
@@ -123,17 +120,39 @@ async function getStudentPosts(limit: number) {
       })
     }
 
+    // 获取相关用户信息
+    const studentIds = Array.from(new Set(records.map(r => r.student_id)))
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('student_id, name')
+      .in('student_id', studentIds)
+
+    if (usersError) {
+      console.error('Error fetching users:', usersError)
+    }
+
+    // 创建用户映射
+    const userMap = new Map()
+    if (users) {
+      users.forEach(user => {
+        userMap.set(user.student_id, user)
+      })
+    }
+
     // 转换数据格式并模拟点赞数据
-    const formattedPosts = records.slice(0, limit).map((record, index) => ({
-      id: record.id,
-      title: generateStudentPostTitle(record.users?.name || '学员'),
-      author: `@${record.users?.name || '学员小张'}`,
-      likes: Math.floor(Math.random() * 5000) + 1000, // 模拟点赞数
-      comments: Math.floor(Math.random() * 500) + 50, // 模拟评论数
-      url: record.xhs_url,
-      tags: ['小红书运营', 'AI学习', '内容创作'],
-      category: '优秀学员爆款'
-    }))
+    const formattedPosts = records.slice(0, limit).map((record, index) => {
+      const user = userMap.get(record.student_id)
+      return {
+        id: record.id,
+        title: generateStudentPostTitle(user?.name || '学员'),
+        author: `@${user?.name || '学员小张'}`,
+        likes: Math.floor(Math.random() * 5000) + 1000, // 模拟点赞数
+        comments: Math.floor(Math.random() * 500) + 50, // 模拟评论数
+        url: record.xhs_url,
+        tags: ['小红书运营', 'AI学习', '内容创作'],
+        category: '优秀学员爆款'
+      }
+    })
 
     return NextResponse.json({
       success: true,
