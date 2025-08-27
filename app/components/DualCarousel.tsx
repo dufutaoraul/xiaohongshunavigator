@@ -32,21 +32,22 @@ export default function DualCarousel({ className = '' }: DualCarouselProps) {
   // 获取AI行业爆款
   const fetchAiIndustryContent = async () => {
     try {
-      const response = await fetch('/api/hot-content')
+      const response = await fetch('/api/real-carousel?type=ai_posts&limit=5')
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.data) {
           setAiIndustryNotes(result.data.map((note: any) => ({
-            id: note.note_id,
+            id: note.id,
             title: note.title,
             author: note.author,
-            nickname: note.nickname,
-            liked_count: note.liked_count,
-            comment_count: note.comment_count,
+            nickname: note.author,
+            liked_count: note.likes,
+            comment_count: note.comments,
             url: note.url,
             cover_image: note.cover_image,
             tags: note.tags
           })))
+          console.log(`✅ AI行业爆款数据加载成功 (${result.source})`)
           return
         }
       }
@@ -89,20 +90,22 @@ export default function DualCarousel({ className = '' }: DualCarouselProps) {
   // 获取优秀学员爆款
   const fetchStudentContent = async () => {
     try {
-      const response = await fetch('/api/student-stats?action=hot_posts&limit=10')
+      const response = await fetch('/api/real-carousel?type=student_posts&limit=5')
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.data && result.data.length > 0) {
           setStudentNotes(result.data.map((post: any) => ({
-            id: post.post_id,
+            id: post.id,
             title: post.title,
-            author: post.student_id,
-            nickname: post.student_name,
-            liked_count: post.like_count,
-            comment_count: post.comment_count,
-            url: post.post_url,
-            cover_image: post.cover_image_url
+            author: post.author,
+            nickname: post.author,
+            liked_count: post.likes,
+            comment_count: post.comments,
+            url: post.url,
+            cover_image: post.cover_image,
+            tags: post.tags
           })))
+          console.log(`✅ 学员爆款数据加载成功 (${result.source})`)
           return
         }
       }

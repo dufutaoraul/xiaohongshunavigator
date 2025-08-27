@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
 import { useAuth } from './contexts/AuthContext'
-import DualCarousel from './components/DualCarousel'
+
 import GlobalUserMenu from './components/GlobalUserMenu'
 
 export default function Home() {
@@ -14,6 +14,16 @@ export default function Home() {
   const { isAuthenticated, login } = useAuth()
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
+
+  // 检查URL参数是否需要打开登录模态框
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('login') === 'true') {
+      setShowLoginModal(true)
+      // 清除URL参数
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
 
   // 检查认证并导航
   const handleNavigation = (path: string) => {
@@ -163,10 +173,7 @@ export default function Home() {
           
         </div>
 
-        {/* 热门爆款轮播 - 在AI灵感引擎和打卡中心下面 */}
-        <div className="mt-16 max-w-4xl mx-auto">
-          <DualCarousel />
-        </div>
+
 
 
 

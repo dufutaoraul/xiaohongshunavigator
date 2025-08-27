@@ -6,9 +6,21 @@ import bcrypt from 'bcryptjs'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key'
 
+// 调试环境变量
+console.log('🔧 Auth Route Environment Check:', {
+  supabaseUrl: supabaseUrl,
+  hasServiceKey: !!supabaseServiceKey,
+  serviceKeyLength: supabaseServiceKey?.length,
+  serviceKeyPrefix: supabaseServiceKey?.substring(0, 20) + '...'
+})
+
 // 在构建时检查环境变量
 if (typeof window === 'undefined' && (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co')) {
   console.warn('Supabase URL not configured properly for build in auth route')
+}
+
+if (supabaseServiceKey === 'placeholder-key') {
+  console.error('🚨 SUPABASE_SERVICE_ROLE_KEY not found in environment variables!')
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)

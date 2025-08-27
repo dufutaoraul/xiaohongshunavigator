@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import GlobalUserMenu from '../components/GlobalUserMenu'
+import DualCarousel from '../components/DualCarousel'
 
 interface CheckinRecord {
   id: string
@@ -644,6 +645,13 @@ export default function CheckinPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 轮播区域 - 只在有打卡计划时显示 */}
+        {checkinPlan && (
+          <div className="mt-12">
+            <DualCarousel />
           </div>
         )}
       </div>

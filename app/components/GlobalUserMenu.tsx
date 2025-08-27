@@ -86,7 +86,8 @@ export default function GlobalUserMenu({ className = '' }: GlobalUserMenuProps) 
 
   // 登录
   const handleLogin = () => {
-    router.push('/')
+    // 跳转到首页并触发登录模态框
+    router.push('/?login=true')
   }
 
   if (!userInfo) {
