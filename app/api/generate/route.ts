@@ -1,16 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// 使用环境变量创建Supabase客户端，支持构建时的占位符
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-
-// 在构建时检查环境变量
-if (typeof window === 'undefined' && (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co')) {
-  console.warn('Supabase URL not configured properly for build in generate route')
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,50 +42,55 @@ export async function POST(request: NextRequest) {
       console.log('使用Supabase用户数据:', userData)
     }
 
-    // 调用 N8N 工作流进行内容生成
-    const n8nWebhookUrl = 'https://n8n.aifunbox.com/webhook-test/7fd7257d-ed4c-44c3-8179-bc035ab51ae3'
-    console.log('Using N8N webhook URL:', n8nWebhookUrl)
-    
-    try {
-      // 构建N8N API请求
-      console.log('Making N8N API request...')
-      const requestBody = {
-        inputs: {
-          persona: userData.persona || "",
-          keywords: userData.keywords || "",
-          vision: userData.vision || "",
-          user_input: user_input,
-          angle: angle,
-          day_number: parseInt(day_number) || 1
-        },
-        response_mode: "blocking",
-        user: student_id
-      }
-      console.log('Request body:', JSON.stringify(requestBody, null, 2))
-      
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时
-      
-      const n8nResponse = await fetch(n8nWebhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-      })
+    // 调用 Dify 工作流进行内容生成
+    console.log('Environment check:', {
+      hasApiUrl: !!process.env.DIFY_API_URL,
+      hasApiKey: !!process.env.DIFY_API_KEY,
+      apiUrl: process.env.DIFY_API_URL
+    })
+
+    if (process.env.DIFY_API_URL && process.env.DIFY_API_KEY) {
+      try {
+        // 构建Dify API请求 - 根据提供的准确格式
+        console.log('Making Dify API request...')
+        const requestBody = {
+          inputs: {
+            persona: userData.persona || "",
+            keywords: userData.keywords || "",
+            vision: userData.vision || "",
+            user_input: user_input,
+            angle: angle,
+            day_number: parseInt(day_number) || 1
+          },
+          response_mode: "blocking",
+          user: student_id
+        }
+        console.log('Request body:', JSON.stringify(requestBody, null, 2))
+
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时
+
+        const difyResponse = await fetch(process.env.DIFY_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.DIFY_API_KEY}`
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        })
         
-      clearTimeout(timeoutId)
+        clearTimeout(timeoutId)
 
-      console.log('N8N response status:', n8nResponse.status)
-      console.log('N8N response headers:', Object.fromEntries(n8nResponse.headers.entries()))
+        console.log('Dify response status:', difyResponse.status)
+        console.log('Dify response headers:', Object.fromEntries(difyResponse.headers.entries()))
 
-      if (n8nResponse.ok) {
-        // 先获取响应文本，避免JSON解析问题
-        const responseText = await n8nResponse.text()
+        if (difyResponse.ok) {
+          // 先获取响应文本，避免JSON解析问题
+          const responseText = await difyResponse.text()
           console.log('Raw response text length:', responseText.length)
           console.log('Raw response text preview:', responseText.substring(0, 200) + '...')
-          
+
           // 尝试解析为JSON
           let rawResult
           try {
@@ -104,10 +98,10 @@ export async function POST(request: NextRequest) {
           } catch (parseError) {
             console.error('Failed to parse response as JSON:', parseError)
             console.error('Response text:', responseText.substring(0, 1000))
-            throw new Error('Invalid JSON response from N8N')
+            throw new Error('Invalid JSON response from Dify')
           }
-          console.log('===== N8N RESPONSE ANALYSIS =====')
-          console.log('Raw N8N response:', JSON.stringify(rawResult, null, 2))
+          console.log('===== DIFY RESPONSE ANALYSIS =====')
+          console.log('Raw Dify response:', JSON.stringify(rawResult, null, 2))
           console.log('Response type:', typeof rawResult)
           
           let result = rawResult
@@ -156,11 +150,11 @@ export async function POST(request: NextRequest) {
           console.log('Final processed result keys:', Object.keys(result))
           console.log('====================================')
           
-          // 首先检查直接的structured_output格式（新的Dify输出）
+          // 首先检查直接的structured_output格式（新的Dify 输出）
           if (result.structured_output) {
             const structuredData = result.structured_output
             console.log('Found direct structured_output:', structuredData)
-            
+
             // 处理缺失的hashtags字段
             let hashtags = []
             if (Array.isArray(structuredData.hashtags)) {
@@ -170,13 +164,13 @@ export async function POST(request: NextRequest) {
               hashtags = ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "AI工具", "效率提升", "学习方法"]
               console.log('Using default hashtags as none provided')
             }
-            
+
             // 处理visuals字段
             const visuals = {
               images: structuredData.visuals?.images || [],
               videos: structuredData.visuals?.videos || []
             }
-            
+
             // 如果没有videos，添加默认建议
             if (visuals.videos.length === 0) {
               visuals.videos = [
@@ -185,13 +179,13 @@ export async function POST(request: NextRequest) {
               ]
               console.log('Added default video suggestions')
             }
-            
+
             return NextResponse.json({
               titles: structuredData.titles || [],
               bodies: structuredData.bodies || [],
               hashtags: hashtags,
               visuals: visuals,
-              n8n: true,
+              dify: true,
               source: 'direct_structured_output'
             })
           }
@@ -229,7 +223,7 @@ export async function POST(request: NextRequest) {
               bodies: structuredData.bodies || [],
               hashtags: hashtags,
               visuals: visuals,
-              n8n: true,
+              dify: true,
               source: 'parsed_answer_structured_output'
             })
           }
@@ -247,7 +241,7 @@ export async function POST(request: NextRequest) {
                 images: structuredData.visuals?.images || [],
                 videos: structuredData.visuals?.videos || []
               },
-              n8n: true, // 标记这是Dify生成的数据
+              dify: true, // 标记这是Dify生成的数据
               task_id: result.task_id,
               workflow_run_id: result.workflow_run_id,
               elapsed_time: result.data.elapsed_time,
@@ -268,7 +262,7 @@ export async function POST(request: NextRequest) {
                 images: structuredData.visuals?.images || [],
                 videos: structuredData.visuals?.videos || []
               },
-              n8n: true // 标记这是Dify生成的数据
+              dify: true // 标记这是Dify生成的数据
             })
           }
           
@@ -279,7 +273,7 @@ export async function POST(request: NextRequest) {
               bodies: result.data.bodies || [],
               hashtags: Array.isArray(result.data.hashtags) ? result.data.hashtags : [],
               visuals: result.data.visuals || { images: [], videos: [] },
-              n8n: true
+              dify: true
             })
           }
           
@@ -291,48 +285,55 @@ export async function POST(request: NextRequest) {
               titles: [{ id: 1, content: "✨ AI生成的专属内容分享" }],
               bodies: [{ id: 1, content: content, style: "AI智能生成" }],
               hashtags: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "AI工具", "学习方法", "个人成长"],
-              visuals: { 
+              visuals: {
                 images: [{ id: 1, suggestion: "根据内容主题制作相关配图，突出重点信息" }],
                 videos: [{ id: 1, suggestion: "制作内容相关的短视频，增强表达效果" }]
               },
-              n8n: true
+              dify: true
             })
           }
         } else {
-        const errorText = await n8nResponse.text()
-        console.error('===== N8N API FAILED =====')
-        console.error('Status:', n8nResponse.status)
-        console.error('Status Text:', n8nResponse.statusText)
-        console.error('Headers:', Object.fromEntries(n8nResponse.headers.entries()))
+          const errorText = await difyResponse.text()
+          console.error('===== DIFY API FAILED =====')
+          console.error('Status:', difyResponse.status)
+          console.error('Status Text:', difyResponse.statusText)
+          console.error('Headers:', Object.fromEntries(difyResponse.headers.entries()))
           console.error('Error Response Body:', errorText)
-        console.error('Request URL:', n8nWebhookUrl)
+          console.error('Request URL:', process.env.DIFY_API_URL)
           console.error('Request Body was:', JSON.stringify(requestBody, null, 2))
           console.error('============================')
-        // 如果N8N失败，降级到模拟数据
+          // 如果Dify失败，降级到模拟数据
         }
       } catch (error) {
-      console.error('===== N8N REQUEST EXCEPTION =====')
-      console.error('Error type:', typeof error)
-      console.error('Error name:', error instanceof Error ? error.name : 'Unknown')
-      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
-      console.error('Request was attempting to:', n8nWebhookUrl)
-        
+        console.error('===== DIFY REQUEST EXCEPTION =====')
+        console.error('Error type:', typeof error)
+        console.error('Error name:', error instanceof Error ? error.name : 'Unknown')
+        console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
+        console.error('Request was attempting to:', process.env.DIFY_API_URL)
+
         // 特别处理超时错误
         if (error instanceof Error && error.name === 'AbortError') {
           console.error('Request was aborted due to timeout (60s)')
         }
-        
-      console.error('==================================')
-      // 如果N8N请求失败，降级到模拟数据
+
+        console.error('==================================')
+        // 如果Dify请求失败，降级到模拟数据
+      }
+
+    } else {
+      console.log('Dify API not configured, using mock data')
     }
 
     // 降级方案：使用模拟数据
     console.log('===== USING MOCK DATA =====')
-    console.log('Reason: N8N API failed')
-    console.log('Using N8N webhook URL:', n8nWebhookUrl)
+    console.log('Reason: Dify API not configured or failed')
+    console.log('Environment check:')
+    console.log('- DIFY_API_URL exists:', !!process.env.DIFY_API_URL)
+    console.log('- DIFY_API_KEY exists:', !!process.env.DIFY_API_KEY)
+    console.log('- DIFY_API_URL value:', process.env.DIFY_API_URL)
     console.log('============================')
-    
+
     const mockResponse = {
       titles: [
         { id: 1, content: "🚀 90天AI学习计划，从小白到高手的华丽转身！" },

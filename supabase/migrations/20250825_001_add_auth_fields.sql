@@ -7,6 +7,9 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
 -- 添加首次登录标记字段
 ALTER TABLE users ADD COLUMN IF NOT EXISTS first_login BOOLEAN DEFAULT true;
 
+-- 添加小红书主页链接字段
+ALTER TABLE users ADD COLUMN IF NOT EXISTS xiaohongshu_url TEXT;
+
 -- 添加创建时间和更新时间字段
 ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
@@ -42,5 +45,6 @@ CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 -- 添加注释
 COMMENT ON COLUMN users.password_hash IS '用户密码的哈希值，使用 bcrypt 加密';
 COMMENT ON COLUMN users.first_login IS '是否为首次登录，用于强制修改密码';
+COMMENT ON COLUMN users.xiaohongshu_url IS '用户的小红书主页链接';
 COMMENT ON COLUMN users.created_at IS '用户创建时间';
 COMMENT ON COLUMN users.updated_at IS '用户信息最后更新时间';

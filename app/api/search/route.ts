@@ -108,8 +108,10 @@ export async function POST(request: NextRequest) {
         if (response.ok) {
           const data = await response.json()
           console.log(`✅ [Search API] 小红书API 响应成功`)
+          console.log('API响应数据结构:', JSON.stringify(data, null, 2))
 
-          if (data.success && data.data && data.data.items) {
+          // 修复数据解析逻辑 - 小红书API的实际响应结构
+          if (data && data.data && data.data.items) {
             searchResults = data.data.items.map((item: any) => {
               const note = item.note_card || item
               return {
@@ -135,6 +137,8 @@ export async function POST(request: NextRequest) {
             searchResults = searchResults.slice(0, page_size)
 
             console.log(`📊 [Search API] 获取到 ${searchResults.length} 条真实数据`)
+          } else {
+            console.warn('⚠️ [Search API] 响应数据格式不正确:', data)
           }
         } else {
           console.warn(`⚠️ [Search API] 小红书API 响应失败: ${response.status}`)
