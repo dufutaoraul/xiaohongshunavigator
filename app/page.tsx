@@ -12,18 +12,30 @@ import GlobalUserMenu from './components/GlobalUserMenu'
 export default function Home() {
   const router = useRouter()
   const { isAuthenticated, login } = useAuth()
+
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
 
-  // 检查URL参数是否需要打开登录模态框
+  // 处理登录模态框
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('login') === 'true') {
+    // 设置全局函数供其他组件调用
+    (window as any).openLoginModal = () => {
+      setShowLoginModal(true)
+    }
+
+    // 检查URL参数
+    const search = window.location.search
+    if (search.includes('login=true')) {
       setShowLoginModal(true)
       // 清除URL参数
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
+
+  // 监听showLoginModal状态变化
+  useEffect(() => {
+    console.log('🔍 首页: showLoginModal 状态变化为', showLoginModal)
+  }, [showLoginModal])
 
   // 检查认证并导航
   const handleNavigation = (path: string) => {
@@ -105,7 +117,8 @@ export default function Home() {
             为爱学AI创富营学员打造的一体化IP孵化工具
           </p>
         </div>
-        
+
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">🧑‍💼</div>
