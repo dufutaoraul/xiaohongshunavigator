@@ -10,6 +10,7 @@ export interface StudentInfo {
   id?: string
   student_id: string
   name: string
+  real_name?: string  // 真实姓名，用于生成证书
   persona?: string
   keywords?: string
   vision?: string
@@ -48,6 +49,7 @@ export async function upsertStudent(studentData: StudentInfo): Promise<boolean> 
       .upsert({
         student_id: studentData.student_id,
         name: studentData.name,
+        real_name: studentData.real_name,
         persona: studentData.persona,
         keywords: studentData.keywords,
         vision: studentData.vision

@@ -13,6 +13,7 @@ import { StudentInfo, upsertStudent } from '../../lib/database'
 interface UserProfile {
   student_id: string
   name: string
+  real_name: string
   persona: string
   keywords: string
   vision: string
@@ -24,6 +25,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile>({
     student_id: '',
     name: '',
+    real_name: '',
     persona: '',
     keywords: '',
     vision: ''
@@ -117,6 +119,7 @@ export default function ProfilePage() {
             ...prev,
             student_id: userData.student_id,
             name: userData.name || prev.name,
+            real_name: userData.real_name || '',
             persona: userData.persona || '',
             keywords: userData.keywords || '',
             vision: userData.vision || ''
@@ -274,6 +277,11 @@ export default function ProfilePage() {
       return
     }
 
+    if (!profile.real_name.trim()) {
+      setMessage('请填写真实姓名（用于后续生成证书）')
+      return
+    }
+
     if (!profile.persona.trim() || !profile.keywords.trim() || !profile.vision.trim()) {
       setMessage('请填写所有必填项')
       return
@@ -408,6 +416,23 @@ export default function ProfilePage() {
         )}
       </Card>
 
+      <Card title="基本信息" icon="📝" className="mb-8">
+        <div className="space-y-6">
+          <Textarea
+            label="真实姓名 *"
+            placeholder="请输入您的真实姓名"
+            value={profile.real_name}
+            onChange={(value) => setProfile({ ...profile, real_name: value })}
+            required
+            rows={1}
+          />
+          <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+            <span className="font-medium">📋 说明：</span>
+            真实姓名用于后续生成证书，不做他用，请如实填写。
+          </div>
+        </div>
+      </Card>
+
       <Card title="个人IP设定" icon="⚙️">
         <div className="space-y-6">
           <Textarea
@@ -438,9 +463,9 @@ export default function ProfilePage() {
           />
 
           <div className="pt-4 space-y-4">
-            <Button 
-              onClick={handleSave} 
-              disabled={loading || !profile.name}
+            <Button
+              onClick={handleSave}
+              disabled={loading || !profile.name || !profile.real_name.trim()}
               className="w-full sm:w-auto"
             >
               {getButtonText()}
