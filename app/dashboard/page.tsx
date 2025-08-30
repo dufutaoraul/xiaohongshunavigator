@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import ComingSoon from '../components/ComingSoon'
 import LoginModal from '../components/LoginModal'
 import XiaohongshuProfileModal from '../components/XiaohongshuProfileModal'
-import DualCarousel from '../components/DualCarousel'
+
 import GlobalUserMenu from '../components/GlobalUserMenu'
 
 // 创建Supabase客户端 - 添加环境变量检查
@@ -292,10 +292,7 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* 优秀学员作品轮播 */}
-        <div className="max-w-4xl mx-auto mt-16 px-4 sm:px-6 lg:px-8">
-          <DualCarousel />
-        </div>
+
       </div>
       
       {/* 小红书主页绑定模态框 */}

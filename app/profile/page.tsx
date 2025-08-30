@@ -175,6 +175,7 @@ export default function ProfilePage() {
         setProfile({
           student_id: inputStudentId,
           name: result.user.name || '',
+          real_name: result.user.real_name || '',
           persona: result.user.persona || '',
           keywords: result.user.keywords || '',
           vision: result.user.vision || ''
@@ -245,6 +246,7 @@ export default function ProfilePage() {
       setProfile({
         student_id: student.student_id,
         name: student.name,
+        real_name: student.real_name || '',
         persona: student.persona || '',
         keywords: student.keywords || '',
         vision: student.vision || ''
@@ -258,6 +260,7 @@ export default function ProfilePage() {
       setProfile({
         student_id: studentId,
         name: '',
+        real_name: '',
         persona: '',
         keywords: '',
         vision: ''

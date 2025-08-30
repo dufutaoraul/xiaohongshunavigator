@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
       const posts = await crawlUserPosts(xiaohongshu_url, cookie)
       
       // 批量保存到数据库
-      const postsToSave = posts.map(post => ({
+      const postsToSave = posts.map((post: any) => ({
         student_id,
         student_name: user.name,
         ...post,

@@ -25,11 +25,7 @@ export default function HomeworkPage() {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          {/* 作业系统 - 快速链接 */}
           <div className="mt-12">
-            <h2 className="text-2xl font-bold text-center mb-8 gradient-text">
-              作业系统 - 快速链接
-            </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* 提交作业 */}
               <a

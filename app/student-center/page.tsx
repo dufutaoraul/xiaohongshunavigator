@@ -113,10 +113,9 @@ export default function StudentCenterPage() {
         <Card className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-white">学员中心</h1>
-            <Button 
+            <Button
               onClick={handleLogout}
               variant="outline"
-              size="sm"
             >
               退出登录
             </Button>
@@ -144,25 +143,31 @@ export default function StudentCenterPage() {
 
         {/* 功能导航 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="text-center cursor-pointer hover:bg-white/20 transition-colors"
-                onClick={() => router.push('/checkin')}>
-            <div className="text-4xl mb-4">📅</div>
-            <h3 className="text-lg font-semibold text-white mb-2">每日打卡</h3>
-            <p className="text-gray-300 text-sm">上传小红书链接完成打卡</p>
+          <Card className="text-center">
+            <div className="cursor-pointer hover:bg-white/10 transition-colors p-4 rounded-lg"
+                 onClick={() => router.push('/checkin')}>
+              <div className="text-4xl mb-4">📅</div>
+              <h3 className="text-lg font-semibold text-white mb-2">每日打卡</h3>
+              <p className="text-gray-300 text-sm">上传小红书链接完成打卡</p>
+            </div>
           </Card>
 
-          <Card className="text-center cursor-pointer hover:bg-white/20 transition-colors"
-                onClick={() => router.push('/homework')}>
-            <div className="text-4xl mb-4">📚</div>
-            <h3 className="text-lg font-semibold text-white mb-2">作业系统</h3>
-            <p className="text-gray-300 text-sm">查看和提交作业</p>
+          <Card className="text-center">
+            <div className="cursor-pointer hover:bg-white/10 transition-colors p-4 rounded-lg"
+                 onClick={() => router.push('/homework')}>
+              <div className="text-4xl mb-4">📚</div>
+              <h3 className="text-lg font-semibold text-white mb-2">作业系统</h3>
+              <p className="text-gray-300 text-sm">查看和提交作业</p>
+            </div>
           </Card>
 
-          <Card className="text-center cursor-pointer hover:bg-white/20 transition-colors"
-                onClick={() => router.push('/profile')}>
-            <div className="text-4xl mb-4">👤</div>
-            <h3 className="text-lg font-semibold text-white mb-2">个人资料</h3>
-            <p className="text-gray-300 text-sm">完善个人信息</p>
+          <Card className="text-center">
+            <div className="cursor-pointer hover:bg-white/10 transition-colors p-4 rounded-lg"
+                 onClick={() => router.push('/profile')}>
+              <div className="text-4xl mb-4">👤</div>
+              <h3 className="text-lg font-semibold text-white mb-2">个人资料</h3>
+              <p className="text-gray-300 text-sm">完善个人信息</p>
+            </div>
           </Card>
         </div>
 
@@ -202,10 +207,9 @@ export default function StudentCenterPage() {
               
               {checkinRecords.length > 5 && (
                 <div className="text-center pt-4">
-                  <Button 
+                  <Button
                     onClick={() => router.push('/checkin')}
                     variant="outline"
-                    size="sm"
                   >
                     查看全部记录
                   </Button>
