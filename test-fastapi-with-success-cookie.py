@@ -29,8 +29,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 测试成功的Cookie
-SUCCESS_COOKIE = "abRequestId=439a8b17-1b61-5307-87ed-efec8a2a6624; a1=198cba40d8dvnhr0zja9fg4xxx774qgwn8vmhoi1350000400192; webId=a7d40c9b85cc7a55e4f1c58f125a8a8f; gid=yjYSD04JKfIqyjYSD048fYl3YfhIxF8uV0jihyqk4CCCW628W4AkEx888488yjJ8Y04DK8qd; xsecappid=xhs-pc-web; web_session=040069b6d4ee5a7980e15856923a4ba1b28686; webBuild=4.76.0; loadts=1755936043438; unread={%22ub%22:%226895cafe000000000004000df2%22%2C%22ue%22:%22689b4bcf000000001c03106e%22%2C%22uc%22:27}; acw_tc=0a0bb0cb17559377408002091e0a75566c149b85df44e4e12fd59d89056b24; websectiga=7750c37de43b7be9de8ed9ff8ea0e576519e8cd2157322eb972ecb429a7735d4; sec_poison_id=542a9a7c-2864-4bbf-9a85-0b68ffd4d100"
+# 默认Cookie - 需要用户更新为有效的Cookie
+DEFAULT_COOKIE = ""
+
+# Cookie配置文件路径
+COOKIE_FILE = "xhs_cookie.txt"
+
+def load_cookie():
+    """从文件加载Cookie"""
+    try:
+        if os.path.exists(COOKIE_FILE):
+            with open(COOKIE_FILE, 'r', encoding='utf-8') as f:
+                cookie = f.read().strip()
+                if cookie:
+                    print(f"✅ 从文件加载Cookie，长度: {len(cookie)}")
+                    return cookie
+    except Exception as e:
+        print(f"⚠️ 加载Cookie文件失败: {e}")
+
+    print("⚠️ 未找到有效Cookie，将返回演示数据")
+    return DEFAULT_COOKIE
+
+def save_cookie(cookie):
+    """保存Cookie到文件"""
+    try:
+        with open(COOKIE_FILE, 'w', encoding='utf-8') as f:
+            f.write(cookie)
+        print(f"✅ Cookie已保存到文件，长度: {len(cookie)}")
+        return True
+    except Exception as e:
+        print(f"❌ 保存Cookie失败: {e}")
+        return False
+
+# 加载Cookie
+SUCCESS_COOKIE = load_cookie()
 
 class SearchRequest(BaseModel):
     keyword: str
@@ -38,6 +70,9 @@ class SearchRequest(BaseModel):
     page_size: Optional[int] = 10
     sort: Optional[str] = "general"
     cookie: Optional[str] = ""
+
+class CookieRequest(BaseModel):
+    cookie: str
 
 # 添加详情页代理接口
 @app.get("/xhs/detail")
@@ -356,6 +391,88 @@ async def search_notes(request: SearchRequest):
                 "keyword": request.keyword,
                 "status": "error"
             }
+        }
+
+@app.post("/cookie/update")
+async def update_cookie(request: CookieRequest):
+    """更新Cookie配置"""
+    print("=" * 80)
+    print("🍪 更新Cookie请求")
+    print(f"🍪 新Cookie长度: {len(request.cookie)}")
+
+    try:
+        # 测试Cookie有效性
+        print("🧪 测试Cookie有效性...")
+        client = XhsClient(cookie=request.cookie)
+        test_result = client.get_note_by_keyword("测试", page=1, page_size=1)
+
+        if isinstance(test_result, dict) and 'items' in test_result:
+            print("✅ Cookie测试成功，有效")
+            # 保存Cookie
+            if save_cookie(request.cookie):
+                global SUCCESS_COOKIE
+                SUCCESS_COOKIE = request.cookie
+                return {
+                    "success": True,
+                    "message": "Cookie更新成功，已通过有效性测试",
+                    "status": "valid"
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "Cookie有效但保存失败",
+                    "status": "save_failed"
+                }
+        else:
+            print("❌ Cookie测试失败，可能已过期")
+            return {
+                "success": False,
+                "message": "Cookie无效或已过期，请重新获取",
+                "status": "invalid"
+            }
+    except Exception as e:
+        print(f"❌ Cookie测试异常: {e}")
+        return {
+            "success": False,
+            "message": f"Cookie测试失败: {str(e)}",
+            "status": "error"
+        }
+
+@app.get("/cookie/status")
+async def get_cookie_status():
+    """获取当前Cookie状态"""
+    try:
+        if not SUCCESS_COOKIE:
+            return {
+                "has_cookie": False,
+                "status": "no_cookie",
+                "message": "未配置Cookie"
+            }
+
+        # 测试当前Cookie
+        client = XhsClient(cookie=SUCCESS_COOKIE)
+        test_result = client.get_note_by_keyword("测试", page=1, page_size=1)
+
+        if isinstance(test_result, dict) and 'items' in test_result:
+            return {
+                "has_cookie": True,
+                "status": "valid",
+                "message": "Cookie有效",
+                "cookie_length": len(SUCCESS_COOKIE)
+            }
+        else:
+            return {
+                "has_cookie": True,
+                "status": "invalid",
+                "message": "Cookie已过期",
+                "cookie_length": len(SUCCESS_COOKIE)
+            }
+    except Exception as e:
+        return {
+            "has_cookie": bool(SUCCESS_COOKIE),
+            "status": "error",
+            "message": f"Cookie状态检查失败: {str(e)}",
+            "cookie_length": len(SUCCESS_COOKIE) if SUCCESS_COOKIE else 0
         }
 
 if __name__ == "__main__":

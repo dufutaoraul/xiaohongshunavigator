@@ -4,43 +4,15 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Card from '@/app/components/Card'
 import Button from '@/app/components/Button'
-import Input from '@/app/components/Input'
-import CookieModal from '@/app/components/CookieModal'
-import { useCookieManager } from '@/app/hooks/useCookieManager'
 import GlobalUserMenu from '../components/GlobalUserMenu'
 
-interface Note {
-  note_id: string
-  title: string
-  desc: string
-  type: string
-  user: {
-    nickname: string
-    user_id: string
-  }
-  interact_info: {
-    liked_count: string
-    comment_count: string
-    collected_count: string
-  }
-  cover: string
+interface StudentInfo {
+  student_id: string
+  nickname: string
+  real_name?: string
 }
 
-interface SearchResult {
-  success: boolean
-  data?: {
-    message: string
-    keyword: string
-    page: number
-    page_size: number
-    status: string
-    total_count: number
-    notes: Note[]
-  }
-  error?: string
-}
-
-export default function SearchPage() {
+export default function StudentCenterPage() {
   const router = useRouter()
   const [keyword, setKeyword] = useState('美食')
   const [sort, setSort] = useState('general')
@@ -56,22 +28,58 @@ export default function SearchPage() {
 
   // 检查身份验证
   useEffect(() => {
-    const userSession = localStorage.getItem('userSession')
-    if (userSession) {
+    // 延迟检查，确保localStorage已加载
+    const checkAuth = () => {
       try {
-        const session = JSON.parse(userSession)
-        if (session.isAuthenticated) {
+        const userSession = localStorage.getItem('userSession')
+        console.log('🔐 检查用户会话:', userSession ? '存在' : '不存在')
+
+        if (userSession) {
+          const session = JSON.parse(userSession)
+          console.log('🔐 会话数据:', session)
+
+          if (session.isAuthenticated && session.student_id) {
+            setIsAuthenticated(true)
+            setStudentId(session.student_id)
+            console.log('✅ 身份验证成功:', session.student_id)
+            return
+          }
+        }
+
+        // 如果没有有效会话，尝试从URL参数获取（用于测试）
+        const urlParams = new URLSearchParams(window.location.search)
+        const testStudentId = urlParams.get('student_id')
+
+        if (testStudentId) {
+          console.log('🧪 使用测试学生ID:', testStudentId)
           setIsAuthenticated(true)
-          setStudentId(session.student_id)
+          setStudentId(testStudentId)
+          // 保存到localStorage
+          localStorage.setItem('userSession', JSON.stringify({
+            isAuthenticated: true,
+            student_id: testStudentId,
+            loginTime: new Date().toISOString()
+          }))
           return
         }
-      } catch {
-        // 忽略解析错误
+
+        console.log('❌ 身份验证失败，跳转到首页')
+        // 延迟跳转，给用户看到验证过程
+        setTimeout(() => {
+          router.push('/')
+        }, 1000)
+
+      } catch (error) {
+        console.error('❌ 身份验证检查出错:', error)
+        setTimeout(() => {
+          router.push('/')
+        }, 1000)
       }
     }
 
-    // 未认证，跳转到首页
-    router.push('/')
+    // 延迟执行，确保组件已挂载
+    const timer = setTimeout(checkAuth, 100)
+    return () => clearTimeout(timer)
   }, [router])
 
   const handleSearch = async () => {
