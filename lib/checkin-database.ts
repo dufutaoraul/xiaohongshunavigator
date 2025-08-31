@@ -110,7 +110,13 @@ export async function upsertCheckinRecord(record: Omit<CheckinRecord, 'id' | 'cr
       const { error: insertError } = await supabase
         .from('checkin_records')
         .insert({
-          ...record,
+          student_id: record.student_id,
+          student_name: record.student_name,
+          checkin_date: record.checkin_date,
+          xhs_url: record.xiaohongshu_url, // 映射到数据库的xhs_url字段
+          xiaohongshu_url: record.xiaohongshu_url, // 保持新字段
+          content_title: record.content_title,
+          content_description: record.content_description,
           status: 'pending',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()

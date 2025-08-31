@@ -12,30 +12,18 @@ export default function HomeworkPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
       <div className="container mx-auto px-4 py-16">
-        {/* 头部区域 - 添加退出登录按钮 */}
-        <div className="flex justify-between items-start mb-8">
-          <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold gradient-text mb-4">
-              小红书AI灵感领航员 - 作业系统
-            </h1>
-            <p className="text-xl text-white/60">
-              智能化作业提交、批改和毕业资格审核
-            </p>
-            {user && (
-              <div className="mt-4 text-purple-300">
-                欢迎回来，{user.name || user.student_id}！
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => {
-              localStorage.removeItem('userSession')
-              router.push('/')
-            }}
-            className="px-4 py-2 bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 rounded-lg text-sm transition-all duration-300 flex items-center gap-2"
-          >
-            🚪 退出登录
-          </button>
+        <div className="text-center mb-16">
+          <h1 className="text-4xl font-bold gradient-text mb-4">
+            小红书AI灵感领航员 - 作业系统
+          </h1>
+          <p className="text-xl text-white/60">
+            智能化作业提交、批改和毕业资格审核
+          </p>
+          {user && (
+            <div className="mt-4 text-purple-300">
+              欢迎回来，{user.name || user.student_id}！
+            </div>
+          )}
         </div>
 
         <div className="max-w-4xl mx-auto">

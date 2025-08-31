@@ -68,16 +68,25 @@ export default function CheckinPage() {
   const checkXiaohongshuProfile = async (studentId: string) => {
     try {
       const response = await fetch(`/api/user?student_id=${studentId}`)
-      const result = await response.json()
 
-      if (result?.xiaohongshu_profile_url) {
-        setHasXiaohongshuProfile(true)
-        setXiaohongshuProfileUrl(result.xiaohongshu_profile_url)
-        // 检查打卡安排
-        checkCheckinSchedule(studentId)
+      if (response.ok) {
+        const result = await response.json()
+        console.log('用户信息:', result) // 调试日志
+
+        if (result?.xiaohongshu_profile_url && result.xiaohongshu_profile_url.trim() !== '') {
+          setHasXiaohongshuProfile(true)
+          setXiaohongshuProfileUrl(result.xiaohongshu_profile_url)
+          // 检查打卡安排
+          checkCheckinSchedule(studentId)
+        } else {
+          console.log('用户没有小红书主页，显示绑定模态框')
+          setHasXiaohongshuProfile(false)
+          setShowProfileModal(true) // 显示绑定小红书主页的模态框
+        }
       } else {
+        console.error('获取用户信息失败:', response.status)
         setHasXiaohongshuProfile(false)
-        setShowProfileModal(true) // 显示绑定小红书主页的模态框
+        setShowProfileModal(true)
       }
     } catch (error) {
       console.error('检查小红书主页失败:', error)
@@ -609,7 +618,10 @@ export default function CheckinPage() {
                 您的打卡还未开始，请联系管理员设置打卡时间。
               </p>
               <button
-                onClick={() => setShowNoScheduleModal(false)}
+                onClick={() => {
+                  setShowNoScheduleModal(false)
+                  router.push('/')
+                }}
                 className="px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300"
               >
                 我知道了

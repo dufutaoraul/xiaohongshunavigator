@@ -38,6 +38,8 @@ export default function AdminDashboard() {
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [checkinMode, setCheckinMode] = useState<'single' | 'batch'>('single')
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [studentSearchTerm, setStudentSearchTerm] = useState('')
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false)
   const [checkinStartDate, setCheckinStartDate] = useState('')
   const [batchStartId, setBatchStartId] = useState('')
   const [batchEndId, setBatchEndId] = useState('')
@@ -284,7 +286,14 @@ export default function AdminDashboard() {
 
         {/* 打卡时间设置模态框 */}
         {showCheckinModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowStudentDropdown(false)
+            }
+          }}
+        >
           <div className="glass-effect p-6 rounded-lg border border-white/20 max-w-md w-full">
             <h3 className="text-xl font-bold text-white mb-4">⏰ 设置打卡开始时间</h3>
 
@@ -316,25 +325,60 @@ export default function AdminDashboard() {
 
             <div className="space-y-4">
               {checkinMode === 'single' ? (
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium text-white mb-2">
-                    选择学员
+                    选择学员（输入学号或姓名搜索）
                   </label>
-                  <select
-                    value={selectedStudent?.student_id || ''}
+                  <input
+                    type="text"
+                    value={studentSearchTerm}
                     onChange={(e) => {
-                      const student = students.find(s => s.student_id === e.target.value)
-                      setSelectedStudent(student || null)
+                      setStudentSearchTerm(e.target.value)
+                      setShowStudentDropdown(true)
                     }}
-                    className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
-                  >
-                    <option value="">请选择学员</option>
-                    {students.map(student => (
-                      <option key={student.student_id} value={student.student_id}>
-                        {student.student_id} - {student.name}
-                      </option>
-                    ))}
-                  </select>
+                    onFocus={() => setShowStudentDropdown(true)}
+                    placeholder="输入学号或姓名搜索学员..."
+                    className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
+                  />
+
+                  {/* 搜索结果下拉框 */}
+                  {showStudentDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-black/90 border border-white/30 rounded-lg max-h-60 overflow-y-auto">
+                      {students
+                        .filter(student =>
+                          student.student_id.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                          student.name.toLowerCase().includes(studentSearchTerm.toLowerCase())
+                        )
+                        .slice(0, 10) // 最多显示10个结果
+                        .map(student => (
+                          <div
+                            key={student.student_id}
+                            onClick={() => {
+                              setSelectedStudent(student)
+                              setStudentSearchTerm(`${student.student_id} - ${student.name}`)
+                              setShowStudentDropdown(false)
+                            }}
+                            className="px-3 py-2 hover:bg-white/10 cursor-pointer text-white border-b border-white/10 last:border-b-0"
+                          >
+                            <div className="font-medium">{student.student_id}</div>
+                            <div className="text-sm text-white/70">{student.name}</div>
+                          </div>
+                        ))
+                      }
+                      {students.filter(student =>
+                        student.student_id.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                        student.name.toLowerCase().includes(studentSearchTerm.toLowerCase())
+                      ).length === 0 && (
+                        <div className="px-3 py-2 text-white/50">没有找到匹配的学员</div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedStudent && (
+                    <div className="mt-2 text-sm text-green-400">
+                      已选择：{selectedStudent.student_id} - {selectedStudent.name}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">

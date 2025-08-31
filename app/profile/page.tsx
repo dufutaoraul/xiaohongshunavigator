@@ -421,25 +421,11 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      {/* 头部区域 - 添加退出登录按钮 */}
-      <div className="mb-12 fade-in-up">
-        <div className="flex justify-between items-start mb-6">
-          <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold gradient-text mb-6">🧑‍💼 个人IP资料库</h1>
-            <p className="text-xl text-white/80">
-              设定你的个人IP定位，这将成为AI为你生成内容的宇宙基因 ✨
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              localStorage.removeItem('userSession')
-              router.push('/')
-            }}
-            className="px-4 py-2 bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 rounded-lg text-sm transition-all duration-300 flex items-center gap-2"
-          >
-            🚪 退出登录
-          </button>
-        </div>
+      <div className="mb-12 text-center fade-in-up">
+        <h1 className="text-4xl font-bold gradient-text mb-6">🧑‍💼 个人IP资料库</h1>
+        <p className="text-xl text-white/80">
+          设定你的个人IP定位，这将成为AI为你生成内容的宇宙基因 ✨
+        </p>
       </div>
 
       <Card title="学员信息" icon="👤" className="mb-8">
