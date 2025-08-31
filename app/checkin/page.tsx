@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import GlobalUserMenu from '../components/GlobalUserMenu'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import XiaohongshuProfileModal from '../components/XiaohongshuProfileModal'
 import { CheckinRecord, CheckinStats } from '@/lib/checkin-database'
 
 export default function CheckinPage() {
@@ -29,7 +30,12 @@ export default function CheckinPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  // 检查认证状态
+  // 小红书主页相关状态
+  const [hasXiaohongshuProfile, setHasXiaohongshuProfile] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [xiaohongshuProfileUrl, setXiaohongshuProfileUrl] = useState('')
+
+  // 检查认证状态和小红书主页
   useEffect(() => {
     const userSession = localStorage.getItem('userSession')
     if (userSession) {
@@ -39,6 +45,8 @@ export default function CheckinPage() {
           setIsAuthenticated(true)
           setStudentId(student_id)
           setUserName(name || '')
+          // 检查小红书主页
+          checkXiaohongshuProfile(student_id)
         } else {
           router.push('/profile')
         }
@@ -50,6 +58,55 @@ export default function CheckinPage() {
     }
     setIsLoading(false)
   }, [router])
+
+  // 检查用户是否有小红书主页记录
+  const checkXiaohongshuProfile = async (studentId: string) => {
+    try {
+      const response = await fetch(`/api/user?student_id=${studentId}`)
+      const result = await response.json()
+
+      if (result?.xiaohongshu_profile_url) {
+        setHasXiaohongshuProfile(true)
+        setXiaohongshuProfileUrl(result.xiaohongshu_profile_url)
+        // 检查打卡安排
+        checkCheckinSchedule(studentId)
+      } else {
+        setHasXiaohongshuProfile(false)
+        setShowProfileModal(true) // 显示绑定小红书主页的模态框
+      }
+    } catch (error) {
+      console.error('检查小红书主页失败:', error)
+      setHasXiaohongshuProfile(false)
+      setShowProfileModal(true)
+    }
+  }
+
+  // 检查学员的打卡安排
+  const checkCheckinSchedule = async (studentId: string) => {
+    try {
+      const response = await fetch(`/api/admin/checkin-schedule?student_id=${studentId}`)
+      const result = await response.json()
+
+      if (result.success && result.data && result.data.length > 0) {
+        const today = new Date().toISOString().split('T')[0]
+        const activeSchedule = result.data.find((schedule: any) => {
+          return schedule.start_date <= today && schedule.end_date >= today && schedule.is_active
+        })
+
+        if (activeSchedule) {
+          // 在打卡周期内，显示打卡提醒
+          console.log('学员在打卡周期内:', activeSchedule)
+          // 可以在这里添加弹窗提醒或其他UI提示
+        } else {
+          console.log('学员不在打卡周期内')
+        }
+      } else {
+        console.log('学员没有打卡安排')
+      }
+    } catch (error) {
+      console.error('检查打卡安排失败:', error)
+    }
+  }
 
   // 获取打卡数据
   useEffect(() => {
@@ -217,6 +274,18 @@ export default function CheckinPage() {
     )
   }
 
+  // 如果没有小红书主页，显示绑定提示（模态框会自动弹出）
+  if (!hasXiaohongshuProfile && !showProfileModal) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">📱</div>
+          <p className="text-white/80">正在检查小红书主页绑定状态...</p>
+        </div>
+      </div>
+    )
+  }
+
   const calendarDays = generateCalendarDays()
   const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
   const weekDays = ['日', '一', '二', '三', '四', '五', '六']
@@ -310,16 +379,16 @@ export default function CheckinPage() {
           </div>
 
           {/* 星期标题 */}
-          <div className="grid grid-cols-7 gap-2 mb-4">
+          <div className="grid grid-cols-7 gap-3 mb-4">
             {weekDays.map((day) => (
-              <div key={day} className="text-center text-white/70 font-medium py-2">
+              <div key={day} className="text-center text-white/70 font-medium py-3 text-sm">
                 {day}
               </div>
             ))}
           </div>
 
-          {/* 日历格子 - 缩小为2/3大小 */}
-          <div className="grid grid-cols-7 gap-1 max-w-md mx-auto">
+          {/* 日历格子 - 调整为合适大小 */}
+          <div className="grid grid-cols-7 gap-3">
             {calendarDays.map((day, index) => {
               // 简化状态逻辑：已打卡、未打卡、忘记打卡
               const today = new Date()
@@ -344,9 +413,9 @@ export default function CheckinPage() {
                   key={index}
                   onClick={() => handleDateClick(day)}
                   className={`
-                    w-8 h-8 flex items-center justify-center text-xs font-medium rounded border transition-all duration-300 relative
+                    aspect-square w-12 h-12 flex items-center justify-center text-sm font-medium rounded-lg border transition-all duration-300 relative
                     ${day.isCurrentMonth ? 'text-white' : 'text-white/30'}
-                    ${day.isToday ? 'ring-1 ring-blue-400' : ''}
+                    ${day.isToday ? 'ring-2 ring-blue-400' : ''}
                     ${day.canCheckin ? 'cursor-pointer hover:bg-blue-500/20' : ''}
                     ${statusClass}
                   `}
@@ -454,6 +523,40 @@ export default function CheckinPage() {
             </div>
           </div>
         )}
+
+        {/* 小红书主页绑定模态框 */}
+        <XiaohongshuProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          onUpdate={async (profileUrl: string) => {
+            try {
+              // 更新用户的小红书主页链接
+              const response = await fetch('/api/user', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  student_id: studentId,
+                  xiaohongshu_profile_url: profileUrl
+                })
+              })
+
+              const result = await response.json()
+              if (result.success) {
+                setXiaohongshuProfileUrl(profileUrl)
+                setHasXiaohongshuProfile(true)
+                setShowProfileModal(false)
+                return true
+              } else {
+                console.error('更新小红书主页失败:', result.error)
+                return false
+              }
+            } catch (error) {
+              console.error('更新小红书主页失败:', error)
+              return false
+            }
+          }}
+          currentUrl={xiaohongshuProfileUrl}
+        />
       </div>
     </div>
   )

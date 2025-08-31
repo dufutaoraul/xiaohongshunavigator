@@ -41,10 +41,60 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
 
-  // 页面加载时检查登录状态
+  // 页面加载时检查登录状态和编辑模式
   useEffect(() => {
     checkAuthStatus()
+    checkEditMode()
   }, [])
+
+  // 检查是否是编辑模式
+  const checkEditMode = () => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const isEdit = urlParams.get('edit') === 'true'
+    const editStudentId = urlParams.get('student_id')
+    const editName = urlParams.get('name')
+    const editRealName = urlParams.get('real_name')
+
+    if (isEdit && editStudentId) {
+      // 编辑模式：预填学员信息
+      setStudentId(editStudentId)
+      setProfile({
+        student_id: editStudentId,
+        name: decodeURIComponent(editName || ''),
+        real_name: decodeURIComponent(editRealName || ''),
+        persona: '',
+        keywords: '',
+        vision: ''
+      })
+      setIsExistingUser(true)
+      setIsAuthenticated(true)
+
+      // 加载完整的学员信息
+      loadStudentProfile(editStudentId)
+    }
+  }
+
+  // 加载学员完整信息（用于编辑模式）
+  const loadStudentProfile = async (studentId: string) => {
+    try {
+      const response = await fetch(`/api/user?student_id=${studentId}`)
+      if (response.ok) {
+        const userData = await response.json()
+        if (userData) {
+          setProfile({
+            student_id: userData.student_id,
+            name: userData.name || '',
+            real_name: userData.real_name || '',
+            persona: userData.persona || '',
+            keywords: userData.keywords || '',
+            vision: userData.vision || ''
+          })
+        }
+      }
+    } catch (error) {
+      console.error('加载学员信息失败:', error)
+    }
+  }
 
   const checkAuthStatus = async () => {
     try {
@@ -371,11 +421,25 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <div className="mb-12 text-center fade-in-up">
-        <h1 className="text-4xl font-bold gradient-text mb-6">🧑‍💼 个人IP资料库</h1>
-        <p className="text-xl text-white/80">
-          设定你的个人IP定位，这将成为AI为你生成内容的宇宙基因 ✨
-        </p>
+      {/* 头部区域 - 添加退出登录按钮 */}
+      <div className="mb-12 fade-in-up">
+        <div className="flex justify-between items-start mb-6">
+          <div className="text-center flex-1">
+            <h1 className="text-4xl font-bold gradient-text mb-6">🧑‍💼 个人IP资料库</h1>
+            <p className="text-xl text-white/80">
+              设定你的个人IP定位，这将成为AI为你生成内容的宇宙基因 ✨
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              localStorage.removeItem('userSession')
+              router.push('/')
+            }}
+            className="px-4 py-2 bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 rounded-lg text-sm transition-all duration-300 flex items-center gap-2"
+          >
+            🚪 退出登录
+          </button>
+        </div>
       </div>
 
       <Card title="学员信息" icon="👤" className="mb-8">

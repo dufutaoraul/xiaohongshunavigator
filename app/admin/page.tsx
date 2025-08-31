@@ -106,6 +106,14 @@ export default function AdminDashboard() {
     }
   })
 
+  // 编辑学员
+  const handleEditStudent = (student: Student) => {
+    // 跳转到学员资料设置界面
+    // 这里我们可以通过URL参数传递学员信息，或者使用状态管理
+    const editUrl = `/profile?edit=true&student_id=${student.student_id}&name=${encodeURIComponent(student.name)}&real_name=${encodeURIComponent((student as any).real_name || '')}`
+    window.open(editUrl, '_blank')
+  }
+
   if (!isAdmin) {
     return null
   }
@@ -156,11 +164,10 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 功能区域 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* 功能区域 - 学员管理居中 */}
+        <div className="max-w-4xl mx-auto">
           {/* 学员管理 */}
-          <div className="lg:col-span-2">
-            <div className="glass-effect p-6 rounded-xl">
+          <div className="glass-effect p-6 rounded-xl">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-white">👥 学员管理</h2>
                 <div className="flex space-x-3">
@@ -261,7 +268,10 @@ export default function AdminDashboard() {
                         }`}>
                           {student.role === 'admin' ? '管理员' : '学员'}
                         </span>
-                        <button className="text-white/60 hover:text-white text-sm px-2 py-1 rounded hover:bg-white/10">
+                        <button
+                          onClick={() => handleEditStudent(student)}
+                          className="text-white/60 hover:text-white text-sm px-2 py-1 rounded hover:bg-white/10"
+                        >
                           编辑
                         </button>
                       </div>
@@ -271,8 +281,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
-
         </div>
       </div>
 

@@ -104,16 +104,23 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE checkin_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE checkin_records ENABLE ROW LEVEL SECURITY;
 
--- users表策略
+-- users表策略（先删除可能存在的策略）
+DROP POLICY IF EXISTS "Users can view all users" ON users;
+DROP POLICY IF EXISTS "Users can update their own data" ON users;
+DROP POLICY IF EXISTS "Admins can insert users" ON users;
 CREATE POLICY "Users can view all users" ON users FOR SELECT USING (true);
 CREATE POLICY "Users can update their own data" ON users FOR UPDATE USING (true);
 CREATE POLICY "Admins can insert users" ON users FOR INSERT WITH CHECK (true);
 
--- checkin_schedules表策略
+-- checkin_schedules表策略（先删除可能存在的策略）
+DROP POLICY IF EXISTS "Users can view their own schedules" ON checkin_schedules;
+DROP POLICY IF EXISTS "Admins can manage schedules" ON checkin_schedules;
 CREATE POLICY "Users can view their own schedules" ON checkin_schedules FOR SELECT USING (true);
 CREATE POLICY "Admins can manage schedules" ON checkin_schedules FOR ALL USING (true);
 
--- checkin_records表策略
+-- checkin_records表策略（先删除可能存在的策略）
+DROP POLICY IF EXISTS "Users can view their own records" ON checkin_records;
+DROP POLICY IF EXISTS "Users can manage their own records" ON checkin_records;
 CREATE POLICY "Users can view their own records" ON checkin_records FOR SELECT USING (true);
 CREATE POLICY "Users can manage their own records" ON checkin_records FOR ALL USING (true);
 
