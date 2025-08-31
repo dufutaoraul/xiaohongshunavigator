@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
 
 // 使用服务角色密钥绕过RLS
-const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabaseAdmin = supabaseUrl && supabaseServiceKey 
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
         id,
         student_id,
         name,
-        email,
+        real_name,
         role,
         created_at,
         persona,
@@ -106,9 +106,9 @@ export async function POST(request: NextRequest) {
     // }
 
     const body = await request.json()
-    const { student_id, name, email, password, role = 'student' } = body
+    const { student_id, name, real_name, password, role = 'student' } = body
 
-    console.log('创建学员请求:', { student_id, name, email: !!email, role });
+    console.log('创建学员请求:', { student_id, name, real_name: !!real_name, role });
 
     // 验证必填字段
     if (!student_id || !name || !password) {
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       .insert({
         student_id,
         name,
-        email,
+        real_name,
         password: hashedPassword,
         role
       })
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         id: newUser.id,
         student_id: newUser.student_id,
         name: newUser.name,
-        email: newUser.email,
+        real_name: newUser.real_name,
         role: newUser.role,
         created_at: newUser.created_at
       }
@@ -192,7 +192,7 @@ export async function PUT(request: NextRequest) {
     // }
 
     const body = await request.json()
-    const { id, student_id, name, email, role, password } = body
+    const { id, student_id, name, real_name, role, password } = body
 
     if (!id) {
       return NextResponse.json(
@@ -205,7 +205,7 @@ export async function PUT(request: NextRequest) {
     const updateData: any = {}
     if (student_id) updateData.student_id = student_id
     if (name) updateData.name = name
-    if (email !== undefined) updateData.email = email
+    if (real_name !== undefined) updateData.real_name = real_name
     if (role) updateData.role = role
     
     // 如果提供了新密码，进行加密
@@ -234,7 +234,7 @@ export async function PUT(request: NextRequest) {
         id: updatedUser.id,
         student_id: updatedUser.student_id,
         name: updatedUser.name,
-        email: updatedUser.email,
+        real_name: updatedUser.real_name,
         role: updatedUser.role,
         created_at: updatedUser.created_at
       }
