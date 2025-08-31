@@ -109,7 +109,6 @@ export default function AdminDashboard() {
   // 编辑学员
   const handleEditStudent = (student: Student) => {
     // 跳转到学员资料设置界面
-    // 这里我们可以通过URL参数传递学员信息，或者使用状态管理
     const editUrl = `/profile?edit=true&student_id=${student.student_id}&name=${encodeURIComponent(student.name)}&real_name=${encodeURIComponent((student as any).real_name || '')}`
     window.open(editUrl, '_blank')
   }
@@ -282,10 +281,9 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 打卡时间设置模态框 */}
-      {showCheckinModal && (
+        {/* 打卡时间设置模态框 */}
+        {showCheckinModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="glass-effect p-6 rounded-lg border border-white/20 max-w-md w-full">
             <h3 className="text-xl font-bold text-white mb-4">⏰ 设置打卡开始时间</h3>
