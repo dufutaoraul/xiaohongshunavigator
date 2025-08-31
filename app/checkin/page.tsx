@@ -245,24 +245,45 @@ export default function CheckinPage() {
           </div>
         </div>
 
-        {/* 打卡统计 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="text-center">
-            <div className="text-3xl font-bold text-blue-400">{checkinStats.total_days}</div>
-            <div className="text-white/70 text-sm mt-1">总打卡天数</div>
+        {/* 打卡统计 - 简化版本，只显示总打卡天数 */}
+        <div className="flex justify-center mb-6">
+          <Card className="text-center px-8 py-6">
+            <div className="text-4xl font-bold text-blue-400 mb-2">{checkinStats.total_days}</div>
+            <div className="text-white/70 text-lg">总打卡天数</div>
           </Card>
-          <Card className="text-center">
-            <div className="text-3xl font-bold text-green-400">{checkinStats.consecutive_days}</div>
-            <div className="text-white/70 text-sm mt-1">连续打卡</div>
-          </Card>
-          <Card className="text-center">
-            <div className="text-3xl font-bold text-purple-400">{checkinStats.current_month_days}</div>
-            <div className="text-white/70 text-sm mt-1">本月打卡</div>
-          </Card>
-          <Card className="text-center">
-            <div className="text-3xl font-bold text-pink-400">{checkinStats.completion_rate}%</div>
-            <div className="text-white/70 text-sm mt-1">完成率</div>
-          </Card>
+        </div>
+
+        {/* 今日打卡按钮 */}
+        <div className="flex justify-center mb-8">
+          <Button
+            onClick={() => {
+              const today = new Date()
+              const todayStr = today.toISOString().split('T')[0]
+              setSelectedDate(todayStr)
+
+              // 检查今天是否已经打卡
+              const todayRecord = checkinRecords.find(record =>
+                record.checkin_date === todayStr
+              )
+
+              if (todayRecord) {
+                // 已有记录，预填数据
+                setXiaohongshuUrl(todayRecord.xiaohongshu_url || '')
+                setContentTitle(todayRecord.content_title || '')
+                setContentDescription(todayRecord.content_description || '')
+              } else {
+                // 清空表单
+                setXiaohongshuUrl('')
+                setContentTitle('')
+                setContentDescription('')
+              }
+
+              setShowCheckinModal(true)
+            }}
+            className="px-8 py-3 text-lg font-medium"
+          >
+            📝 今日打卡
+          </Button>
         </div>
 
         {/* 日历界面 */}
@@ -297,56 +318,61 @@ export default function CheckinPage() {
             ))}
           </div>
 
-          {/* 日历格子 */}
-          <div className="grid grid-cols-7 gap-2">
-            {calendarDays.map((day, index) => (
-              <div
-                key={index}
-                onClick={() => handleDateClick(day)}
-                className={`
-                  aspect-square flex items-center justify-center text-sm font-medium rounded-lg border transition-all duration-300 relative
-                  ${day.isCurrentMonth ? 'text-white' : 'text-white/30'}
-                  ${day.isToday ? 'ring-2 ring-blue-400' : ''}
-                  ${day.canCheckin ? 'cursor-pointer hover:bg-blue-500/20 border-blue-400/50' : 'border-white/20'}
-                  ${day.hasCheckin ? (
-                    day.checkinStatus === 'approved' ? 'bg-green-500/20 border-green-400' :
-                    day.checkinStatus === 'rejected' ? 'bg-red-500/20 border-red-400' :
-                    'bg-yellow-500/20 border-yellow-400'
-                  ) : 'glass-effect'}
-                `}
-              >
-                <span>{day.day}</span>
-                {day.hasCheckin && (
-                  <div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
-                    day.checkinStatus === 'approved' ? 'bg-green-400' :
-                    day.checkinStatus === 'rejected' ? 'bg-red-400' :
-                    'bg-yellow-400'
-                  }`} />
-                )}
-                {day.isToday && (
-                  <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full" />
-                )}
-              </div>
-            ))}
+          {/* 日历格子 - 缩小为2/3大小 */}
+          <div className="grid grid-cols-7 gap-1 max-w-md mx-auto">
+            {calendarDays.map((day, index) => {
+              // 简化状态逻辑：已打卡、未打卡、忘记打卡
+              const today = new Date()
+              const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day.day)
+              const isPast = dayDate < today && !day.isToday
+              const isFuture = dayDate > today
+
+              let statusClass = 'glass-effect border-white/20'
+              if (day.hasCheckin) {
+                // 已打卡
+                statusClass = 'bg-green-500/30 border-green-400'
+              } else if (isPast && day.isCurrentMonth) {
+                // 忘记打卡（过去的日期但没有打卡）
+                statusClass = 'bg-red-500/30 border-red-400'
+              } else if (isFuture || !day.isCurrentMonth) {
+                // 未打卡（未来的日期）
+                statusClass = 'bg-gray-500/20 border-gray-400/50'
+              }
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => handleDateClick(day)}
+                  className={`
+                    w-8 h-8 flex items-center justify-center text-xs font-medium rounded border transition-all duration-300 relative
+                    ${day.isCurrentMonth ? 'text-white' : 'text-white/30'}
+                    ${day.isToday ? 'ring-1 ring-blue-400' : ''}
+                    ${day.canCheckin ? 'cursor-pointer hover:bg-blue-500/20' : ''}
+                    ${statusClass}
+                  `}
+                >
+                  <span>{day.day}</span>
+                  {day.isToday && (
+                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full" />
+                  )}
+                </div>
+              )
+            })}
           </div>
 
-          {/* 图例 */}
-          <div className="mt-6 flex flex-wrap gap-4 text-xs text-white/70">
+          {/* 图例 - 简化为三种状态 */}
+          <div className="mt-6 flex justify-center gap-6 text-xs text-white/70">
             <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500/20 border border-green-400 rounded mr-2"></div>
-              已通过
+              <div className="w-3 h-3 bg-green-500/30 border border-green-400 rounded mr-2"></div>
+              已打卡
             </div>
             <div className="flex items-center">
-              <div className="w-3 h-3 bg-yellow-500/20 border border-yellow-400 rounded mr-2"></div>
-              待审核
+              <div className="w-3 h-3 bg-gray-500/20 border border-gray-400/50 rounded mr-2"></div>
+              未打卡
             </div>
             <div className="flex items-center">
-              <div className="w-3 h-3 bg-red-500/20 border border-red-400 rounded mr-2"></div>
-              未通过
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 ring-2 ring-blue-400 rounded mr-2"></div>
-              今天
+              <div className="w-3 h-3 bg-red-500/30 border border-red-400 rounded mr-2"></div>
+              忘记打卡
             </div>
           </div>
         </Card>

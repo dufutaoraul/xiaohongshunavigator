@@ -168,6 +168,7 @@ export default function ProfilePage() {
         localStorage.setItem('userSession', JSON.stringify({
           student_id: inputStudentId,
           name: result.user.name,
+          role: result.user.role || 'student',
           isAuthenticated: true
         }))
         
@@ -339,6 +340,7 @@ export default function ProfilePage() {
     localStorage.setItem('userSession', JSON.stringify({
       student_id: profile.student_id,
       name: profile.name,
+      role: 'student', // 默认为学员
       isAuthenticated: true
     }))
     router.push('/generate')

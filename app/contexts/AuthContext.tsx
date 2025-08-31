@@ -32,8 +32,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (userSession) {
       try {
         const sessionData = JSON.parse(userSession)
-        if (sessionData.isAuthenticated && sessionData.user) {
-          setUser(sessionData.user)
+        if (sessionData.isAuthenticated) {
+          // 支持两种数据结构：新的（直接在sessionData中）和旧的（在sessionData.user中）
+          const userData = sessionData.user || {
+            student_id: sessionData.student_id,
+            name: sessionData.name,
+            role: sessionData.role || 'student'
+          }
+          setUser(userData)
           setIsAuthenticated(true)
         }
       } catch (error) {

@@ -373,16 +373,53 @@ export default function AdminDashboard() {
 
               <div className="flex space-x-3 pt-4">
                 <button
-                  onClick={() => {
-                    // TODO: 实现设置打卡时间的逻辑
-                    console.log('设置打卡时间:', {
-                      mode: checkinMode,
-                      student: selectedStudent,
-                      batchStart: batchStartId,
-                      batchEnd: batchEndId,
-                      startDate: checkinStartDate
-                    })
-                    setShowCheckinModal(false)
+                  onClick={async () => {
+                    if (!checkinStartDate) {
+                      alert('请选择打卡开始日期')
+                      return
+                    }
+
+                    if (checkinMode === 'single' && !selectedStudent) {
+                      alert('请选择学员')
+                      return
+                    }
+
+                    if (checkinMode === 'batch' && (!batchStartId || !batchEndId)) {
+                      alert('请输入起始和结束学号')
+                      return
+                    }
+
+                    try {
+                      const response = await fetch('/api/admin/checkin-schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          mode: checkinMode,
+                          student_id: selectedStudent?.student_id,
+                          batch_start_id: batchStartId,
+                          batch_end_id: batchEndId,
+                          start_date: checkinStartDate,
+                          created_by: user?.student_id || 'ADMIN'
+                        })
+                      })
+
+                      const result = await response.json()
+
+                      if (result.success) {
+                        alert(result.message)
+                        setShowCheckinModal(false)
+                        // 清空表单
+                        setSelectedStudent(null)
+                        setBatchStartId('')
+                        setBatchEndId('')
+                        setCheckinStartDate('')
+                      } else {
+                        alert('设置失败：' + result.error)
+                      }
+                    } catch (error) {
+                      console.error('Error setting checkin schedule:', error)
+                      alert('设置失败，请重试')
+                    }
                   }}
                   className="flex-1 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
                 >
