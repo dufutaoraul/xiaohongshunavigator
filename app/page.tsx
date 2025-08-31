@@ -134,7 +134,19 @@ export default function Home() {
             </button>
           </div>
 
-
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
+            <div className="text-5xl mb-6 breathing-glow">🤖</div>
+            <h3 className="text-xl font-bold text-white mb-4 gradient-text">AI灵感引擎</h3>
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
+              基于你的人设，AI生成高质量小红书内容模板，并智能搜索相关爆款内容。一站式创作工具，从模板生成到热门搜索，让创意如星河般闪耀。
+            </p>
+            <button
+              onClick={() => handleNavigation('/generate')}
+              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
+            >
+              智慧生成 🚀
+            </button>
+          </div>
 
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">📝</div>

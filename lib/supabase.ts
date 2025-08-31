@@ -28,6 +28,8 @@ export const supabase = supabaseUrl && supabaseUrl !== 'https://placeholder.supa
 export interface User {
   id: string
   student_id: string
+  name?: string
+  real_name?: string  // 真实姓名，用于生成证书
   created_at: string
   persona: string
   keywords: string

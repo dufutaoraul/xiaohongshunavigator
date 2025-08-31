@@ -46,23 +46,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { student_id, persona, keywords, vision } = body
+    const { student_id, name, real_name, persona, keywords, vision } = body
 
-    if (!student_id || !persona || !keywords || !vision) {
+    if (!student_id) {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'student_id is required' },
         { status: 400 }
       )
     }
 
+    // 构建更新数据对象，只包含提供的字段
+    const updateData: any = { student_id }
+    if (name !== undefined) updateData.name = name
+    if (real_name !== undefined) updateData.real_name = real_name
+    if (persona !== undefined) updateData.persona = persona
+    if (keywords !== undefined) updateData.keywords = keywords
+    if (vision !== undefined) updateData.vision = vision
+
+    console.log('Updating user data:', updateData)
+
     const { data, error } = await supabase
       .from('users')
-      .upsert({
-        student_id,
-        persona,
-        keywords,
-        vision
-      }, {
+      .upsert(updateData, {
         onConflict: 'student_id'
       })
       .select()
