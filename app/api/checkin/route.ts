@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
     const studentId = searchParams.get('student_id')
     const year = searchParams.get('year')
     const month = searchParams.get('month')
+    const startDate = searchParams.get('start_date')
+    const endDate = searchParams.get('end_date')
     const type = searchParams.get('type') || 'all'
 
     if (!studentId) {
@@ -36,11 +38,31 @@ export async function GET(request: NextRequest) {
         }
         data = await getMonthlyCheckins(studentId, parseInt(year), parseInt(month))
         break
-      
+
+      case 'schedule':
+        if (!startDate || !endDate) {
+          return NextResponse.json(
+            { error: 'start_date and end_date are required for schedule type' },
+            { status: 400 }
+          )
+        }
+        // 按日期范围查询打卡记录
+        const { data: scheduleData, error } = await supabase
+          .from('checkin_records')
+          .select('*')
+          .eq('student_id', studentId)
+          .gte('checkin_date', startDate)
+          .lte('checkin_date', endDate)
+          .order('checkin_date', { ascending: true })
+
+        if (error) throw error
+        data = scheduleData || []
+        break
+
       case 'stats':
         data = await getCheckinStats(studentId)
         break
-      
+
       case 'all':
       default:
         data = await getStudentCheckins(studentId)

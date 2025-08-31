@@ -35,6 +35,11 @@ export default function CheckinPage() {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [xiaohongshuProfileUrl, setXiaohongshuProfileUrl] = useState('')
 
+  // 打卡安排相关状态
+  const [hasCheckinSchedule, setHasCheckinSchedule] = useState(false)
+  const [checkinSchedule, setCheckinSchedule] = useState<any>(null)
+  const [showNoScheduleModal, setShowNoScheduleModal] = useState(false)
+
   // 检查认证状态和小红书主页
   useEffect(() => {
     const userSession = localStorage.getItem('userSession')
@@ -94,17 +99,24 @@ export default function CheckinPage() {
         })
 
         if (activeSchedule) {
-          // 在打卡周期内，显示打卡提醒
+          // 在打卡周期内
+          setHasCheckinSchedule(true)
+          setCheckinSchedule(activeSchedule)
           console.log('学员在打卡周期内:', activeSchedule)
-          // 可以在这里添加弹窗提醒或其他UI提示
         } else {
-          console.log('学员不在打卡周期内')
+          // 不在打卡周期内
+          setHasCheckinSchedule(false)
+          setShowNoScheduleModal(true)
         }
       } else {
-        console.log('学员没有打卡安排')
+        // 没有打卡安排
+        setHasCheckinSchedule(false)
+        setShowNoScheduleModal(true)
       }
     } catch (error) {
       console.error('检查打卡安排失败:', error)
+      setHasCheckinSchedule(false)
+      setShowNoScheduleModal(true)
     }
   }
 
@@ -116,12 +128,11 @@ export default function CheckinPage() {
   }, [isAuthenticated, studentId, currentDate])
 
   const fetchCheckinData = async () => {
-    try {
-      const year = currentDate.getFullYear()
-      const month = currentDate.getMonth() + 1
+    if (!checkinSchedule) return
 
-      // 获取当月打卡记录
-      const recordsResponse = await fetch(`/api/checkin?student_id=${studentId}&type=monthly&year=${year}&month=${month}`)
+    try {
+      // 获取打卡周期内的所有打卡记录
+      const recordsResponse = await fetch(`/api/checkin?student_id=${studentId}&type=schedule&start_date=${checkinSchedule.start_date}&end_date=${checkinSchedule.end_date}`)
       if (recordsResponse.ok) {
         const recordsData = await recordsResponse.json()
         setCheckinRecords(recordsData.data || [])
@@ -138,32 +149,43 @@ export default function CheckinPage() {
     }
   }
 
-  // 生成日历数据
+  // 生成日历数据 - 基于打卡安排生成93天日历
   const generateCalendarDays = () => {
-    const year = currentDate.getFullYear()
-    const month = currentDate.getMonth()
-    const firstDay = new Date(year, month, 1)
-    const startDate = new Date(firstDay)
-    startDate.setDate(startDate.getDate() - firstDay.getDay()) // 从周日开始
+    if (!checkinSchedule) {
+      return []
+    }
+
+    const startDate = new Date(checkinSchedule.start_date)
+    const endDate = new Date(checkinSchedule.end_date)
+    const today = new Date().toISOString().split('T')[0]
+
+    // 计算日历显示范围（包含打卡周期前后的日期以填满日历格子）
+    const calendarStart = new Date(startDate)
+    calendarStart.setDate(calendarStart.getDate() - calendarStart.getDay()) // 从周日开始
+
+    const calendarEnd = new Date(endDate)
+    const remainingDays = 6 - calendarEnd.getDay()
+    calendarEnd.setDate(calendarEnd.getDate() + remainingDays) // 到周六结束
 
     const days = []
-    const current = new Date(startDate)
+    const current = new Date(calendarStart)
 
-    for (let i = 0; i < 42; i++) { // 6周 x 7天
+    while (current <= calendarEnd) {
       const dateStr = current.toISOString().split('T')[0]
-      const isCurrentMonth = current.getMonth() === month
-      const isToday = dateStr === new Date().toISOString().split('T')[0]
+      const isInSchedule = dateStr >= checkinSchedule.start_date && dateStr <= checkinSchedule.end_date
+      const isToday = dateStr === today
       const checkinRecord = checkinRecords.find(record => record.checkin_date === dateStr)
 
       days.push({
         date: new Date(current),
         dateStr,
         day: current.getDate(),
-        isCurrentMonth,
+        isCurrentMonth: true, // 在打卡周期内都视为当前月
         isToday,
         hasCheckin: !!checkinRecord,
         checkinStatus: checkinRecord?.status || null,
-        canCheckin: isToday && isCurrentMonth
+        canCheckin: isToday && isInSchedule,
+        isInSchedule // 是否在打卡周期内
       })
 
       current.setDate(current.getDate() + 1)
@@ -286,6 +308,18 @@ export default function CheckinPage() {
     )
   }
 
+  // 如果没有打卡安排，显示提示
+  if (hasXiaohongshuProfile && !hasCheckinSchedule && !showNoScheduleModal) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">📅</div>
+          <p className="text-white/80">正在检查打卡安排...</p>
+        </div>
+      </div>
+    )
+  }
+
   const calendarDays = generateCalendarDays()
   const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
   const weekDays = ['日', '一', '二', '三', '四', '五', '六']
@@ -390,22 +424,29 @@ export default function CheckinPage() {
           {/* 日历格子 - 调整为合适大小 */}
           <div className="grid grid-cols-7 gap-3">
             {calendarDays.map((day, index) => {
-              // 简化状态逻辑：已打卡、未打卡、忘记打卡
-              const today = new Date()
-              const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day.day)
-              const isPast = dayDate < today && !day.isToday
-              const isFuture = dayDate > today
+              // 基于打卡安排的状态逻辑
+              const today = new Date().toISOString().split('T')[0]
+              const isPast = day.dateStr < today
 
               let statusClass = 'glass-effect border-white/20'
-              if (day.hasCheckin) {
-                // 已打卡
+              let textClass = 'text-white/30' // 默认为灰色（不在打卡周期内）
+
+              if (!day.isInSchedule) {
+                // 不在打卡周期内 - 灰色
+                statusClass = 'bg-gray-500/10 border-gray-500/30'
+                textClass = 'text-white/30'
+              } else if (day.hasCheckin) {
+                // 已打卡 - 绿色
                 statusClass = 'bg-green-500/30 border-green-400'
-              } else if (isPast && day.isCurrentMonth) {
-                // 忘记打卡（过去的日期但没有打卡）
+                textClass = 'text-white'
+              } else if (isPast) {
+                // 忘记打卡（过去的日期但没有打卡）- 红色
                 statusClass = 'bg-red-500/30 border-red-400'
-              } else if (isFuture || !day.isCurrentMonth) {
-                // 未打卡（未来的日期）
+                textClass = 'text-white'
+              } else {
+                // 待打卡（未来的日期或今天）- 灰色边框
                 statusClass = 'bg-gray-500/20 border-gray-400/50'
+                textClass = 'text-white'
               }
 
               return (
@@ -414,7 +455,7 @@ export default function CheckinPage() {
                   onClick={() => handleDateClick(day)}
                   className={`
                     aspect-square w-12 h-12 flex items-center justify-center text-sm font-medium rounded-lg border transition-all duration-300 relative
-                    ${day.isCurrentMonth ? 'text-white' : 'text-white/30'}
+                    ${textClass}
                     ${day.isToday ? 'ring-2 ring-blue-400' : ''}
                     ${day.canCheckin ? 'cursor-pointer hover:bg-blue-500/20' : ''}
                     ${statusClass}
@@ -557,6 +598,25 @@ export default function CheckinPage() {
           }}
           currentUrl={xiaohongshuProfileUrl}
         />
+
+        {/* 没有打卡安排的提示模态框 */}
+        {showNoScheduleModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-md w-full text-center">
+              <div className="text-6xl mb-4">📅</div>
+              <h3 className="text-xl font-bold text-white mb-4">打卡还未开始</h3>
+              <p className="text-white/80 mb-6">
+                您的打卡还未开始，请联系管理员设置打卡时间。
+              </p>
+              <button
+                onClick={() => setShowNoScheduleModal(false)}
+                className="px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300"
+              >
+                我知道了
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
