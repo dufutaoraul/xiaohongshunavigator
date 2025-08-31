@@ -14,7 +14,7 @@ DROP TABLE IF EXISTS graduation_requirements CASCADE;
 DROP TABLE IF EXISTS generated_content CASCADE;
 
 -- 4. 删除热门帖子相关表格（当前未使用此功能）
-DROP TABLE IF EXISTS student_best_posts CASCADE;
+DROP VIEW IF EXISTS student_best_posts CASCADE;
 DROP TABLE IF EXISTS hot_posts CASCADE;
 
 -- 5. 删除打卡卡片表格（功能重复，已有checkin_records）

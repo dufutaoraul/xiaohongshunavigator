@@ -25,8 +25,7 @@ export default function CheckinPage() {
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState('')
   const [xiaohongshuUrl, setXiaohongshuUrl] = useState('')
-  const [contentTitle, setContentTitle] = useState('')
-  const [contentDescription, setContentDescription] = useState('')
+
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -137,11 +136,12 @@ export default function CheckinPage() {
   }, [isAuthenticated, studentId, currentDate])
 
   const fetchCheckinData = async () => {
-    if (!checkinSchedule) return
-
     try {
-      // 获取打卡周期内的所有打卡记录
-      const recordsResponse = await fetch(`/api/checkin?student_id=${studentId}&type=schedule&start_date=${checkinSchedule.start_date}&end_date=${checkinSchedule.end_date}`)
+      const year = currentDate.getFullYear()
+      const month = currentDate.getMonth() + 1
+
+      // 获取当月打卡记录
+      const recordsResponse = await fetch(`/api/checkin?student_id=${studentId}&type=monthly&year=${year}&month=${month}`)
       if (recordsResponse.ok) {
         const recordsData = await recordsResponse.json()
         setCheckinRecords(recordsData.data || [])
@@ -158,38 +158,34 @@ export default function CheckinPage() {
     }
   }
 
-  // 生成日历数据 - 基于打卡安排生成93天日历
+  // 生成日历数据 - 按月显示真实日历
   const generateCalendarDays = () => {
-    if (!checkinSchedule) {
-      return []
-    }
-
-    const startDate = new Date(checkinSchedule.start_date)
-    const endDate = new Date(checkinSchedule.end_date)
-    const today = new Date().toISOString().split('T')[0]
-
-    // 计算日历显示范围（包含打卡周期前后的日期以填满日历格子）
-    const calendarStart = new Date(startDate)
-    calendarStart.setDate(calendarStart.getDate() - calendarStart.getDay()) // 从周日开始
-
-    const calendarEnd = new Date(endDate)
-    const remainingDays = 6 - calendarEnd.getDay()
-    calendarEnd.setDate(calendarEnd.getDate() + remainingDays) // 到周六结束
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const startDate = new Date(firstDay)
+    startDate.setDate(startDate.getDate() - firstDay.getDay()) // 从周日开始
 
     const days = []
-    const current = new Date(calendarStart)
+    const current = new Date(startDate)
+    const today = new Date().toISOString().split('T')[0]
 
-    while (current <= calendarEnd) {
+    for (let i = 0; i < 42; i++) { // 6周 x 7天
       const dateStr = current.toISOString().split('T')[0]
-      const isInSchedule = dateStr >= checkinSchedule.start_date && dateStr <= checkinSchedule.end_date
+      const isCurrentMonth = current.getMonth() === month
       const isToday = dateStr === today
       const checkinRecord = checkinRecords.find(record => record.checkin_date === dateStr)
+
+      // 检查是否在打卡周期内
+      const isInSchedule = checkinSchedule &&
+        dateStr >= checkinSchedule.start_date &&
+        dateStr <= checkinSchedule.end_date
 
       days.push({
         date: new Date(current),
         dateStr,
         day: current.getDate(),
-        isCurrentMonth: true, // 在打卡周期内都视为当前月
+        isCurrentMonth,
         isToday,
         hasCheckin: !!checkinRecord,
         checkinStatus: checkinRecord?.status || null,
@@ -213,12 +209,8 @@ export default function CheckinPage() {
       const existingRecord = checkinRecords.find(record => record.checkin_date === day.dateStr)
       if (existingRecord) {
         setXiaohongshuUrl(existingRecord.xiaohongshu_url)
-        setContentTitle(existingRecord.content_title || '')
-        setContentDescription(existingRecord.content_description || '')
       } else {
         setXiaohongshuUrl('')
-        setContentTitle('')
-        setContentDescription('')
       }
     }
   }
@@ -249,8 +241,8 @@ export default function CheckinPage() {
           student_name: userName,
           checkin_date: selectedDate,
           xiaohongshu_url: xiaohongshuUrl,
-          content_title: contentTitle,
-          content_description: contentDescription
+          content_title: '',
+          content_description: ''
         })
       })
 
@@ -263,8 +255,6 @@ export default function CheckinPage() {
         
         // 清空表单
         setXiaohongshuUrl('')
-        setContentTitle('')
-        setContentDescription('')
       } else {
         setMessage(result.error || '提交失败，请重试')
       }
@@ -381,13 +371,9 @@ export default function CheckinPage() {
               if (todayRecord) {
                 // 已有记录，预填数据
                 setXiaohongshuUrl(todayRecord.xiaohongshu_url || '')
-                setContentTitle(todayRecord.content_title || '')
-                setContentDescription(todayRecord.content_description || '')
               } else {
                 // 清空表单
                 setXiaohongshuUrl('')
-                setContentTitle('')
-                setContentDescription('')
               }
 
               setShowCheckinModal(true)
@@ -438,12 +424,16 @@ export default function CheckinPage() {
               const isPast = day.dateStr < today
 
               let statusClass = 'glass-effect border-white/20'
-              let textClass = 'text-white/30' // 默认为灰色（不在打卡周期内）
+              let textClass = day.isCurrentMonth ? 'text-white' : 'text-white/30'
 
-              if (!day.isInSchedule) {
-                // 不在打卡周期内 - 灰色
+              if (!day.isCurrentMonth) {
+                // 不是当前月的日期 - 灰色
                 statusClass = 'bg-gray-500/10 border-gray-500/30'
                 textClass = 'text-white/30'
+              } else if (!day.isInSchedule) {
+                // 不在打卡周期内 - 普通显示
+                statusClass = 'bg-gray-500/10 border-gray-500/30'
+                textClass = 'text-white/50'
               } else if (day.hasCheckin) {
                 // 已打卡 - 绿色
                 statusClass = 'bg-green-500/30 border-green-400'
@@ -516,31 +506,7 @@ export default function CheckinPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    内容标题 (可选)
-                  </label>
-                  <input
-                    type="text"
-                    value={contentTitle}
-                    onChange={(e) => setContentTitle(e.target.value)}
-                    placeholder="简单描述你的作品标题"
-                    className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
-                  />
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    内容描述 (可选)
-                  </label>
-                  <textarea
-                    value={contentDescription}
-                    onChange={(e) => setContentDescription(e.target.value)}
-                    placeholder="分享你的创作心得或学习收获"
-                    rows={3}
-                    className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none resize-none"
-                  />
-                </div>
 
                 {message && (
                   <div className={`p-3 rounded-lg text-sm ${
