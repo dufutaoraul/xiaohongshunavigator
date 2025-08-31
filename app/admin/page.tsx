@@ -20,7 +20,6 @@ interface AdminStats {
   totalStudents: number
   totalAdmins: number
   activePunches: number
-  pendingHomework: number
 }
 
 export default function AdminDashboard() {
@@ -30,12 +29,18 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats>({
     totalStudents: 0,
     totalAdmins: 0,
-    activePunches: 0,
-    pendingHomework: 0
+    activePunches: 0
   })
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchType, setSearchType] = useState<'student_id' | 'name' | 'real_name'>('student_id')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showCheckinModal, setShowCheckinModal] = useState(false)
+  const [checkinMode, setCheckinMode] = useState<'single' | 'batch'>('single')
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [checkinStartDate, setCheckinStartDate] = useState('')
+  const [batchStartId, setBatchStartId] = useState('')
+  const [batchEndId, setBatchEndId] = useState('')
 
   // 权限检查
   useEffect(() => {
@@ -84,11 +89,22 @@ export default function AdminDashboard() {
     }
   }
 
-  // 过滤学员
-  const filteredStudents = students.filter(student =>
-    student.student_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  // 过滤学员 - 支持三种搜索方式
+  const filteredStudents = students.filter(student => {
+    if (!searchTerm.trim()) return true
+
+    const searchLower = searchTerm.toLowerCase()
+    switch (searchType) {
+      case 'student_id':
+        return student.student_id.toLowerCase().includes(searchLower)
+      case 'name':
+        return student.name.toLowerCase().includes(searchLower)
+      case 'real_name':
+        return (student as any).real_name?.toLowerCase().includes(searchLower) || false
+      default:
+        return true
+    }
+  })
 
   if (!isAdmin) {
     return null
@@ -108,7 +124,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="glass-effect p-6 rounded-xl">
             <div className="flex items-center">
               <div className="text-3xl mr-4">👥</div>
@@ -118,33 +134,23 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-          
+
+          <div className="glass-effect p-6 rounded-xl">
+            <div className="flex items-center">
+              <div className="text-3xl mr-4">📊</div>
+              <div>
+                <p className="text-white/60 text-sm">正在打卡人数</p>
+                <p className="text-2xl font-bold text-white">{stats.activePunches}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="glass-effect p-6 rounded-xl">
             <div className="flex items-center">
               <div className="text-3xl mr-4">👑</div>
               <div>
                 <p className="text-white/60 text-sm">管理员数</p>
                 <p className="text-2xl font-bold text-white">{stats.totalAdmins}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="glass-effect p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">📊</div>
-              <div>
-                <p className="text-white/60 text-sm">活跃打卡</p>
-                <p className="text-2xl font-bold text-white">{stats.activePunches}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="glass-effect p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">📝</div>
-              <div>
-                <p className="text-white/60 text-sm">待批改作业</p>
-                <p className="text-2xl font-bold text-white">{stats.pendingHomework}</p>
               </div>
             </div>
           </div>
@@ -157,19 +163,65 @@ export default function AdminDashboard() {
             <div className="glass-effect p-6 rounded-xl">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-white">👥 学员管理</h2>
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="cosmic-button px-4 py-2 rounded-lg text-sm font-medium"
-                >
-                  ➕ 新增学员
-                </button>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="cosmic-button px-4 py-2 rounded-lg text-sm font-medium"
+                  >
+                    ➕ 新增学员
+                  </button>
+                  <button
+                    onClick={() => setShowCheckinModal(true)}
+                    className="cosmic-button px-4 py-2 rounded-lg text-sm font-medium"
+                  >
+                    ⏰ 设置打卡时间
+                  </button>
+                </div>
               </div>
 
-              {/* 搜索框 */}
-              <div className="mb-4">
+              {/* 搜索区域 */}
+              <div className="mb-4 space-y-3">
+                {/* 搜索类型选择 */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setSearchType('student_id')}
+                    className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                      searchType === 'student_id'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                  >
+                    按学号
+                  </button>
+                  <button
+                    onClick={() => setSearchType('name')}
+                    className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                      searchType === 'name'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                  >
+                    按昵称
+                  </button>
+                  <button
+                    onClick={() => setSearchType('real_name')}
+                    className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                      searchType === 'real_name'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                  >
+                    按真实姓名
+                  </button>
+                </div>
+
+                {/* 搜索框 */}
                 <input
                   type="text"
-                  placeholder="搜索学员（学号或姓名）..."
+                  placeholder={`搜索学员（${
+                    searchType === 'student_id' ? '学号' :
+                    searchType === 'name' ? '昵称' : '真实姓名'
+                  }）...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-400"
@@ -220,68 +272,133 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* 快速操作 */}
-          <div className="space-y-6">
-            {/* 作业与审核 */}
-            <div className="glass-effect p-6 rounded-xl">
-              <h3 className="text-xl font-bold text-white mb-4">📋 作业与审核</h3>
-              <div className="space-y-3">
-                <Link
-                  href="/homework"
-                  className="block w-full p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors duration-300"
+
+        </div>
+      </div>
+
+      {/* 打卡时间设置模态框 */}
+      {showCheckinModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass-effect p-6 rounded-lg border border-white/20 max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-4">⏰ 设置打卡开始时间</h3>
+
+            {/* 模式选择 */}
+            <div className="mb-4">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setCheckinMode('single')}
+                  className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                    checkinMode === 'single'
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  }`}
                 >
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">📝</span>
-                    <div>
-                      <p className="text-white font-medium">待批改作业</p>
-                      <p className="text-white/60 text-sm">查看和批改学员作业</p>
-                    </div>
-                  </div>
-                </Link>
-                
-                <Link
-                  href="/admin/graduation"
-                  className="block w-full p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors duration-300"
+                  单个设置
+                </button>
+                <button
+                  onClick={() => setCheckinMode('batch')}
+                  className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                    checkinMode === 'batch'
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  }`}
                 >
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">🎓</span>
-                    <div>
-                      <p className="text-white font-medium">毕业审核</p>
-                      <p className="text-white/60 text-sm">审核学员毕业申请</p>
-                    </div>
-                  </div>
-                </Link>
+                  批量设置
+                </button>
               </div>
             </div>
 
-            {/* 系统工具 */}
-            <div className="glass-effect p-6 rounded-xl">
-              <h3 className="text-xl font-bold text-white mb-4">🔧 系统工具</h3>
-              <div className="space-y-3">
-                <button className="w-full p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors duration-300 text-left">
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">📊</span>
-                    <div>
-                      <p className="text-white font-medium">数据导出</p>
-                      <p className="text-white/60 text-sm">导出学员和打卡数据</p>
-                    </div>
+            <div className="space-y-4">
+              {checkinMode === 'single' ? (
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    选择学员
+                  </label>
+                  <select
+                    value={selectedStudent?.student_id || ''}
+                    onChange={(e) => {
+                      const student = students.find(s => s.student_id === e.target.value)
+                      setSelectedStudent(student || null)
+                    }}
+                    className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
+                  >
+                    <option value="">请选择学员</option>
+                    {students.map(student => (
+                      <option key={student.student_id} value={student.student_id}>
+                        {student.student_id} - {student.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      起始学号
+                    </label>
+                    <input
+                      type="text"
+                      value={batchStartId}
+                      onChange={(e) => setBatchStartId(e.target.value)}
+                      placeholder="例如：AI001"
+                      className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
+                    />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      结束学号
+                    </label>
+                    <input
+                      type="text"
+                      value={batchEndId}
+                      onChange={(e) => setBatchEndId(e.target.value)}
+                      placeholder="例如：AI100"
+                      className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  打卡开始日期
+                </label>
+                <input
+                  type="date"
+                  value={checkinStartDate}
+                  onChange={(e) => setCheckinStartDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    // TODO: 实现设置打卡时间的逻辑
+                    console.log('设置打卡时间:', {
+                      mode: checkinMode,
+                      student: selectedStudent,
+                      batchStart: batchStartId,
+                      batchEnd: batchEndId,
+                      startDate: checkinStartDate
+                    })
+                    setShowCheckinModal(false)
+                  }}
+                  className="flex-1 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+                >
+                  确认设置
                 </button>
-                
-                <button className="w-full p-3 bg-white/10 hover:bg-white/20 rounded-lg transition-colors duration-300 text-left">
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">🔄</span>
-                    <div>
-                      <p className="text-white font-medium">系统同步</p>
-                      <p className="text-white/60 text-sm">同步外部数据源</p>
-                    </div>
-                  </div>
+                <button
+                  onClick={() => setShowCheckinModal(false)}
+                  className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                >
+                  取消
                 </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 新增学员模态框 */}
       <AddStudentModal
