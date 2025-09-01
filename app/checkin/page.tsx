@@ -458,28 +458,9 @@ export default function CheckinPage() {
                 statusClass = 'bg-gray-500/10 border-gray-500/30'
                 textClass = 'text-white/50'
               } else if (day.hasCheckin) {
-                // 根据打卡状态显示不同颜色
-                switch (day.checkinStatus) {
-                  case 'approved':
-                    // 打卡合格 - 绿色
-                    statusClass = 'bg-green-500/30 border-green-400'
-                    textClass = 'text-white'
-                    break
-                  case 'pending':
-                    // 正在打卡（待审核）- 黄色
-                    statusClass = 'bg-yellow-500/30 border-yellow-400'
-                    textClass = 'text-white'
-                    break
-                  case 'rejected':
-                    // 打卡不合格 - 橙色
-                    statusClass = 'bg-orange-500/30 border-orange-400'
-                    textClass = 'text-white'
-                    break
-                  default:
-                    // 默认已打卡状态 - 绿色
-                    statusClass = 'bg-green-500/30 border-green-400'
-                    textClass = 'text-white'
-                }
+                // 已打卡 - 绿色（打卡合格）
+                statusClass = 'bg-green-500/30 border-green-400'
+                textClass = 'text-white'
               } else if (isPast) {
                 // 忘记打卡（过去的日期但没有打卡）- 红色
                 statusClass = 'bg-red-500/30 border-red-400'
@@ -507,9 +488,7 @@ export default function CheckinPage() {
                   {/* 打卡状态图标 */}
                   {day.hasCheckin && (
                     <div className="absolute top-1 right-1 text-xs">
-                      {day.checkinStatus === 'approved' && '✅'}
-                      {day.checkinStatus === 'pending' && '⏳'}
-                      {day.checkinStatus === 'rejected' && '❌'}
+                      ✅
                     </div>
                   )}
 
@@ -522,19 +501,11 @@ export default function CheckinPage() {
             })}
           </div>
 
-          {/* 图例 - 显示所有打卡状态 */}
-          <div className="mt-6 flex justify-center flex-wrap gap-4 text-xs text-white/70">
+          {/* 图例 - 只显示三种状态 */}
+          <div className="mt-6 flex justify-center flex-wrap gap-6 text-xs text-white/70">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-green-500/30 border border-green-400 rounded mr-2"></div>
               打卡合格
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-yellow-500/30 border border-yellow-400 rounded mr-2"></div>
-              正在打卡
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-orange-500/30 border border-orange-400 rounded mr-2"></div>
-              打卡不合格
             </div>
             <div className="flex items-center">
               <div className="w-3 h-3 bg-gray-500/20 border border-gray-400/50 rounded mr-2"></div>
@@ -568,16 +539,8 @@ export default function CheckinPage() {
                             day: 'numeric'
                           })}
                         </span>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          record.status === 'approved' ? 'bg-green-500/20 text-green-300' :
-                          record.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
-                          record.status === 'rejected' ? 'bg-orange-500/20 text-orange-300' :
-                          'bg-gray-500/20 text-gray-300'
-                        }`}>
-                          {record.status === 'approved' ? '✅ 已通过' :
-                           record.status === 'pending' ? '⏳ 待审核' :
-                           record.status === 'rejected' ? '❌ 未通过' :
-                           '📝 已提交'}
+                        <span className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-300">
+                          ✅ 已打卡
                         </span>
                       </div>
 
@@ -654,7 +617,7 @@ export default function CheckinPage() {
                     disabled={loading}
                     className="flex-1"
                   >
-                    {loading ? '提交中...' : (selectedDate && checkinRecords.find(record => record.checkin_date === selectedDate) ? '修改提交链接' : '提交打卡')}
+                    {loading ? '提交中...' : (selectedDate && checkinRecords.find(record => record.checkin_date === selectedDate) ? '修改链接' : '提交打卡')}
                   </Button>
                   <Button
                     variant="outline"
