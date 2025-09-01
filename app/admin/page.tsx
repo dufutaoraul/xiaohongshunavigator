@@ -18,8 +18,9 @@ interface Student {
 
 interface AdminStats {
   totalStudents: number
-  totalAdmins: number
   activePunches: number
+  qualifiedStudents: number
+  unqualifiedStudents: number
 }
 
 export default function AdminDashboard() {
@@ -28,12 +29,14 @@ export default function AdminDashboard() {
   const [students, setStudents] = useState<Student[]>([])
   const [stats, setStats] = useState<AdminStats>({
     totalStudents: 0,
-    totalAdmins: 0,
-    activePunches: 0
+    activePunches: 0,
+    qualifiedStudents: 0,
+    unqualifiedStudents: 0
   })
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [searchType, setSearchType] = useState<'student_id' | 'name' | 'real_name'>('student_id')
+  const [showStudentManagement, setShowStudentManagement] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [checkinMode, setCheckinMode] = useState<'single' | 'batch'>('single')
@@ -72,15 +75,25 @@ export default function AdminDashboard() {
       if (studentsResponse.ok) {
         const studentsData = await studentsResponse.json()
         setStudents(studentsData.students || [])
-        
+
         // 计算统计数据
         const totalStudents = studentsData.students?.filter((s: Student) => s.role === 'student').length || 0
-        const totalAdmins = studentsData.students?.filter((s: Student) => s.role === 'admin').length || 0
-        
+
         setStats(prev => ({
           ...prev,
-          totalStudents,
-          totalAdmins
+          totalStudents
+        }))
+      }
+
+      // 加载打卡统计数据
+      const checkinStatsResponse = await fetch('/api/admin/checkin-stats')
+      if (checkinStatsResponse.ok) {
+        const checkinStatsData = await checkinStatsResponse.json()
+        setStats(prev => ({
+          ...prev,
+          activePunches: checkinStatsData.activePunches || 0,
+          qualifiedStudents: checkinStatsData.qualifiedStudents || 0,
+          unqualifiedStudents: checkinStatsData.unqualifiedStudents || 0
         }))
       }
       
@@ -130,43 +143,135 @@ export default function AdminDashboard() {
           <p className="text-white/70">
             欢迎回来，{user?.name}！管理学员信息和系统运营数据。
           </p>
-        </div>
 
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="glass-effect p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">👥</div>
-              <div>
-                <p className="text-white/60 text-sm">总学员数</p>
-                <p className="text-2xl font-bold text-white">{stats.totalStudents}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-effect p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">📊</div>
-              <div>
-                <p className="text-white/60 text-sm">正在打卡人数</p>
-                <p className="text-2xl font-bold text-white">{stats.activePunches}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-effect p-6 rounded-xl">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">👑</div>
-              <div>
-                <p className="text-white/60 text-sm">管理员数</p>
-                <p className="text-2xl font-bold text-white">{stats.totalAdmins}</p>
-              </div>
-            </div>
+          {/* 数据库清理按钮 */}
+          <div className="mt-4 text-center">
+            <button
+              onClick={async () => {
+                if (confirm('确定要清理无用的数据库表格吗？此操作不可逆！')) {
+                  try {
+                    const response = await fetch('/api/admin/cleanup-database', {
+                      method: 'POST'
+                    })
+                    const result = await response.json()
+                    if (result.success) {
+                      alert(`数据库清理完成！${result.message}`)
+                    } else {
+                      alert(`清理失败：${result.error}`)
+                    }
+                  } catch (error) {
+                    alert('清理过程中发生错误')
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 rounded-lg transition-all duration-300 text-sm"
+            >
+              🧹 清理无用数据库表格
+            </button>
           </div>
         </div>
 
-        {/* 功能区域 - 学员管理居中 */}
-        <div className="max-w-4xl mx-auto">
+        {/* 条件渲染：统计面板或学员管理 */}
+        {!showStudentManagement ? (
+          <>
+            {/* 统计卡片 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="glass-effect p-6 rounded-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="text-3xl mr-4">👥</div>
+                <div>
+                  <p className="text-white/60 text-sm">总学员数</p>
+                  <p className="text-2xl font-bold text-white">{stats.totalStudents}</p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowStudentManagement(true)}
+              className="w-full px-4 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 text-sm"
+            >
+              进入管理
+            </button>
+          </div>
+
+          <div className="glass-effect p-6 rounded-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="text-3xl mr-4">📊</div>
+                <div>
+                  <p className="text-white/60 text-sm">正在打卡人数</p>
+                  <p className="text-2xl font-bold text-white">{stats.activePunches}</p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                // TODO: 跳转到正在打卡学员列表页面
+                alert('正在打卡学员列表功能开发中...')
+              }}
+              className="w-full px-4 py-2 bg-green-500/20 text-green-300 hover:bg-green-500/30 hover:text-green-200 rounded-lg transition-all duration-300 text-sm"
+            >
+              进入管理
+            </button>
+          </div>
+
+          <div className="glass-effect p-6 rounded-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="text-3xl mr-4">✅</div>
+                <div>
+                  <p className="text-white/60 text-sm">打卡合格人数</p>
+                  <p className="text-2xl font-bold text-white">{stats.qualifiedStudents}</p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                // TODO: 跳转到打卡合格学员列表页面
+                alert('打卡合格学员列表功能开发中...')
+              }}
+              className="w-full px-4 py-2 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200 rounded-lg transition-all duration-300 text-sm"
+            >
+              进入管理
+            </button>
+          </div>
+
+          <div className="glass-effect p-6 rounded-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="text-3xl mr-4">❌</div>
+                <div>
+                  <p className="text-white/60 text-sm">打卡不合格人数</p>
+                  <p className="text-2xl font-bold text-white">{stats.unqualifiedStudents}</p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                // TODO: 跳转到打卡不合格学员列表页面
+                alert('打卡不合格学员列表功能开发中...')
+              }}
+              className="w-full px-4 py-2 bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 rounded-lg transition-all duration-300 text-sm"
+            >
+              进入管理
+            </button>
+          </div>
+            </div>
+          </>
+        ) : (
+          /* 学员管理界面 */
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center mb-6">
+              <button
+                onClick={() => setShowStudentManagement(false)}
+                className="mr-4 p-2 text-white/70 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h2 className="text-3xl font-bold text-white">👥 学员管理</h2>
+            </div>
           {/* 学员管理 */}
           <div className="glass-effect p-6 rounded-xl">
               <div className="flex justify-between items-center mb-6">
@@ -484,7 +589,8 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        )}
       )}
 
       {/* 新增学员模态框 */}
