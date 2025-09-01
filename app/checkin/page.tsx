@@ -149,23 +149,37 @@ export default function CheckinPage() {
 
   const fetchCheckinData = async () => {
     try {
-      const year = currentDate.getFullYear()
-      const month = currentDate.getMonth() + 1
-
-      // 获取当月打卡记录，添加时间戳避免缓存
+      // 获取打卡记录，添加时间戳避免缓存
       const timestamp = new Date().getTime()
-      const recordsResponse = await fetch(`/api/checkin?student_id=${studentId}&type=monthly&year=${year}&month=${month}&_t=${timestamp}`)
+      const recordsResponse = await fetch(`/api/checkin/submit?student_id=${studentId}&days=90&_t=${timestamp}`)
       if (recordsResponse.ok) {
         const recordsData = await recordsResponse.json()
-        setCheckinRecords(recordsData.data || [])
-        console.log('刷新打卡记录:', recordsData.data)
-      }
-
-      // 获取打卡统计
-      const statsResponse = await fetch(`/api/checkin?student_id=${studentId}&type=stats`)
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json()
-        setCheckinStats(statsData.data || { total_days: 0, consecutive_days: 0, current_month_days: 0, completion_rate: 0 })
+        console.log('打卡记录API响应:', recordsData)
+        
+        if (recordsData.success && recordsData.data) {
+          // 转换数据格式以匹配前端期望的结构
+          const records = recordsData.data.checkins?.map((record: any) => ({
+            id: record.id,
+            student_id: record.student_id,
+            checkin_date: record.date,
+            xiaohongshu_url: record.links?.[0] || '', // 取第一个链接
+            links: record.links || [],
+            passed: record.passed,
+            created_at: record.created_at,
+            updated_at: record.updated_at
+          })) || []
+          
+          setCheckinRecords(records)
+          console.log('转换后的打卡记录:', records)
+          
+          // 更新统计数据
+          setCheckinStats({
+            total_days: recordsData.data.total_checkin_days || 0,
+            consecutive_days: 0, // 需要计算连续天数
+            current_month_days: recordsData.data.passed_days || 0,
+            completion_rate: parseFloat(recordsData.data.pass_rate) || 0
+          })
+        }
       }
     } catch (error) {
       console.error('Error fetching checkin data:', error)
@@ -252,29 +266,32 @@ export default function CheckinPage() {
     setMessage('')
 
     try {
-      const response = await fetch('/api/checkin', {
+      const response = await fetch('/api/checkin/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           student_id: studentId,
-          student_name: userName,
-          checkin_date: selectedDate,
-          xiaohongshu_url: xiaohongshuUrl,
-          content_title: '',
-          content_description: ''
+          urls: [xiaohongshuUrl],
+          date: selectedDate
         })
       })
 
       const result = await response.json()
 
-      if (response.ok) {
+      if (response.ok && result.success) {
         setMessage('打卡提交成功！')
-        setShowCheckinModal(false)
-        fetchCheckinData() // 刷新数据
-
-        // 不清空表单，保留已提交的链接以便下次查看
+        
+        // 立即刷新打卡数据
+        await fetchCheckinData()
+        
+        // 延迟关闭模态框，让用户看到成功消息
+        setTimeout(() => {
+          setShowCheckinModal(false)
+          setXiaohongshuUrl('')
+          setMessage('')
+        }, 1500)
       } else {
         setMessage(result.error || '提交失败，请重试')
       }
