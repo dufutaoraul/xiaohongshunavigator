@@ -362,8 +362,7 @@ export default function CheckinPage() {
 
   return (
     <div className="min-h-screen relative">
-      {/* 全局用户菜单 - 左上角 */}
-      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
 
       <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center fade-in-up">
