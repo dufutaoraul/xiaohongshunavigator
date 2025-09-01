@@ -13,11 +13,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // 计算结束日期（开始日期 + 93天）
-    const startDateObj = new Date(start_date)
-    const endDateObj = new Date(startDateObj)
-    endDateObj.setDate(startDateObj.getDate() + 93)
-    
+    // 计算结束日期（开始日期 + 92天，因为包含开始日期本身，所以93天周期是+92）
+    const startDateObj = new Date(start_date + 'T00:00:00.000Z')
+    const endDateObj = new Date(startDateObj.getTime() + (92 * 24 * 60 * 60 * 1000))
+
     const end_date = endDateObj.toISOString().split('T')[0]
 
     if (mode === 'single') {

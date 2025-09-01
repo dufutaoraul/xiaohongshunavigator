@@ -101,9 +101,17 @@ export default function CheckinPage() {
       const result = await response.json()
 
       if (result.success && result.data && result.data.length > 0) {
-        const today = new Date().toISOString().split('T')[0]
+        // 获取本地日期，避免时区问题
+        const today = new Date()
+        const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+        const todayStr = localToday.toISOString().split('T')[0]
+
+        console.log('今天日期:', todayStr)
+        console.log('打卡安排:', result.data)
+
         const activeSchedule = result.data.find((schedule: any) => {
-          return schedule.start_date <= today && schedule.end_date >= today && schedule.is_active
+          console.log(`检查安排: ${schedule.start_date} <= ${todayStr} <= ${schedule.end_date}`)
+          return schedule.start_date <= todayStr && schedule.end_date >= todayStr && schedule.is_active
         })
 
         if (activeSchedule) {

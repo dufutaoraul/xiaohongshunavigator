@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
 import { useAuth } from './contexts/AuthContext'
+import UserProfileStatus from './components/UserProfileStatus'
 
 import GlobalUserMenu from './components/GlobalUserMenu'
 
@@ -116,6 +117,9 @@ export default function Home() {
           <p className="text-lg text-white/60 mb-12 fade-in-up" style={{animationDelay: '0.4s'}}>
             为爱学AI创富营学员打造的一体化IP孵化工具
           </p>
+
+          {/* 个人资料与登录状态 - 首页居中显示 */}
+          <UserProfileStatus isHomePage={true} />
         </div>
 
 
