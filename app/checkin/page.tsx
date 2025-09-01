@@ -209,6 +209,7 @@ export default function CheckinPage() {
         isToday,
         hasCheckin: !!checkinRecord,
         checkinStatus: checkinRecord?.status || null,
+        checkinRecord: checkinRecord, // 添加完整的打卡记录
         canCheckin: isToday && isInSchedule,
         isInSchedule // 是否在打卡周期内
       })
@@ -457,9 +458,28 @@ export default function CheckinPage() {
                 statusClass = 'bg-gray-500/10 border-gray-500/30'
                 textClass = 'text-white/50'
               } else if (day.hasCheckin) {
-                // 已打卡 - 绿色
-                statusClass = 'bg-green-500/30 border-green-400'
-                textClass = 'text-white'
+                // 根据打卡状态显示不同颜色
+                switch (day.checkinStatus) {
+                  case 'approved':
+                    // 打卡合格 - 绿色
+                    statusClass = 'bg-green-500/30 border-green-400'
+                    textClass = 'text-white'
+                    break
+                  case 'pending':
+                    // 正在打卡（待审核）- 黄色
+                    statusClass = 'bg-yellow-500/30 border-yellow-400'
+                    textClass = 'text-white'
+                    break
+                  case 'rejected':
+                    // 打卡不合格 - 橙色
+                    statusClass = 'bg-orange-500/30 border-orange-400'
+                    textClass = 'text-white'
+                    break
+                  default:
+                    // 默认已打卡状态 - 绿色
+                    statusClass = 'bg-green-500/30 border-green-400'
+                    textClass = 'text-white'
+                }
               } else if (isPast) {
                 // 忘记打卡（过去的日期但没有打卡）- 红色
                 statusClass = 'bg-red-500/30 border-red-400'
@@ -483,6 +503,17 @@ export default function CheckinPage() {
                   `}
                 >
                   <span>{day.day}</span>
+
+                  {/* 打卡状态图标 */}
+                  {day.hasCheckin && (
+                    <div className="absolute top-1 right-1 text-xs">
+                      {day.checkinStatus === 'approved' && '✅'}
+                      {day.checkinStatus === 'pending' && '⏳'}
+                      {day.checkinStatus === 'rejected' && '❌'}
+                    </div>
+                  )}
+
+                  {/* 今天标记 */}
                   {day.isToday && (
                     <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full" />
                   )}
@@ -491,11 +522,19 @@ export default function CheckinPage() {
             })}
           </div>
 
-          {/* 图例 - 简化为三种状态 */}
-          <div className="mt-6 flex justify-center gap-6 text-xs text-white/70">
+          {/* 图例 - 显示所有打卡状态 */}
+          <div className="mt-6 flex justify-center flex-wrap gap-4 text-xs text-white/70">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-green-500/30 border border-green-400 rounded mr-2"></div>
-              已打卡
+              打卡合格
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-yellow-500/30 border border-yellow-400 rounded mr-2"></div>
+              正在打卡
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-orange-500/30 border border-orange-400 rounded mr-2"></div>
+              打卡不合格
             </div>
             <div className="flex items-center">
               <div className="w-3 h-3 bg-gray-500/20 border border-gray-400/50 rounded mr-2"></div>
@@ -506,6 +545,77 @@ export default function CheckinPage() {
               忘记打卡
             </div>
           </div>
+        </Card>
+
+        {/* 最近打卡记录 */}
+        <Card className="mb-8">
+          <h2 className="text-2xl font-bold text-white mb-6 text-center">📋 最近打卡记录</h2>
+
+          {checkinRecords.length > 0 ? (
+            <div className="space-y-4">
+              {checkinRecords
+                .sort((a, b) => new Date(b.checkin_date).getTime() - new Date(a.checkin_date).getTime())
+                .slice(0, 10)
+                .map((record) => (
+                <div key={record.id || record.checkin_date} className="glass-effect p-4 rounded-lg border border-white/20">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-white font-medium">
+                          {new Date(record.checkin_date).toLocaleDateString('zh-CN', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          record.status === 'approved' ? 'bg-green-500/20 text-green-300' :
+                          record.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
+                          record.status === 'rejected' ? 'bg-orange-500/20 text-orange-300' :
+                          'bg-gray-500/20 text-gray-300'
+                        }`}>
+                          {record.status === 'approved' ? '✅ 已通过' :
+                           record.status === 'pending' ? '⏳ 待审核' :
+                           record.status === 'rejected' ? '❌ 未通过' :
+                           '📝 已提交'}
+                        </span>
+                      </div>
+
+                      {record.xiaohongshu_url && (
+                        <div className="mb-2">
+                          <a
+                            href={record.xiaohongshu_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 text-sm break-all"
+                          >
+                            🔗 {record.xiaohongshu_url}
+                          </a>
+                        </div>
+                      )}
+
+                      {record.admin_comment && (
+                        <div className="mt-2 p-2 bg-white/5 rounded text-sm text-white/70">
+                          <span className="text-white/50">管理员备注：</span>
+                          {record.admin_comment}
+                        </div>
+                      )}
+
+                      <div className="text-xs text-white/50 mt-2">
+                        提交时间：{new Date(record.created_at || record.checkin_date).toLocaleString('zh-CN')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">📝</div>
+              <p className="text-white/60 mb-4">还没有打卡记录</p>
+              <p className="text-white/40 text-sm">点击上方&ldquo;今日打卡&rdquo;按钮开始您的打卡之旅</p>
+            </div>
+          )}
         </Card>
 
         {/* 打卡模态框 */}

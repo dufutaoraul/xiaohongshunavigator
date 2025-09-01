@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '../contexts/AuthContext'
 import Link from 'next/link'
 import AddStudentModal from '../components/AddStudentModal'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 
 interface Student {
   id: string
@@ -125,6 +126,9 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* 页面标题 */}
         <div className="mb-8">

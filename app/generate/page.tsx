@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 
 export default function GeneratePage() {
   const [studentId, setStudentId] = useState('')
@@ -241,7 +242,11 @@ export default function GeneratePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
+      <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center fade-in-up">
         <h1 className="text-4xl font-bold gradient-text mb-6">🤖 AI灵感内容引擎</h1>
         <p className="text-xl text-white/80">
@@ -385,7 +390,7 @@ export default function GeneratePage() {
         </div>
       </Card>
 
-
+      </div>
     </div>
   )
 }

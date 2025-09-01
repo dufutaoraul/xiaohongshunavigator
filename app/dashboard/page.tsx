@@ -191,17 +191,17 @@ export default function DashboardPage() {
     )
   }
 
-  if (!isLoggedIn || !currentXiaohongshuUrl) {
+  if (!isLoggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="max-w-md mx-auto text-center">
           <div className="text-6xl mb-6">📊</div>
           <h1 className="text-3xl font-bold gradient-text mb-4">打卡中心</h1>
           <p className="text-white/60 mb-8">
-            {!isLoggedIn ? '需要登录后才能访问打卡中心' : '需要绑定小红书主页后才能使用打卡功能'}
+            需要登录后才能访问打卡中心
           </p>
         </div>
-        
+
         {/* 登录模态框 */}
         <LoginModal
           isOpen={showLoginModal}
@@ -209,7 +209,7 @@ export default function DashboardPage() {
           onLogin={handleLogin}
           loading={authLoading}
         />
-        
+
       </div>
     )
   }
@@ -229,15 +229,27 @@ export default function DashboardPage() {
           </p>
           
           {/* 小红书主页链接信息 */}
-          <div className="mb-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
-            <h3 className="text-white font-medium mb-2 flex items-center justify-center">
-              <span className="mr-2">🔗</span>
-              已绑定小红书主页
-            </h3>
-            <p className="text-white/70 text-sm break-all">
-              {currentXiaohongshuUrl}
-            </p>
-          </div>
+          {currentXiaohongshuUrl ? (
+            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+              <h3 className="text-white font-medium mb-2 flex items-center justify-center">
+                <span className="mr-2">🔗</span>
+                已绑定小红书主页
+              </h3>
+              <p className="text-white/70 text-sm break-all">
+                {currentXiaohongshuUrl}
+              </p>
+            </div>
+          ) : (
+            <div className="mb-6 p-4 bg-orange-500/10 border border-orange-400/30 rounded-lg">
+              <h3 className="text-white font-medium mb-2 flex items-center justify-center">
+                <span className="mr-2">⚠️</span>
+                尚未绑定小红书主页
+              </h3>
+              <p className="text-orange-200/70 text-sm">
+                请先绑定您的小红书主页链接，以便使用打卡功能
+              </p>
+            </div>
+          )}
           
           {isAuthenticated ? (
             <div className="space-y-4 text-white/60">
@@ -253,24 +265,28 @@ export default function DashboardPage() {
 
           {/* 按钮组 */}
           <div className="mt-8 space-y-4">
-            {/* 打卡中心按钮 - 仅登录用户可见 */}
+            {/* 打卡中心按钮 - 所有登录用户都可见 */}
             {isAuthenticated && (
               <button
                 onClick={() => router.push('/checkin')}
-                className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold rounded-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                  currentXiaohongshuUrl
+                    ? 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600'
+                    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'
+                }`}
               >
-                📊 进入打卡中心
+                {currentXiaohongshuUrl ? '📊 进入打卡中心' : '📊 进入打卡中心（需先绑定主页）'}
               </button>
             )}
 
-            {/* 修改小红书链接按钮 */}
+            {/* 绑定/修改小红书链接按钮 */}
             <button
               onClick={() => {
                 checkXiaohongshuProfile(currentStudentId, true)
               }}
               className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              🔗 修改我的小红书主页链接
+              {currentXiaohongshuUrl ? '🔗 修改我的小红书主页链接' : '🔗 绑定我的小红书主页链接'}
             </button>
 
             {/* 返回首页按钮 */}

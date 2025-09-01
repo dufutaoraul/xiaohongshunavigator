@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 
 interface GeneratedContent {
   titles: Array<{ id: number; content: string }>
@@ -92,7 +93,11 @@ ${hashtagsText}`
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
+      <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center fade-in-up">
         <h1 className="text-4xl font-bold gradient-text mb-6">✨ 内容生成结果</h1>
         <p className="text-xl text-white/80">
@@ -209,25 +214,76 @@ ${hashtagsText}`
       </Card>
 
       {/* 标签建议 */}
-      <Card title="🏷️ 推荐标签" icon="🔖" className="mt-8">
-        <div className="flex flex-wrap gap-2">
-          {content.hashtags.map((hashtag, index) => (
-            <span
-              key={index}
-              onClick={() => copyToClipboard(hashtag, '标签')}
-              className="px-3 py-1 bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-pink-400/30 rounded-full text-pink-300 text-sm cursor-pointer hover:bg-pink-500/30 transition-colors"
-            >
-              {hashtag}
-            </span>
-          ))}
+      <Card title="🏷️ 标签建议" icon="🔖" className="mt-8">
+        {/* 固定标签 */}
+        <div className="mb-6">
+          <h3 className="text-white font-medium mb-3 flex items-center">
+            <span className="mr-2">📌</span>
+            固定标签
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {['#小红书', '#种草', '#分享', '#生活', '#推荐'].map((hashtag, index) => (
+              <span
+                key={index}
+                onClick={() => copyToClipboard(hashtag, '固定标签')}
+                className="px-3 py-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm cursor-pointer hover:bg-blue-500/30 transition-colors"
+              >
+                {hashtag}
+              </span>
+            ))}
+          </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => copyToClipboard(content.hashtags.join(' '), '所有标签')}
-          className="mt-4"
-        >
-          📋 复制所有标签
-        </Button>
+
+        {/* 推荐标签 */}
+        <div>
+          <h3 className="text-white font-medium mb-3 flex items-center">
+            <span className="mr-2">✨</span>
+            AI推荐标签
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {content.hashtags.map((hashtag, index) => (
+              <span
+                key={index}
+                onClick={() => copyToClipboard(hashtag, 'AI推荐标签')}
+                className="px-3 py-1 bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-pink-400/30 rounded-full text-pink-300 text-sm cursor-pointer hover:bg-pink-500/30 transition-colors"
+              >
+                {hashtag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* 操作按钮 */}
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const fixedTags = ['#小红书', '#种草', '#分享', '#生活', '#推荐']
+              const allTags = [...fixedTags, ...content.hashtags]
+              copyToClipboard(allTags.join(' '), '所有标签')
+            }}
+            className="flex-1 min-w-[150px]"
+          >
+            📋 复制所有标签
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const fixedTags = ['#小红书', '#种草', '#分享', '#生活', '#推荐']
+              copyToClipboard(fixedTags.join(' '), '固定标签')
+            }}
+            className="flex-1 min-w-[150px]"
+          >
+            📌 复制固定标签
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => copyToClipboard(content.hashtags.join(' '), 'AI推荐标签')}
+            className="flex-1 min-w-[150px]"
+          >
+            ✨ 复制推荐标签
+          </Button>
+        </div>
       </Card>
 
       {/* 视觉建议 */}
@@ -290,6 +346,7 @@ ${hashtagsText}`
         <p className="text-white/50 text-sm">
           💡 提示：点击任意内容块可以快速复制，祝你创作愉快！
         </p>
+      </div>
       </div>
     </div>
   )

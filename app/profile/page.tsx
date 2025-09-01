@@ -8,6 +8,7 @@ import Button from '../components/Button'
 import StudentInputWithAutocomplete from '../components/StudentInputWithAutocomplete'
 import LoginModal from '../components/LoginModal'
 import PasswordChangeModal from '../components/PasswordChangeModal'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 import { StudentInfo, upsertStudent } from '../../lib/database'
 
 interface UserProfile {
@@ -420,7 +421,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
+      <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center fade-in-up">
         <h1 className="text-4xl font-bold gradient-text mb-6">🧑‍💼 个人IP资料库</h1>
         <p className="text-xl text-white/80">
@@ -558,6 +563,7 @@ export default function ProfilePage() {
         currentPassword={currentPassword}
         loading={authLoading}
       />
+      </div>
     </div>
   )
 }
