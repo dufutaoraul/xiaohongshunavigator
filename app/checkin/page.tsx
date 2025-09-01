@@ -38,6 +38,7 @@ export default function CheckinPage() {
   const [hasCheckinSchedule, setHasCheckinSchedule] = useState(false)
   const [checkinSchedule, setCheckinSchedule] = useState<any>(null)
   const [showNoScheduleModal, setShowNoScheduleModal] = useState(false)
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
   // 检查认证状态和小红书主页
   useEffect(() => {
@@ -119,6 +120,9 @@ export default function CheckinPage() {
           setHasCheckinSchedule(true)
           setCheckinSchedule(activeSchedule)
           console.log('学员在打卡周期内:', activeSchedule)
+
+          // 显示欢迎弹窗
+          setShowWelcomeModal(true)
         } else {
           // 不在打卡周期内
           setHasCheckinSchedule(false)
@@ -148,11 +152,13 @@ export default function CheckinPage() {
       const year = currentDate.getFullYear()
       const month = currentDate.getMonth() + 1
 
-      // 获取当月打卡记录
-      const recordsResponse = await fetch(`/api/checkin?student_id=${studentId}&type=monthly&year=${year}&month=${month}`)
+      // 获取当月打卡记录，添加时间戳避免缓存
+      const timestamp = new Date().getTime()
+      const recordsResponse = await fetch(`/api/checkin?student_id=${studentId}&type=monthly&year=${year}&month=${month}&_t=${timestamp}`)
       if (recordsResponse.ok) {
         const recordsData = await recordsResponse.json()
         setCheckinRecords(recordsData.data || [])
+        console.log('刷新打卡记录:', recordsData.data)
       }
 
       // 获取打卡统计
@@ -176,10 +182,16 @@ export default function CheckinPage() {
 
     const days = []
     const current = new Date(startDate)
-    const today = new Date().toISOString().split('T')[0]
+
+    // 获取本地今天日期，避免时区问题
+    const todayDate = new Date()
+    const localToday = new Date(todayDate.getTime() - (todayDate.getTimezoneOffset() * 60000))
+    const today = localToday.toISOString().split('T')[0]
 
     for (let i = 0; i < 42; i++) { // 6周 x 7天
-      const dateStr = current.toISOString().split('T')[0]
+      // 获取本地日期字符串，避免时区问题
+      const localCurrent = new Date(current.getTime() - (current.getTimezoneOffset() * 60000))
+      const dateStr = localCurrent.toISOString().split('T')[0]
       const isCurrentMonth = current.getMonth() === month
       const isToday = dateStr === today
       const checkinRecord = checkinRecords.find(record => record.checkin_date === dateStr)
@@ -367,8 +379,10 @@ export default function CheckinPage() {
         <div className="flex justify-center mb-8">
           <Button
             onClick={() => {
+              // 获取本地今天日期，避免时区问题
               const today = new Date()
-              const todayStr = today.toISOString().split('T')[0]
+              const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+              const todayStr = localToday.toISOString().split('T')[0]
               setSelectedDate(todayStr)
 
               // 检查今天是否已经打卡
@@ -530,7 +544,7 @@ export default function CheckinPage() {
                     disabled={loading}
                     className="flex-1"
                   >
-                    {loading ? '提交中...' : '提交打卡'}
+                    {loading ? '提交中...' : (selectedDate && checkinRecords.find(record => record.checkin_date === selectedDate) ? '修改提交链接' : '提交打卡')}
                   </Button>
                   <Button
                     variant="outline"
@@ -581,6 +595,28 @@ export default function CheckinPage() {
           }}
           currentUrl={xiaohongshuProfileUrl}
         />
+
+        {/* 打卡开始欢迎弹窗 */}
+        {showWelcomeModal && checkinSchedule && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-md w-full text-center">
+              <div className="text-6xl mb-4">🎉</div>
+              <h3 className="text-xl font-bold text-white mb-4">打卡之旅开始啦！</h3>
+              <p className="text-white/80 mb-6">
+                您的打卡周期从 <span className="text-blue-300 font-medium">{checkinSchedule.start_date}</span> 开始，
+                到 <span className="text-blue-300 font-medium">{checkinSchedule.end_date}</span> 结束。
+                <br /><br />
+                坚持就是胜利，让我们一起努力，记录每一天的成长！💪
+              </p>
+              <button
+                onClick={() => setShowWelcomeModal(false)}
+                className="px-6 py-2 bg-green-500/20 text-green-300 hover:bg-green-500/30 hover:text-green-200 rounded-lg transition-all duration-300"
+              >
+                开始打卡
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 没有打卡安排的提示模态框 */}
         {showNoScheduleModal && (

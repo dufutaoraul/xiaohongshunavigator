@@ -1,16 +1,20 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
 interface UserProfileStatusProps {
   isHomePage?: boolean
 }
 
-export default function UserProfileStatus({ isHomePage = false }: UserProfileStatusProps) {
+export default function UserProfileStatus({ isHomePage }: UserProfileStatusProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userInfo, setUserInfo] = useState<any>(null)
+
+  // 自动检测是否为首页
+  const isCurrentlyHomePage = isHomePage !== undefined ? isHomePage : pathname === '/'
 
   useEffect(() => {
     // 检查是否已登录
@@ -37,7 +41,7 @@ export default function UserProfileStatus({ isHomePage = false }: UserProfileSta
     return null
   }
 
-  const containerClass = isHomePage
+  const containerClass = isCurrentlyHomePage
     ? "flex justify-center mb-8" // 首页居中显示
     : "fixed top-4 right-4 z-50" // 其他页面右上角显示
 
