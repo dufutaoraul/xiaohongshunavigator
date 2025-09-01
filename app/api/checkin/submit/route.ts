@@ -43,8 +43,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 使用提供的日期或今天
-    const checkinDate = date || new Date().toISOString().split('T')[0]
+    // 使用提供的日期或今天（北京时间）
+    const checkinDate = date || (() => {
+      const now = new Date()
+      const beijingTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
+      return beijingTime.toISOString().split('T')[0]
+    })()
     
     console.log(`📝 [Checkin] 学员 ${student_id} 提交打卡，日期: ${checkinDate}, URLs: ${validUrls.length}个`)
 

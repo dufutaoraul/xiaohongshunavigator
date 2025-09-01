@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import PasswordChangeModal from './PasswordChangeModal'
 
 interface UserMenuProps {
   className?: string
@@ -9,6 +10,7 @@ interface UserMenuProps {
 
 export default function UserMenu({ className = '' }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [userInfo, setUserInfo] = useState<{
     student_id: string
     name: string
@@ -59,6 +61,29 @@ export default function UserMenu({ className = '' }: UserMenuProps) {
     window.location.reload()
   }
 
+  // 修改密码
+  const handleChangePassword = async (newPassword: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'change_password',
+          student_id: userInfo?.student_id,
+          new_password: newPassword
+        })
+      })
+
+      const result = await response.json()
+      return result.success
+    } catch (error) {
+      console.error('修改密码失败:', error)
+      return false
+    }
+  }
+
   // 如果没有用户信息，不显示菜单
   if (!userInfo) {
     return null
@@ -106,27 +131,14 @@ export default function UserMenu({ className = '' }: UserMenuProps) {
             <button
               onClick={() => {
                 setIsOpen(false)
-                router.push('/profile')
+                setShowPasswordModal(true)
               }}
               className="w-full px-4 py-2 text-left text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
               </svg>
-              <span>个人资料</span>
-            </button>
-            
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                router.push('/dashboard')
-              }}
-              className="w-full px-4 py-2 text-left text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span>打卡中心</span>
+              <span>修改密码</span>
             </button>
             
             <div className="border-t border-white/10 my-2"></div>
@@ -143,6 +155,15 @@ export default function UserMenu({ className = '' }: UserMenuProps) {
           </div>
         </div>
       )}
+      
+      {/* 密码修改模态框 */}
+      <PasswordChangeModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onChangePassword={handleChangePassword}
+        studentId={userInfo?.student_id || ''}
+        currentPassword={userInfo?.student_id || ''}
+      />
     </div>
   )
 }

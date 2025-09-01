@@ -56,7 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 保存到本地存储
     localStorage.setItem('userSession', JSON.stringify({
       user: userData,
-      isAuthenticated: true
+      isAuthenticated: true,
+      student_id: userData.student_id,
+      name: userData.name,
+      role: userData.role
     }))
   }
 
