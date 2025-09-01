@@ -273,9 +273,8 @@ export default function CheckinPage() {
         setMessage('打卡提交成功！')
         setShowCheckinModal(false)
         fetchCheckinData() // 刷新数据
-        
-        // 清空表单
-        setXiaohongshuUrl('')
+
+        // 不清空表单，保留已提交的链接以便下次查看
       } else {
         setMessage(result.error || '提交失败，请重试')
       }

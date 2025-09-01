@@ -21,7 +21,8 @@ interface AdminStats {
   totalStudents: number
   activePunches: number
   qualifiedStudents: number
-  unqualifiedStudents: number
+  notStartedStudents: number
+  forgotStudents: number
 }
 
 export default function AdminDashboard() {
@@ -32,7 +33,8 @@ export default function AdminDashboard() {
     totalStudents: 0,
     activePunches: 0,
     qualifiedStudents: 0,
-    unqualifiedStudents: 0
+    notStartedStudents: 0,
+    forgotStudents: 0
   })
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -40,7 +42,7 @@ export default function AdminDashboard() {
   const [showStudentManagement, setShowStudentManagement] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCheckinManagement, setShowCheckinManagement] = useState(false)
-  const [checkinType, setCheckinType] = useState<'active' | 'qualified' | 'unqualified'>('active')
+  const [checkinType, setCheckinType] = useState<'qualified' | 'not_started' | 'forgot'>('qualified')
   const [checkinStudents, setCheckinStudents] = useState<any[]>([])
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
   const [showStudentDetail, setShowStudentDetail] = useState(false)
@@ -91,7 +93,8 @@ export default function AdminDashboard() {
           ...prev,
           activePunches: checkinStatsData.activePunches || 0,
           qualifiedStudents: checkinStatsData.qualifiedStudents || 0,
-          unqualifiedStudents: checkinStatsData.unqualifiedStudents || 0
+          notStartedStudents: checkinStatsData.notStartedStudents || 0,
+          forgotStudents: checkinStatsData.forgotStudents || 0
         }))
       }
     } catch (error) {
@@ -119,7 +122,7 @@ export default function AdminDashboard() {
   })
 
   // 加载打卡管理数据
-  const loadCheckinData = async (type: 'active' | 'qualified' | 'unqualified') => {
+  const loadCheckinData = async (type: 'qualified' | 'not_started' | 'forgot') => {
     try {
       setLoading(true)
 
@@ -173,10 +176,27 @@ export default function AdminDashboard() {
         const checkinDays = studentRecords.length
         const completionRate = totalDays > 0 ? (checkinDays / totalDays) * 100 : 0
 
-        let status = 'active' // 正在打卡
+        // 根据新的三种状态分类：打卡合格、未打卡、忘记打卡
+        let status = 'qualified' // 默认为合格
+
         if (now > endDate) {
-          // 打卡期已结束，判断合格/不合格
+          // 打卡期已结束，根据完成率判断
           status = completionRate >= 80 ? 'qualified' : 'unqualified'
+        } else {
+          // 打卡期进行中，检查是否有忘记打卡的情况
+          const today = new Date().toISOString().split('T')[0]
+          const daysSinceStart = Math.ceil((new Date(today).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+
+          if (daysSinceStart > 0 && checkinDays < daysSinceStart) {
+            // 有忘记打卡的天数
+            status = 'forgot'
+          } else if (checkinDays === 0) {
+            // 还没有开始打卡
+            status = 'not_started'
+          } else {
+            // 正常打卡中
+            status = 'qualified'
+          }
         }
 
         return {
@@ -261,28 +281,6 @@ export default function AdminDashboard() {
               <div className="glass-effect p-6 rounded-xl">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
-                    <div className="text-3xl mr-4">📊</div>
-                    <div>
-                      <p className="text-white/60 text-sm">正在打卡人数</p>
-                      <p className="text-2xl font-bold text-white">{stats.activePunches}</p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setCheckinType('active')
-                    setShowCheckinManagement(true)
-                    loadCheckinData('active')
-                  }}
-                  className="w-full px-4 py-2 bg-green-500/20 text-green-300 hover:bg-green-500/30 hover:text-green-200 rounded-lg transition-all duration-300 text-sm"
-                >
-                  进入管理
-                </button>
-              </div>
-
-              <div className="glass-effect p-6 rounded-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
                     <div className="text-3xl mr-4">✅</div>
                     <div>
                       <p className="text-white/60 text-sm">打卡合格人数</p>
@@ -305,20 +303,42 @@ export default function AdminDashboard() {
               <div className="glass-effect p-6 rounded-xl">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
-                    <div className="text-3xl mr-4">❌</div>
+                    <div className="text-3xl mr-4">⏳</div>
                     <div>
-                      <p className="text-white/60 text-sm">打卡不合格人数</p>
-                      <p className="text-2xl font-bold text-white">{stats.unqualifiedStudents}</p>
+                      <p className="text-white/60 text-sm">未打卡人数</p>
+                      <p className="text-2xl font-bold text-white">{stats.notStartedStudents}</p>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    setCheckinType('unqualified')
+                    setCheckinType('not_started')
                     setShowCheckinManagement(true)
-                    loadCheckinData('unqualified')
+                    loadCheckinData('not_started')
                   }}
-                  className="w-full px-4 py-2 bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 rounded-lg transition-all duration-300 text-sm"
+                  className="w-full px-4 py-2 bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 hover:text-gray-200 rounded-lg transition-all duration-300 text-sm"
+                >
+                  进入管理
+                </button>
+              </div>
+
+              <div className="glass-effect p-6 rounded-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="text-3xl mr-4">😴</div>
+                    <div>
+                      <p className="text-white/60 text-sm">忘记打卡人数</p>
+                      <p className="text-2xl font-bold text-white">{stats.forgotStudents}</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setCheckinType('forgot')
+                    setShowCheckinManagement(true)
+                    loadCheckinData('forgot')
+                  }}
+                  className="w-full px-4 py-2 bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 hover:text-orange-200 rounded-lg transition-all duration-300 text-sm"
                 >
                   进入管理
                 </button>
@@ -461,7 +481,9 @@ export default function AdminDashboard() {
                 </svg>
               </button>
               <h2 className="text-3xl font-bold text-white">
-                📊 {checkinType === 'active' ? '正在打卡学员' : checkinType === 'qualified' ? '打卡合格学员' : '打卡不合格学员'}
+                📊 {checkinType === 'qualified' ? '打卡合格学员' :
+                     checkinType === 'not_started' ? '未打卡学员' :
+                     checkinType === 'forgot' ? '忘记打卡学员' : '学员管理'}
               </h2>
             </div>
 
@@ -469,14 +491,14 @@ export default function AdminDashboard() {
               <div className="glass-effect p-6 rounded-xl">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white mb-4">
-                    {checkinType === 'active' ? '📊 正在打卡的学员列表' :
-                     checkinType === 'qualified' ? '✅ 打卡合格的学员列表' :
-                     '❌ 打卡不合格的学员列表'}
+                    {checkinType === 'qualified' ? '✅ 打卡合格的学员列表' :
+                     checkinType === 'not_started' ? '⏳ 未打卡的学员列表' :
+                     checkinType === 'forgot' ? '😴 忘记打卡的学员列表' : '学员列表'}
                   </h3>
                   <p className="text-white/60 text-sm">
-                    {checkinType === 'active' ? '这些学员正在进行90天打卡挑战' :
-                     checkinType === 'qualified' ? '这些学员已完成打卡要求（完成率≥80%）' :
-                     '这些学员未达到打卡要求（完成率<80%）'}
+                    {checkinType === 'qualified' ? '这些学员已完成打卡要求（完成率≥80%）' :
+                     checkinType === 'not_started' ? '这些学员还没有开始打卡' :
+                     checkinType === 'forgot' ? '这些学员有忘记打卡的情况' : '学员管理'}
                   </p>
                 </div>
 
@@ -496,7 +518,10 @@ export default function AdminDashboard() {
                           <div className="text-2xl">👤</div>
                           <div>
                             <p className="text-white font-medium">{student.name}</p>
-                            <p className="text-white/60 text-sm">{student.student_id}</p>
+                            <p className="text-white/60 text-sm">学号：{student.student_id}</p>
+                            {(student as any).real_name && (
+                              <p className="text-white/60 text-sm">真实姓名：{(student as any).real_name}</p>
+                            )}
                             <p className="text-white/50 text-xs">
                               打卡进度：{student.checkinDays}/{student.totalDays} 天
                               ({student.completionRate}%)
@@ -506,12 +531,14 @@ export default function AdminDashboard() {
                         <div className="flex items-center space-x-2">
                           <span className={`px-2 py-1 rounded text-xs ${
                             student.status === 'qualified' ? 'bg-green-500/20 text-green-300' :
-                            student.status === 'unqualified' ? 'bg-red-500/20 text-red-300' :
+                            student.status === 'not_started' ? 'bg-gray-500/20 text-gray-300' :
+                            student.status === 'forgot' ? 'bg-orange-500/20 text-orange-300' :
                             'bg-blue-500/20 text-blue-300'
                           }`}>
                             {student.status === 'qualified' ? '✅ 合格' :
-                             student.status === 'unqualified' ? '❌ 不合格' :
-                             '📊 进行中'}
+                             student.status === 'not_started' ? '⏳ 未开始' :
+                             student.status === 'forgot' ? '😴 忘记打卡' :
+                             '📊 其他'}
                           </span>
                           <button
                             onClick={() => handleViewStudentDetail(student)}
@@ -539,6 +566,9 @@ export default function AdminDashboard() {
                   <div>
                     <h3 className="text-2xl font-bold text-white">{selectedStudent?.name} 的打卡详情</h3>
                     <p className="text-white/60">学号：{selectedStudent?.student_id}</p>
+                    {(selectedStudent as any)?.real_name && (
+                      <p className="text-white/60">真实姓名：{(selectedStudent as any).real_name}</p>
+                    )}
                   </div>
                 </div>
 
@@ -556,6 +586,89 @@ export default function AdminDashboard() {
                     <div>
                       <p className="text-2xl font-bold text-white">{selectedStudent?.completionRate}%</p>
                       <p className="text-white/60 text-sm">完成率</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 打卡日历视图 */}
+                <div className="mb-6 p-4 bg-white/5 rounded-lg">
+                  <h4 className="text-lg font-medium text-white mb-4">📅 打卡日历</h4>
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                    {/* 星期标题 */}
+                    {['日', '一', '二', '三', '四', '五', '六'].map(day => (
+                      <div key={day} className="p-2 text-white/60 font-medium">{day}</div>
+                    ))}
+
+                    {/* 生成日历格子 */}
+                    {(() => {
+                      if (!selectedStudent?.schedule) return null
+
+                      const startDate = new Date(selectedStudent.schedule.start_date)
+                      const endDate = new Date(selectedStudent.schedule.end_date)
+                      const checkinDates = new Set(selectedStudent.records?.map((r: any) => r.checkin_date) || [])
+
+                      // 生成日历天数
+                      const calendarDays = []
+                      const firstDay = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+                      const lastDay = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0)
+
+                      // 填充月初空白
+                      const startWeekday = firstDay.getDay()
+                      for (let i = 0; i < startWeekday; i++) {
+                        calendarDays.push(<div key={`empty-${i}`} className="p-2"></div>)
+                      }
+
+                      // 填充日期
+                      const current = new Date(firstDay)
+                      while (current <= lastDay) {
+                        const dateStr = current.toISOString().split('T')[0]
+                        const isInRange = dateStr >= selectedStudent.schedule.start_date && dateStr <= selectedStudent.schedule.end_date
+                        const hasCheckin = checkinDates.has(dateStr)
+                        const isPast = dateStr < new Date().toISOString().split('T')[0]
+
+                        let bgClass = 'bg-gray-500/20'
+                        let textClass = 'text-white/30'
+
+                        if (isInRange) {
+                          if (hasCheckin) {
+                            bgClass = 'bg-green-500/30'
+                            textClass = 'text-green-300'
+                          } else if (isPast) {
+                            bgClass = 'bg-red-500/30'
+                            textClass = 'text-red-300'
+                          } else {
+                            bgClass = 'bg-gray-500/20'
+                            textClass = 'text-white/60'
+                          }
+                        }
+
+                        calendarDays.push(
+                          <div key={dateStr} className={`p-2 rounded text-xs ${bgClass} ${textClass} relative`}>
+                            {current.getDate()}
+                            {hasCheckin && <div className="absolute top-0 right-0 text-xs">✅</div>}
+                          </div>
+                        )
+
+                        current.setDate(current.getDate() + 1)
+                      }
+
+                      return calendarDays
+                    })()}
+                  </div>
+
+                  {/* 图例 */}
+                  <div className="mt-4 flex justify-center flex-wrap gap-4 text-xs text-white/70">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-green-500/30 rounded mr-2"></div>
+                      已打卡
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-red-500/30 rounded mr-2"></div>
+                      忘记打卡
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-gray-500/20 rounded mr-2"></div>
+                      未到时间
                     </div>
                   </div>
                 </div>
