@@ -10,18 +10,22 @@ interface CheckinRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: CheckinRequest = await request.json()
+    console.log('收到打卡请求:', body)
+    
     const { student_id, urls, date } = body
 
     if (!student_id) {
+      console.error('缺少student_id参数')
       return NextResponse.json(
-        { error: 'Missing student_id parameter' },
+        { success: false, error: 'Missing student_id parameter' },
         { status: 400 }
       )
     }
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
+      console.error('缺少urls参数或urls为空')
       return NextResponse.json(
-        { error: 'Missing or empty urls array' },
+        { success: false, error: 'Missing or empty urls array' },
         { status: 400 }
       )
     }
@@ -30,15 +34,16 @@ export async function POST(request: NextRequest) {
     const validUrls = urls.filter(url => {
       try {
         new URL(url)
-        return true
+        return url.includes('xiaohongshu.com') || url.includes('xhslink.com')
       } catch {
         return false
       }
     })
 
     if (validUrls.length === 0) {
+      console.error('没有有效的小红书链接')
       return NextResponse.json(
-        { error: 'No valid URLs provided' },
+        { success: false, error: 'No valid xiaohongshu URLs provided' },
         { status: 400 }
       )
     }
@@ -52,96 +57,119 @@ export async function POST(request: NextRequest) {
     
     console.log(`📝 [Checkin] 学员 ${student_id} 提交打卡，日期: ${checkinDate}, URLs: ${validUrls.length}个`)
 
+    // 使用第一个有效URL作为小红书链接
+    const xiaohongshu_url = validUrls[0]
+
+    // 首先检查表是否存在
+    const { data: tableCheck, error: tableError } = await supabase
+      .from('checkin_records')
+      .select('count(*)')
+      .limit(1)
+
+    if (tableError) {
+      console.error('检查表存在性失败:', tableError)
+      return NextResponse.json({ 
+        success: false, 
+        error: '数据库表不存在或无法访问: ' + tableError.message 
+      }, { status: 500 })
+    }
+
     // 检查今天是否已经打卡
     const { data: existingCheckin, error: checkError } = await supabase
-      .from('xhs_checkins')
-      .select('id, links, passed')
+      .from('checkin_records')
+      .select('*')
       .eq('student_id', student_id)
-      .eq('date', checkinDate)
-      .single()
+      .eq('checkin_date', checkinDate)
+      .maybeSingle()
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Failed to check existing checkin:', checkError)
+    if (checkError) {
+      console.error('检查现有记录失败:', checkError)
       return NextResponse.json(
-        { error: 'Database query failed' },
+        { success: false, error: 'Database query failed: ' + checkError.message },
         { status: 500 }
       )
     }
 
-    // 判断是否合格：只要有1个或以上的有效URL就合格
-    const passed = validUrls.length >= 1
-
     let result
     if (existingCheckin) {
       // 更新现有打卡记录
-      console.log(`🔄 [Checkin] 更新现有打卡记录`)
+      console.log(`🔄 [Checkin] 更新现有打卡记录 ID: ${existingCheckin.id}`)
       const { data, error } = await supabase
-        .from('xhs_checkins')
+        .from('checkin_records')
         .update({
-          links: validUrls,
-          passed,
+          xiaohongshu_url,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingCheckin.id)
         .select()
-        .single()
 
       if (error) {
-        console.error('Failed to update checkin:', error)
+        console.error('更新打卡记录失败:', error)
         return NextResponse.json(
-          { error: 'Failed to update checkin record' },
+          { success: false, error: 'Failed to update checkin record: ' + error.message },
           { status: 500 }
         )
       }
-      result = data
+      result = data?.[0]
     } else {
       // 创建新的打卡记录
       console.log(`✨ [Checkin] 创建新打卡记录`)
-      const { data, error } = await supabase
-        .from('xhs_checkins')
-        .insert({
-          student_id,
-          date: checkinDate,
-          links: validUrls,
-          passed
-        })
-        .select()
+      
+      // 获取学员姓名
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('name')
+        .eq('student_id', student_id)
         .single()
 
+      const student_name = userData?.name || '未知学员'
+
+      const insertData = {
+        student_id,
+        student_name,
+        checkin_date: checkinDate,
+        xiaohongshu_url,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      console.log('准备插入数据:', insertData)
+
+      const { data, error } = await supabase
+        .from('checkin_records')
+        .insert(insertData)
+        .select()
+
       if (error) {
-        console.error('Failed to create checkin:', error)
+        console.error('创建打卡记录失败:', error)
+        console.error('错误详情:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
         return NextResponse.json(
-          { error: 'Failed to create checkin record' },
+          { success: false, error: 'Failed to create checkin record: ' + error.message + (error.details ? ' - ' + error.details : '') },
           { status: 500 }
         )
       }
-      result = data
+      result = data?.[0]
     }
 
-    // 更新笔记缓存（从URL中提取note_id）
-    await updateNotesFromUrls(validUrls)
-
-    // 检查点赞里程碑
-    await checkNoteLikeMilestones(validUrls, student_id)
+    console.log('打卡记录保存成功:', result)
 
     return NextResponse.json({
       success: true,
-      data: {
-        checkin_id: result.id,
-        student_id,
-        date: checkinDate,
-        urls_submitted: validUrls.length,
-        urls_valid: validUrls.length,
-        passed,
-        message: passed ? '打卡成功！' : '打卡失败，需要至少提交1个有效链接',
-        is_update: !!existingCheckin
-      }
+      data: result,
+      message: existingCheckin ? '打卡记录已更新' : '打卡提交成功'
     })
 
   } catch (error: any) {
-    console.error('Checkin submit error:', error)
+    console.error('打卡提交过程中出错:', error)
+    const errorMessage = error instanceof Error ? error.message : '未知错误'
     return NextResponse.json(
-      { error: 'Failed to submit checkin', details: error?.message ?? String(error) },
+      { success: false, error: 'Server internal error: ' + errorMessage },
       { status: 500 }
     )
   }
@@ -156,34 +184,38 @@ export async function GET(request: NextRequest) {
 
     if (!student_id) {
       return NextResponse.json(
-        { error: 'Missing student_id parameter' },
+        { success: false, error: 'Missing student_id parameter' },
         { status: 400 }
       )
     }
+
+    console.log(`📊 [Checkin] 获取学员 ${student_id} 最近 ${days} 天的打卡记录`)
 
     // 获取最近N天的打卡记录
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
     const { data: checkins, error } = await supabase
-      .from('xhs_checkins')
+      .from('checkin_records')
       .select('*')
       .eq('student_id', student_id)
-      .gte('date', startDate.toISOString().split('T')[0])
-      .order('date', { ascending: false })
+      .gte('checkin_date', startDate.toISOString().split('T')[0])
+      .order('checkin_date', { ascending: false })
 
     if (error) {
-      console.error('Failed to fetch checkin history:', error)
+      console.error('获取打卡历史失败:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch checkin history' },
+        { success: false, error: 'Failed to fetch checkin history: ' + error.message },
         { status: 500 }
       )
     }
 
     // 统计信息
     const totalDays = checkins?.length || 0
-    const passedDays = checkins?.filter(c => c.passed).length || 0
-    const totalUrls = checkins?.reduce((sum, c) => sum + (c.links?.length || 0), 0) || 0
+    const passedDays = checkins?.filter(c => c.status === 'approved').length || 0
+    const pendingDays = checkins?.filter(c => c.status === 'pending').length || 0
+
+    console.log(`📈 [Checkin] 统计结果: 总计${totalDays}天, 通过${passedDays}天, 待审核${pendingDays}天`)
 
     return NextResponse.json({
       success: true,
@@ -192,122 +224,18 @@ export async function GET(request: NextRequest) {
         period_days: days,
         total_checkin_days: totalDays,
         passed_days: passedDays,
-        total_urls_submitted: totalUrls,
+        pending_days: pendingDays,
         pass_rate: totalDays > 0 ? (passedDays / totalDays * 100).toFixed(1) : '0.0',
         checkins: checkins || []
       }
     })
 
   } catch (error: any) {
-    console.error('Checkin history error:', error)
+    console.error('获取打卡历史出错:', error)
+    const errorMessage = error instanceof Error ? error.message : '未知错误'
     return NextResponse.json(
-      { error: 'Failed to fetch checkin history', details: error?.message ?? String(error) },
+      { success: false, error: 'Failed to fetch checkin history: ' + errorMessage },
       { status: 500 }
     )
-  }
-}
-
-// 从URLs更新笔记缓存
-async function updateNotesFromUrls(urls: string[]) {
-  for (const url of urls) {
-    try {
-      // 从小红书URL中提取note_id
-      const noteId = extractNoteIdFromUrl(url)
-      if (noteId) {
-        // 检查缓存中是否已存在
-        const { data: existing } = await supabase
-          .from('xhs_notes_cache')
-          .select('note_id')
-          .eq('note_id', noteId)
-          .single()
-
-        if (!existing) {
-          // 创建基础缓存记录
-          await supabase
-            .from('xhs_notes_cache')
-            .insert({
-              note_id: noteId,
-              title: '用户提交的笔记',
-              url: url,
-              last_seen_at: new Date().toISOString()
-            })
-        } else {
-          // 更新最后见到时间
-          await supabase
-            .from('xhs_notes_cache')
-            .update({ last_seen_at: new Date().toISOString() })
-            .eq('note_id', noteId)
-        }
-      }
-    } catch (error) {
-      console.error(`Failed to process URL ${url}:`, error)
-    }
-  }
-}
-
-// 检查笔记点赞里程碑
-async function checkNoteLikeMilestones(urls: string[], student_id: string) {
-  for (const url of urls) {
-    try {
-      const noteId = extractNoteIdFromUrl(url)
-      if (noteId) {
-        // 获取笔记的当前点赞数（如果缓存中有的话）
-        const { data: note } = await supabase
-          .from('xhs_notes_cache')
-          .select('liked_count')
-          .eq('note_id', noteId)
-          .single()
-
-        if (note && note.liked_count >= 10) {
-          // 检查是否已经有提醒
-          const { data: existingAlert } = await supabase
-            .from('xhs_alerts')
-            .select('id')
-            .eq('note_id', noteId)
-            .eq('student_id', student_id)
-            .eq('alert_type', 'like_milestone')
-            .single()
-
-          if (!existingAlert) {
-            // 创建新提醒
-            await supabase
-              .from('xhs_alerts')
-              .insert({
-                student_id,
-                note_id: noteId,
-                liked_count: note.liked_count,
-                alert_type: 'like_milestone'
-              })
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`Failed to check milestone for URL ${url}:`, error)
-    }
-  }
-}
-
-// 从小红书URL中提取note_id
-function extractNoteIdFromUrl(url: string): string | null {
-  try {
-    const urlObj = new URL(url)
-    
-    // 匹配不同的小红书URL格式
-    const patterns = [
-      /\/explore\/([a-f0-9]+)/i,  // https://www.xiaohongshu.com/explore/xxxxx
-      /\/discovery\/item\/([a-f0-9]+)/i,  // https://www.xiaohongshu.com/discovery/item/xxxxx
-      /note_id=([a-f0-9]+)/i,  // 查询参数中的note_id
-    ]
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match && match[1]) {
-        return match[1]
-      }
-    }
-
-    return null
-  } catch {
-    return null
   }
 }
