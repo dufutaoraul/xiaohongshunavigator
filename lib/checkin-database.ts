@@ -93,7 +93,8 @@ export async function upsertCheckinRecord(record: Omit<CheckinRecord, 'id' | 'cr
       const { error: updateError } = await supabase
         .from('checkin_records')
         .update({
-          xiaohongshu_url: record.xiaohongshu_url,
+          xhs_url: record.xiaohongshu_url, // 兼容旧字段
+          xiaohongshu_url: record.xiaohongshu_url, // 新字段
           content_title: record.content_title,
           content_description: record.content_description,
           status: 'pending', // 重新提交后状态重置为待审核

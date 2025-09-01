@@ -430,16 +430,16 @@ export default function CheckinPage() {
           </div>
 
           {/* 星期标题 */}
-          <div className="grid grid-cols-7 gap-3 mb-4">
+          <div className="grid grid-cols-7 gap-1 mb-2">
             {weekDays.map((day) => (
-              <div key={day} className="text-center text-white/70 font-medium py-3 text-sm">
+              <div key={day} className="text-center text-white/70 font-medium py-2 text-sm">
                 {day}
               </div>
             ))}
           </div>
 
-          {/* 日历格子 - 调整为合适大小 */}
-          <div className="grid grid-cols-7 gap-3">
+          {/* 日历格子 - 标准日历样式 */}
+          <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((day, index) => {
               // 基于打卡安排的状态逻辑
               const today = new Date().toISOString().split('T')[0]
@@ -475,7 +475,7 @@ export default function CheckinPage() {
                   key={index}
                   onClick={() => handleDateClick(day)}
                   className={`
-                    aspect-square w-12 h-12 flex items-center justify-center text-sm font-medium rounded-lg border transition-all duration-300 relative
+                    aspect-square w-full h-14 flex items-center justify-center text-base font-medium rounded-lg border transition-all duration-300 relative
                     ${textClass}
                     ${day.isToday ? 'ring-2 ring-blue-400' : ''}
                     ${day.canCheckin ? 'cursor-pointer hover:bg-blue-500/20' : ''}

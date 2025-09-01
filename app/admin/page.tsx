@@ -390,7 +390,7 @@ export default function AdminDashboard() {
                       type="text"
                       value={batchStartId}
                       onChange={(e) => setBatchStartId(e.target.value)}
-                      placeholder="例如：AI001"
+                      placeholder="例如：AXCF2025010001"
                       className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
                     />
                   </div>
@@ -402,7 +402,7 @@ export default function AdminDashboard() {
                       type="text"
                       value={batchEndId}
                       onChange={(e) => setBatchEndId(e.target.value)}
-                      placeholder="例如：AI100"
+                      placeholder="例如：AXCF2025010010"
                       className="w-full px-3 py-2 bg-black/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 focus:outline-none"
                     />
                   </div>
