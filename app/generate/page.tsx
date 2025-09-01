@@ -212,11 +212,13 @@ export default function GeneratePage() {
       }
       localStorage.setItem('generatedContent', JSON.stringify(contentWithParams))
 
-      // 设置生成的内容到当前页面显示
-      setGeneratedContent(JSON.stringify(contentWithParams, null, 2))
+      // 设置成功消息并跳转到结果页面
+      setMessage(`内容生成成功${result.dify ? ' (Dify AI生成)' : ' (模拟数据)'}！正在跳转到结果页面...`)
 
-      // 设置成功消息
-      setMessage(`内容生成成功${result.dify ? ' (Dify AI生成)' : ' (模拟数据)'}！`)
+      // 延迟跳转，让用户看到成功消息
+      setTimeout(() => {
+        router.push('/result')
+      }, 1500)
 
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '网络错误，请检查连接')
@@ -383,96 +385,7 @@ export default function GeneratePage() {
         </div>
       </Card>
 
-      {generatedContent && (
-        <Card title="生成结果" icon="✨" className="mb-8">
-          <div className="space-y-6">
-            {/* 解析并显示生成的内容 */}
-            {(() => {
-              try {
-                const content = JSON.parse(generatedContent)
-                return (
-                  <div className="space-y-6">
-                    {/* 标题选项 */}
-                    {content.titles && content.titles.length > 0 && (
-                      <div className="glass-effect p-6 rounded-lg border border-white/10">
-                        <h3 className="text-lg font-semibold text-white mb-4">📝 标题选项</h3>
-                        <div className="space-y-3">
-                          {content.titles.map((title: any, index: number) => (
-                            <div key={index} className="p-3 bg-white/5 rounded-lg">
-                              <p className="text-white/90">{title.content || title}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
-                    {/* 正文内容 */}
-                    {content.bodies && content.bodies.length > 0 && (
-                      <div className="glass-effect p-6 rounded-lg border border-white/10">
-                        <h3 className="text-lg font-semibold text-white mb-4">📄 正文内容</h3>
-                        <div className="space-y-4">
-                          {content.bodies.map((body: any, index: number) => (
-                            <div key={index} className="p-4 bg-white/5 rounded-lg">
-                              <p className="text-white/90 whitespace-pre-wrap">{body.content || body}</p>
-                              {body.style && (
-                                <p className="text-white/60 text-sm mt-2">风格: {body.style}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 标签建议 */}
-                    {content.hashtags && content.hashtags.length > 0 && (
-                      <div className="glass-effect p-6 rounded-lg border border-white/10">
-                        <h3 className="text-lg font-semibold text-white mb-4"># 标签建议</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {content.hashtags.map((tag: string, index: number) => (
-                            <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 操作按钮 */}
-                    <div className="flex gap-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          navigator.clipboard.writeText(JSON.stringify(content, null, 2))
-                          setMessage('内容已复制到剪贴板！')
-                          setTimeout(() => setMessage(''), 2000)
-                        }}
-                      >
-                        📋 复制全部内容
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          localStorage.setItem('generatedContent', generatedContent)
-                          router.push('/result')
-                        }}
-                      >
-                        📄 查看详细结果
-                      </Button>
-                    </div>
-                  </div>
-                )
-              } catch (error) {
-                return (
-                  <div className="glass-effect p-6 rounded-lg border border-white/10">
-                    <pre className="whitespace-pre-wrap text-sm text-white/90 leading-relaxed">
-                      {generatedContent}
-                    </pre>
-                  </div>
-                )
-              }
-            })()}
-          </div>
-        </Card>
-      )}
     </div>
   )
 }

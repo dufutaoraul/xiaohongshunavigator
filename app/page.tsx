@@ -102,7 +102,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative">
+    <div className="min-h-screen relative">
       {/* 全局用户菜单 - 左上角 */}
       <GlobalUserMenu className="absolute top-6 left-6 z-50" />
 
