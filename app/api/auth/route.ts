@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       // 先验证当前密码
       const { data: user, error: fetchError } = await supabase
         .from('users')
-        .select('password, password_hash')
+        .select('password')
         .eq('student_id', student_id)
         .single()
 
@@ -153,10 +153,19 @@ export async function POST(request: NextRequest) {
 
       // 验证当前密码
       let isCurrentPasswordValid = false
-      if (user.password_hash) {
-        isCurrentPasswordValid = await bcrypt.compare(password, user.password_hash)
-      } else if (user.password) {
-        isCurrentPasswordValid = user.password === password
+      
+      console.log('验证密码:', {
+        inputPassword: password,
+        storedPassword: user.password,
+        studentId: student_id
+      })
+
+      // 如果密码以$2a$或$2b$开头，说明是bcrypt加密的
+      if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
+        isCurrentPasswordValid = await bcrypt.compare(password, user.password)
+      } else {
+        // 兼容旧的明文密码或初始密码（学号）
+        isCurrentPasswordValid = user.password === password || user.password?.trim() === password?.trim()
       }
 
       if (!isCurrentPasswordValid) {

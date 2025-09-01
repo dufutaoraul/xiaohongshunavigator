@@ -64,6 +64,9 @@ export default function UserMenu({ className = '' }: UserMenuProps) {
   // 修改密码
   const handleChangePassword = async (newPassword: string): Promise<boolean> => {
     try {
+      // 获取当前密码（初始密码通常是学号）
+      const currentPassword = userInfo?.student_id || ''
+      
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: {
@@ -72,11 +75,17 @@ export default function UserMenu({ className = '' }: UserMenuProps) {
         body: JSON.stringify({
           action: 'change_password',
           student_id: userInfo?.student_id,
+          password: currentPassword, // 添加当前密码用于验证
           new_password: newPassword
         })
       })
 
       const result = await response.json()
+      
+      if (!result.success) {
+        console.error('密码修改失败:', result.error)
+      }
+      
       return result.success
     } catch (error) {
       console.error('修改密码失败:', error)

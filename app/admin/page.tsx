@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Link from 'next/link'
 import AddStudentModal from '../components/AddStudentModal'
 import GlobalUserMenu from '../components/GlobalUserMenu'
+import { getBeijingDateString } from '@/lib/date-utils'
 
 interface Student {
   id: string
@@ -184,7 +185,7 @@ export default function AdminDashboard() {
           status = completionRate >= 80 ? 'qualified' : 'unqualified'
         } else {
           // 打卡期进行中，检查是否有忘记打卡的情况
-          const today = new Date().toISOString().split('T')[0]
+          const today = getBeijingDateString()
           const daysSinceStart = Math.ceil((new Date(today).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
 
           if (daysSinceStart > 0 && checkinDays < daysSinceStart) {
@@ -621,10 +622,10 @@ export default function AdminDashboard() {
                       // 填充日期
                       const current = new Date(firstDay)
                       while (current <= lastDay) {
-                        const dateStr = current.toISOString().split('T')[0]
+                        const dateStr = getBeijingDateString(current)
                         const isInRange = dateStr >= selectedStudent.schedule.start_date && dateStr <= selectedStudent.schedule.end_date
                         const hasCheckin = checkinDates.has(dateStr)
-                        const isPast = dateStr < new Date().toISOString().split('T')[0]
+                        const isPast = dateStr < getBeijingDateString()
 
                         let bgClass = 'bg-gray-500/20'
                         let textClass = 'text-white/30'

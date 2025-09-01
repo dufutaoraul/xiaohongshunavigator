@@ -7,6 +7,7 @@ import Card from '../components/Card'
 import Button from '../components/Button'
 import XiaohongshuProfileModal from '../components/XiaohongshuProfileModal'
 import { CheckinRecord, CheckinStats } from '@/lib/checkin-database'
+import { getBeijingDateString, isToday, isPastDate } from '@/lib/date-utils'
 
 export default function CheckinPage() {
   const router = useRouter()
@@ -103,9 +104,7 @@ export default function CheckinPage() {
 
       if (result.success && result.data && result.data.length > 0) {
         // 获取本地日期，避免时区问题
-        const today = new Date()
-        const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
-        const todayStr = localToday.toISOString().split('T')[0]
+        const todayStr = getBeijingDateString()
 
         console.log('今天日期:', todayStr)
         console.log('打卡安排:', result.data)
@@ -161,10 +160,10 @@ export default function CheckinPage() {
           const records = recordsData.data.checkins?.map((record: any) => ({
             id: record.id,
             student_id: record.student_id,
-            checkin_date: record.date,
-            xiaohongshu_url: record.links?.[0] || '', // 取第一个链接
-            links: record.links || [],
-            passed: record.passed,
+            student_name: record.student_name || '',
+            checkin_date: record.checkin_date, // 修复：使用正确的字段名
+            xiaohongshu_url: record.xiaohongshu_url || '', // 修复：使用正确的字段名
+            status: record.status || 'pending',
             created_at: record.created_at,
             updated_at: record.updated_at
           })) || []
@@ -198,14 +197,11 @@ export default function CheckinPage() {
     const current = new Date(startDate)
 
     // 获取本地今天日期，避免时区问题
-    const todayDate = new Date()
-    const localToday = new Date(todayDate.getTime() - (todayDate.getTimezoneOffset() * 60000))
-    const today = localToday.toISOString().split('T')[0]
+    const today = getBeijingDateString()
 
     for (let i = 0; i < 42; i++) { // 6周 x 7天
-      // 获取本地日期字符串，避免时区问题
-      const localCurrent = new Date(current.getTime() - (current.getTimezoneOffset() * 60000))
-      const dateStr = localCurrent.toISOString().split('T')[0]
+      // 获取北京时间日期字符串
+      const dateStr = getBeijingDateString(current)
       const isCurrentMonth = current.getMonth() === month
       const isToday = dateStr === today
       const checkinRecord = checkinRecords.find(record => record.checkin_date === dateStr)
@@ -281,17 +277,36 @@ export default function CheckinPage() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        setMessage('打卡提交成功！')
+        setMessage('✅ 打卡提交成功！日历已更新')
         
-        // 立即刷新打卡数据
+        // 立即刷新打卡数据，确保UI同步更新
         await fetchCheckinData()
         
-        // 延迟关闭模态框，让用户看到成功消息
+        // 立即更新本地打卡记录状态，确保日历颜色立即变化
+        const newRecord: CheckinRecord = {
+          id: result.data?.id || Date.now().toString(),
+          student_id: studentId,
+          student_name: userName,
+          checkin_date: selectedDate,
+          xiaohongshu_url: xiaohongshuUrl,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        
+        // 更新本地记录
+        setCheckinRecords(prev => {
+          const filtered = prev.filter(r => r.checkin_date !== selectedDate)
+          return [newRecord, ...filtered].sort((a, b) => 
+            new Date(b.checkin_date).getTime() - new Date(a.checkin_date).getTime()
+          )
+        })
+        
+        // 延迟关闭模态框，让用户看到成功消息和绿色效果
         setTimeout(() => {
           setShowCheckinModal(false)
-          setXiaohongshuUrl('')
           setMessage('')
-        }, 1500)
+        }, 2000)
       } else {
         setMessage(result.error || '提交失败，请重试')
       }
@@ -395,10 +410,8 @@ export default function CheckinPage() {
         <div className="flex justify-center mb-8">
           <Button
             onClick={() => {
-              // 获取本地今天日期，避免时区问题
-              const today = new Date()
-              const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
-              const todayStr = localToday.toISOString().split('T')[0]
+              // 获取北京时间的今天日期
+              const todayStr = getBeijingDateString()
               setSelectedDate(todayStr)
 
               // 检查今天是否已经打卡
@@ -458,7 +471,7 @@ export default function CheckinPage() {
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((day, index) => {
               // 基于打卡安排的状态逻辑
-              const today = new Date().toISOString().split('T')[0]
+              const today = getBeijingDateString()
               const isPast = day.dateStr < today
 
               let statusClass = 'glass-effect border-white/20'

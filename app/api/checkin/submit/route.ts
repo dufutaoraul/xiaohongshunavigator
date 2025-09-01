@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getBeijingDateString } from '@/lib/date-utils'
 
 interface CheckinRequest {
   student_id: string
@@ -49,11 +50,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 使用提供的日期或今天（北京时间）
-    const checkinDate = date || (() => {
-      const now = new Date()
-      const beijingTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
-      return beijingTime.toISOString().split('T')[0]
-    })()
+    const checkinDate = date || getBeijingDateString()
+    
+    console.log('🕐 打卡日期确定:', {
+      传入日期: date,
+      最终日期: checkinDate,
+      是否使用当前北京时间: !date
+    })
     
     console.log(`📝 [Checkin] 学员 ${student_id} 提交打卡，日期: ${checkinDate}, URLs: ${validUrls.length}个`)
 
@@ -191,15 +194,16 @@ export async function GET(request: NextRequest) {
 
     console.log(`📊 [Checkin] 获取学员 ${student_id} 最近 ${days} 天的打卡记录`)
 
-    // 获取最近N天的打卡记录
+    // 获取最近N天的打卡记录（基于北京时间）
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
+    const startDateStr = getBeijingDateString(startDate)
 
     const { data: checkins, error } = await supabase
       .from('checkin_records')
       .select('*')
       .eq('student_id', student_id)
-      .gte('checkin_date', startDate.toISOString().split('T')[0])
+      .gte('checkin_date', startDateStr)
       .order('checkin_date', { ascending: false })
 
     if (error) {

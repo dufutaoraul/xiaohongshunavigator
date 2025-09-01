@@ -22,18 +22,59 @@ export default function GlobalUserMenu({ className = '' }: GlobalUserMenuProps) 
 
   // 获取用户信息
   useEffect(() => {
-    const checkUserSession = () => {
+    const checkUserSession = async () => {
       const userSession = localStorage.getItem('userSession')
       if (userSession) {
         try {
           const session = JSON.parse(userSession)
-          if (session.isAuthenticated) {
-            setUserInfo({
-              student_id: session.student_id,
-              name: session.name,
-              isAuthenticated: true,
-              role: session.role
-            })
+          if (session.isAuthenticated && session.student_id) {
+            // 验证会话是否仍然有效，并获取最新的role信息
+            try {
+              const response = await fetch(`/api/user?student_id=${session.student_id}`)
+              if (response.ok) {
+                const userData = await response.json()
+                // 使用最新的role信息，避免缓存问题
+                const latestRole = userData?.role || 'student'
+                
+                console.log('🔍 实时权限检查:', {
+                  studentId: session.student_id,
+                  cachedRole: session.role,
+                  latestRole: latestRole,
+                  isAdmin: latestRole === 'admin'
+                })
+                
+                setUserInfo({
+                  student_id: session.student_id,
+                  name: session.name,
+                  isAuthenticated: true,
+                  role: latestRole // 使用从数据库获取的最新role
+                })
+                
+                // 如果role发生变化，更新localStorage
+                if (session.role !== latestRole) {
+                  const updatedSession = { ...session, role: latestRole }
+                  localStorage.setItem('userSession', JSON.stringify(updatedSession))
+                  console.log('🔄 更新localStorage中的role信息:', latestRole)
+                }
+              } else {
+                // API调用失败，使用缓存的信息
+                setUserInfo({
+                  student_id: session.student_id,
+                  name: session.name,
+                  isAuthenticated: true,
+                  role: session.role || 'student'
+                })
+              }
+            } catch (apiError) {
+              console.error('API调用失败，使用缓存信息:', apiError)
+              // API调用失败，使用缓存的信息
+              setUserInfo({
+                student_id: session.student_id,
+                name: session.name,
+                isAuthenticated: true,
+                role: session.role || 'student'
+              })
+            }
           } else {
             setUserInfo({ student_id: '', name: '', isAuthenticated: false })
           }
@@ -54,8 +95,8 @@ export default function GlobalUserMenu({ className = '' }: GlobalUserMenuProps) 
     
     window.addEventListener('storage', handleStorageChange)
     
-    // 定期检查用户状态
-    const interval = setInterval(checkUserSession, 1000)
+    // 定期检查用户状态和权限（每30秒检查一次，避免过于频繁）
+    const interval = setInterval(checkUserSession, 30000)
     
     return () => {
       window.removeEventListener('storage', handleStorageChange)
@@ -101,6 +142,9 @@ export default function GlobalUserMenu({ className = '' }: GlobalUserMenuProps) 
   // 修改密码
   const handleChangePassword = async (newPassword: string): Promise<boolean> => {
     try {
+      // 获取当前密码（初始密码通常是学号）
+      const currentPassword = userInfo?.student_id || ''
+      
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: {
@@ -109,11 +153,17 @@ export default function GlobalUserMenu({ className = '' }: GlobalUserMenuProps) 
         body: JSON.stringify({
           action: 'change_password',
           student_id: userInfo?.student_id,
+          password: currentPassword, // 添加当前密码用于验证
           new_password: newPassword
         })
       })
 
       const result = await response.json()
+      
+      if (!result.success) {
+        console.error('密码修改失败:', result.error)
+      }
+      
       return result.success
     } catch (error) {
       console.error('修改密码失败:', error)
