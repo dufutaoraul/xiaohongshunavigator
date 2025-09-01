@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from './contexts/AuthContext'
 import Navigation from './components/Navigation'
-import UserProfileStatus from './components/UserProfileStatus'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,7 +21,6 @@ export default function RootLayout({
       <body className={`${inter.className} cosmic-bg`}>
         <AuthProvider>
           <Navigation />
-          <UserProfileStatus />
           <main className="min-h-screen pt-16">
             {children}
           </main>

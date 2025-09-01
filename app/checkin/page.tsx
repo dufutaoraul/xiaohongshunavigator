@@ -185,10 +185,16 @@ export default function CheckinPage() {
     }
   }
 
-  // 生成日历数据 - 按月显示真实日历
+  // 生成日历数据 - 按月显示真实日历，全程使用北京时间
   const generateCalendarDays = () => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
+    
+    // 基于北京时间计算日历
+    const beijingNow = new Date()
+    const beijingToday = getBeijingDateString(beijingNow)
+    
+    // 获取当月第一天（基于当前选择的年月）
     const firstDay = new Date(year, month, 1)
     const startDate = new Date(firstDay)
     startDate.setDate(startDate.getDate() - firstDay.getDay()) // 从周日开始
@@ -196,15 +202,20 @@ export default function CheckinPage() {
     const days = []
     const current = new Date(startDate)
 
-    // 获取本地今天日期，避免时区问题
-    const today = getBeijingDateString()
+    console.log('🗓️ 日历生成调试信息:', {
+      当前选择年月: `${year}-${month + 1}`,
+      北京时间今天: beijingToday,
+      日历开始日期: startDate.toISOString().split('T')[0]
+    })
 
     for (let i = 0; i < 42; i++) { // 6周 x 7天
-      // 获取北京时间日期字符串
-      const dateStr = getBeijingDateString(current)
+      // 直接使用current的日期，不进行时区转换
+      const dateStr = current.toISOString().split('T')[0]
       const isCurrentMonth = current.getMonth() === month
-      const isToday = dateStr === today
+      const isToday = dateStr === beijingToday
       const checkinRecord = checkinRecords.find(record => record.checkin_date === dateStr)
+      
+      console.log(`📅 日历格子 ${current.getDate()}: ${dateStr}, 是今天: ${isToday}, 有打卡: ${!!checkinRecord}`);
 
       // 检查是否在打卡周期内
       const isInSchedule = checkinSchedule &&

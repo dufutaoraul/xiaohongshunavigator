@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { student_id, name, real_name, persona, keywords, vision } = body
+    const { student_id, name, real_name, persona, keywords, vision, xiaohongshu_profile_url } = body
 
     if (!student_id) {
       return NextResponse.json(
@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     if (persona !== undefined) updateData.persona = persona
     if (keywords !== undefined) updateData.keywords = keywords
     if (vision !== undefined) updateData.vision = vision
+    if (xiaohongshu_profile_url !== undefined) updateData.xiaohongshu_profile_url = xiaohongshu_profile_url
 
     console.log('Updating user data:', updateData)
 
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json({ success: true, data })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json(
@@ -89,4 +90,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// PUT /api/user - 更新用户信息（与POST相同逻辑）
+export async function PUT(request: NextRequest) {
+  return POST(request) // 复用POST方法的逻辑
 }

@@ -43,7 +43,7 @@ export default function AdminDashboard() {
   const [showStudentManagement, setShowStudentManagement] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCheckinManagement, setShowCheckinManagement] = useState(false)
-  const [checkinType, setCheckinType] = useState<'qualified' | 'not_started' | 'forgot'>('qualified')
+  const [checkinType, setCheckinType] = useState<'active' | 'qualified' | 'unqualified'>('active')
   const [checkinStudents, setCheckinStudents] = useState<any[]>([])
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
   const [showStudentDetail, setShowStudentDetail] = useState(false)
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
   })
 
   // 加载打卡管理数据
-  const loadCheckinData = async (type: 'qualified' | 'not_started' | 'forgot') => {
+  const loadCheckinData = async (type: 'active' | 'qualified' | 'unqualified') => {
     try {
       setLoading(true)
 
@@ -177,26 +177,26 @@ export default function AdminDashboard() {
         const checkinDays = studentRecords.length
         const completionRate = totalDays > 0 ? (checkinDays / totalDays) * 100 : 0
 
-        // 根据新的三种状态分类：打卡合格、未打卡、忘记打卡
-        let status = 'qualified' // 默认为合格
+        // 根据新的三种状态分类：正在打卡、打卡合格、打卡不合格
+        let status = 'active' // 默认为正在打卡
 
         if (now > endDate) {
           // 打卡期已结束，根据完成率判断
           status = completionRate >= 80 ? 'qualified' : 'unqualified'
+        } else if (now < startDate) {
+          // 打卡期还未开始
+          status = 'not_started'
         } else {
-          // 打卡期进行中，检查是否有忘记打卡的情况
+          // 打卡期进行中
           const today = getBeijingDateString()
           const daysSinceStart = Math.ceil((new Date(today).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
 
           if (daysSinceStart > 0 && checkinDays < daysSinceStart) {
-            // 有忘记打卡的天数
-            status = 'forgot'
-          } else if (checkinDays === 0) {
-            // 还没有开始打卡
-            status = 'not_started'
+            // 有忘记打卡的天数 - 打卡不合格
+            status = 'unqualified'
           } else {
-            // 正常打卡中
-            status = 'qualified'
+            // 正常打卡中 - 正在打卡
+            status = 'active'
           }
         }
 
@@ -284,16 +284,16 @@ export default function AdminDashboard() {
                   <div className="flex items-center">
                     <div className="text-3xl mr-4">✅</div>
                     <div>
-                      <p className="text-white/60 text-sm">打卡合格人数</p>
-                      <p className="text-2xl font-bold text-white">{stats.qualifiedStudents}</p>
+                      <p className="text-white/60 text-sm">正在打卡</p>
+                      <p className="text-2xl font-bold text-white">{stats.activePunches}</p>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    setCheckinType('qualified')
+                    setCheckinType('active')
                     setShowCheckinManagement(true)
-                    loadCheckinData('qualified')
+                    loadCheckinData('active')
                   }}
                   className="w-full px-4 py-2 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200 rounded-lg transition-all duration-300 text-sm"
                 >
@@ -306,16 +306,16 @@ export default function AdminDashboard() {
                   <div className="flex items-center">
                     <div className="text-3xl mr-4">⏳</div>
                     <div>
-                      <p className="text-white/60 text-sm">未打卡人数</p>
-                      <p className="text-2xl font-bold text-white">{stats.notStartedStudents}</p>
+                      <p className="text-white/60 text-sm">打卡合格</p>
+                      <p className="text-2xl font-bold text-white">{stats.qualifiedStudents}</p>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    setCheckinType('not_started')
+                    setCheckinType('qualified')
                     setShowCheckinManagement(true)
-                    loadCheckinData('not_started')
+                    loadCheckinData('qualified')
                   }}
                   className="w-full px-4 py-2 bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 hover:text-gray-200 rounded-lg transition-all duration-300 text-sm"
                 >
@@ -328,16 +328,16 @@ export default function AdminDashboard() {
                   <div className="flex items-center">
                     <div className="text-3xl mr-4">😴</div>
                     <div>
-                      <p className="text-white/60 text-sm">忘记打卡人数</p>
+                      <p className="text-white/60 text-sm">打卡不合格</p>
                       <p className="text-2xl font-bold text-white">{stats.forgotStudents}</p>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    setCheckinType('forgot')
+                    setCheckinType('unqualified')
                     setShowCheckinManagement(true)
-                    loadCheckinData('forgot')
+                    loadCheckinData('unqualified')
                   }}
                   className="w-full px-4 py-2 bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 hover:text-orange-200 rounded-lg transition-all duration-300 text-sm"
                 >
@@ -482,9 +482,9 @@ export default function AdminDashboard() {
                 </svg>
               </button>
               <h2 className="text-3xl font-bold text-white">
-                📊 {checkinType === 'qualified' ? '打卡合格学员' :
-                     checkinType === 'not_started' ? '未打卡学员' :
-                     checkinType === 'forgot' ? '忘记打卡学员' : '学员管理'}
+                📊 {checkinType === 'active' ? '正在打卡' :
+                     checkinType === 'qualified' ? '打卡合格' :
+                     checkinType === 'unqualified' ? '打卡不合格' : '学员管理'}
               </h2>
             </div>
 
@@ -492,14 +492,14 @@ export default function AdminDashboard() {
               <div className="glass-effect p-6 rounded-xl">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white mb-4">
-                    {checkinType === 'qualified' ? '✅ 打卡合格的学员列表' :
-                     checkinType === 'not_started' ? '⏳ 未打卡的学员列表' :
-                     checkinType === 'forgot' ? '😴 忘记打卡的学员列表' : '学员列表'}
+                    {checkinType === 'active' ? '✅ 正在打卡的学员列表' :
+                     checkinType === 'qualified' ? '⏳ 打卡合格的学员列表' :
+                     checkinType === 'unqualified' ? '😴 打卡不合格的学员列表' : '学员列表'}
                   </h3>
                   <p className="text-white/60 text-sm">
-                    {checkinType === 'qualified' ? '这些学员已完成打卡要求（完成率≥80%）' :
-                     checkinType === 'not_started' ? '这些学员还没有开始打卡' :
-                     checkinType === 'forgot' ? '这些学员有忘记打卡的情况' : '学员管理'}
+                    {checkinType === 'active' ? '这些学员正在打卡中' :
+                     checkinType === 'qualified' ? '这些学员已完成打卡要求（完成率≥80%）' :
+                     checkinType === 'unqualified' ? '这些学员打卡不合格或有忘记打卡情况' : '学员管理'}
                   </p>
                 </div>
 
@@ -531,14 +531,16 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className={`px-2 py-1 rounded text-xs ${
+                            student.status === 'active' ? 'bg-blue-500/20 text-blue-300' :
                             student.status === 'qualified' ? 'bg-green-500/20 text-green-300' :
+                            student.status === 'unqualified' ? 'bg-red-500/20 text-red-300' :
                             student.status === 'not_started' ? 'bg-gray-500/20 text-gray-300' :
-                            student.status === 'forgot' ? 'bg-orange-500/20 text-orange-300' :
-                            'bg-blue-500/20 text-blue-300'
+                            'bg-gray-500/20 text-gray-300'
                           }`}>
-                            {student.status === 'qualified' ? '✅ 合格' :
+                            {student.status === 'active' ? '🔄 正在打卡' :
+                             student.status === 'qualified' ? '✅ 打卡合格' :
+                             student.status === 'unqualified' ? '❌ 打卡不合格' :
                              student.status === 'not_started' ? '⏳ 未开始' :
-                             student.status === 'forgot' ? '😴 忘记打卡' :
                              '📊 其他'}
                           </span>
                           <button

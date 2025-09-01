@@ -98,8 +98,8 @@ export async function POST(request: NextRequest) {
 
       console.log('🔍 Password validation successful')
 
-      // 检查是否需要强制改密（简化版本）
-      const needsPasswordChange = user.password === user.student_id
+      // 检查是否需要强制改密 - 只有当用户用学号作为密码登录时才提示修改
+      const needsPasswordChange = password === user.student_id
 
       return NextResponse.json({
         success: true,
