@@ -37,49 +37,14 @@ export async function GET(request: NextRequest) {
 // 获取AI相关的热门帖子
 async function getAIRelatedPosts(limit: number) {
   try {
-    // 从热门帖子表中获取AI相关的热门帖子
-    const { data: posts, error } = await supabase
-      .from('hot_posts')
-      .select('*')
-      .or('title.ilike.%AI%,title.ilike.%人工智能%,title.ilike.%ChatGPT%,title.ilike.%机器学习%')
-      .order('like_count', { ascending: false })
-      .limit(limit)
-
-    if (error) {
-      console.error('Error fetching AI posts:', error)
-      // 返回模拟数据作为备选
-      return NextResponse.json({
-        success: true,
-        data: generateMockAIPosts(limit),
-        source: 'mock'
-      })
-    }
-
-    if (!posts || posts.length === 0) {
-      // 如果没有真实数据，返回模拟数据
-      return NextResponse.json({
-        success: true,
-        data: generateMockAIPosts(limit),
-        source: 'mock'
-      })
-    }
-
-    // 转换数据格式
-    const formattedPosts = posts.map(post => ({
-      id: post.note_id || post.id,
-      title: post.title || '无标题',
-      author: post.author || '匿名用户',
-      likes: post.like_count || 0,
-      comments: post.comment_count || 0,
-      url: post.url || '#',
-      tags: extractTags(post.title || ''),
-      category: 'AI行业爆款'
-    }))
+    // 由于hot_posts表已删除，直接返回模拟数据
+    console.log('使用模拟AI帖子数据，因为hot_posts表已被清理')
 
     return NextResponse.json({
       success: true,
-      data: formattedPosts,
-      source: 'database'
+      data: generateMockAIPosts(limit),
+      source: 'mock',
+      message: '使用模拟数据，原数据表已清理'
     })
   } catch (error) {
     console.error('Error in getAIRelatedPosts:', error)
