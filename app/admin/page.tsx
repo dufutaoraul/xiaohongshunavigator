@@ -348,6 +348,42 @@ export default function AdminDashboard() {
           setShowCheckinScheduleModal(false)
           setScheduleMessage('')
         }, 3000)
+      } else if (result.error === 'SCHEDULE_EXISTS' || result.error === 'BATCH_SCHEDULE_EXISTS') {
+        // 显示重复确认对话框
+        const confirmUpdate = window.confirm(
+          `${result.message}\n\n点击"确定"修改现有安排，点击"取消"保持不变。`
+        )
+
+        if (confirmUpdate) {
+          // 用户确认修改，重新发送请求并添加 force_update 参数
+          const forceUpdateBody = { ...requestBody, force_update: true }
+
+          const forceResponse = await fetch('/api/admin/checkin-schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(forceUpdateBody)
+          })
+
+          const forceResult = await forceResponse.json()
+
+          if (forceResult.success) {
+            setScheduleMessage(`✅ ${forceResult.message}`)
+            // 清空表单
+            setScheduleStudentId('')
+            setScheduleBatchStart('')
+            setScheduleBatchEnd('')
+            setScheduleStartDate('')
+            // 3秒后关闭模态框
+            setTimeout(() => {
+              setShowCheckinScheduleModal(false)
+              setScheduleMessage('')
+            }, 3000)
+          } else {
+            setScheduleMessage(`❌ 修改失败：${forceResult.error}`)
+          }
+        } else {
+          setScheduleMessage('❌ 操作已取消')
+        }
       } else {
         setScheduleMessage(`❌ 设置失败：${result.error}`)
       }
