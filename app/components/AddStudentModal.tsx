@@ -207,15 +207,16 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
           </div>
         </form>
 
-        <div className="mt-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
-          <h4 className="text-blue-300 font-medium text-sm mb-2">💡 创建提示</h4>
-          <ul className="text-blue-200/70 text-xs space-y-1">
-            <li>• 学号格式建议：AXCF + 年份 + 月份 + 序号</li>
-            <li>• 初始密码自动设置为学号，安全加密存储</li>
-            <li>• 建议学员首次登录后修改密码</li>
-            <li>• 管理员角色拥有后台管理权限</li>
-          </ul>
-        </div>
+            <div className="mt-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+              <h4 className="text-blue-300 font-medium text-sm mb-2">💡 创建提示</h4>
+              <ul className="text-blue-200/70 text-xs space-y-1">
+                <li>• 学号格式建议：AXCF + 年份 + 月份 + 序号</li>
+                <li>• 初始密码自动设置为学号，安全加密存储</li>
+                <li>• 建议学员首次登录后修改密码</li>
+                <li>• 管理员角色拥有后台管理权限</li>
+              </ul>
+            </div>
+          </form>
         )}
       </div>
     </div>
