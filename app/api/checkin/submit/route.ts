@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         console.log(`🔍 [Checkin Submit API] URL[${index}] 验证结果:`, { url, isValid })
         return isValid
       } catch (error) {
-        console.log(`❌ [Checkin Submit API] URL[${index}] 格式错误:`, { url, error: error.message })
+        console.log(`❌ [Checkin Submit API] URL[${index}] 格式错误:`, { url, error: error instanceof Error ? error.message : String(error) })
         return false
       }
     })
