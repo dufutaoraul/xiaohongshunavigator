@@ -38,8 +38,9 @@ export async function GET(request: NextRequest) {
           } else if (schedule.checkin_mode === 'batch' && schedule.batch_start_id && schedule.batch_end_id) {
             // 批量模式，需要计算范围内的学员数量
             const { data: batchStudents, error: batchError } = await supabase
-              .from('students')
+              .from('users')
               .select('student_id')
+              .eq('role', 'student')
               .gte('student_id', schedule.batch_start_id)
               .lte('student_id', schedule.batch_end_id)
             

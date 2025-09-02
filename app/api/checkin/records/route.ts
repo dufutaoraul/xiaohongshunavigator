@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`📊 [Checkin Records API] 获取学员打卡记录: ${studentId}`)
+    console.log(`📊 [Checkin Records API] 获取学员打卡记录: ${studentId}, limit: ${limit}, offset: ${offset}`)
 
     // 查询打卡记录
     const { data: records, error } = await supabase
@@ -26,10 +26,22 @@ export async function GET(request: NextRequest) {
       .order('checkin_date', { ascending: false })
       .range(offset, offset + limit - 1)
 
+    console.log(`🔍 [Checkin Records API] 数据库查询结果:`, {
+      records: records,
+      recordsLength: records?.length || 0,
+      error: error
+    })
+
     if (error) {
-      console.error('查询打卡记录失败:', error)
+      console.error('❌ [Checkin Records API] 查询打卡记录失败:', error)
+      console.error('❌ [Checkin Records API] 错误详情:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      })
       return NextResponse.json(
-        { error: 'Failed to fetch checkin records' },
+        { error: 'Failed to fetch checkin records: ' + error.message },
         { status: 500 }
       )
     }

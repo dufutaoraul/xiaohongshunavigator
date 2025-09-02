@@ -18,6 +18,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [createdStudentInfo, setCreatedStudentInfo] = useState<{student_id: string, name: string} | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,14 +49,25 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // 重置表单
-        setFormData({
-          student_id: '',
-          name: '',
-          role: 'student'
+        // 保存创建的学员信息
+        setCreatedStudentInfo({
+          student_id: formData.student_id,
+          name: formData.name
         })
-        onSuccess()
-        onClose()
+        setSuccess(true)
+
+        // 3秒后关闭模态框并重置
+        setTimeout(() => {
+          setFormData({
+            student_id: '',
+            name: '',
+            role: 'student'
+          })
+          setSuccess(false)
+          setCreatedStudentInfo(null)
+          onSuccess()
+          onClose()
+        }, 3000)
       } else {
         setError(result.error || '创建学员失败')
       }
@@ -67,13 +80,15 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
   }
 
   const handleClose = () => {
-    if (!loading) {
+    if (!loading && !success) {
       setFormData({
         student_id: '',
         name: '',
         role: 'student'
       })
       setError('')
+      setSuccess(false)
+      setCreatedStudentInfo(null)
       onClose()
     }
   }
@@ -84,14 +99,51 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-4">👥</div>
-          <h2 className="text-2xl font-bold gradient-text mb-2">新增学员</h2>
+          <div className="text-4xl mb-4">{success ? '✅' : '👥'}</div>
+          <h2 className="text-2xl font-bold gradient-text mb-2">
+            {success ? '创建成功' : '新增学员'}
+          </h2>
           <p className="text-white/60 text-sm">
-            添加新的学员到系统中
+            {success ? '学员已成功添加到系统中' : '添加新的学员到系统中'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {success && createdStudentInfo ? (
+          <div className="space-y-6">
+            <div className="p-6 bg-green-500/10 border border-green-400/30 rounded-lg">
+              <h3 className="text-green-300 font-medium text-lg mb-4">🎉 学员创建成功！</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">学号：</span>
+                  <span className="text-white font-mono">{createdStudentInfo.student_id}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">姓名：</span>
+                  <span className="text-white">{createdStudentInfo.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">初始密码：</span>
+                  <span className="text-green-300 font-mono">{createdStudentInfo.student_id}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+              <h4 className="text-blue-300 font-medium text-sm mb-2">📋 重要提醒</h4>
+              <ul className="text-blue-200/70 text-xs space-y-1">
+                <li>• 初始密码与学号完全一致：<span className="font-mono text-blue-300">{createdStudentInfo.student_id}</span></li>
+                <li>• 请将登录信息告知学员</li>
+                <li>• 建议学员首次登录后立即修改密码</li>
+                <li>• 密码已安全加密存储在数据库中</li>
+              </ul>
+            </div>
+
+            <div className="text-center text-white/60 text-sm">
+              3秒后自动关闭...
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             label="学号 *"
             placeholder="例如: AXCF2025040001"
@@ -164,6 +216,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
             <li>• 管理员角色拥有后台管理权限</li>
           </ul>
         </div>
+        )}
       </div>
     </div>
   )

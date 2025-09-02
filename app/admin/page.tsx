@@ -55,6 +55,9 @@ export default function AdminDashboard() {
   const [scheduleStartDate, setScheduleStartDate] = useState('')
   const [scheduleLoading, setScheduleLoading] = useState(false)
   const [scheduleMessage, setScheduleMessage] = useState('')
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false)
+  const [filteredStudents, setFilteredStudents] = useState<Student[]>([])
+  const [allStudents, setAllStudents] = useState<Student[]>([])
 
   // 权限检查
   useEffect(() => {
@@ -83,10 +86,12 @@ export default function AdminDashboard() {
       const studentsResponse = await fetch('/api/admin/students')
       if (studentsResponse.ok) {
         const studentsData = await studentsResponse.json()
-        setStudents(studentsData.students || [])
+        const allStudentsData = studentsData.students || []
+        setStudents(allStudentsData)
+        setAllStudents(allStudentsData)
 
         // 计算统计数据
-        const totalStudents = studentsData.students?.filter((s: Student) => s.role === 'student').length || 0
+        const totalStudents = allStudentsData.filter((s: Student) => s.role === 'student').length || 0
 
         setStats(prev => ({
           ...prev,
@@ -162,50 +167,68 @@ export default function AdminDashboard() {
 
       // 计算每个学员的打卡状态
       const studentStats = allStudents.map((student: any) => {
-        // 找到该学员的打卡安排
-        const studentSchedule = schedules.find((s: any) => s.student_id === student.student_id)
+        // 找到该学员的打卡安排（支持单个和批量模式）
+        const studentSchedule = schedules.find((s: any) => {
+          if (s.checkin_mode === 'single') {
+            return s.student_id === student.student_id
+          } else if (s.checkin_mode === 'batch') {
+            return student.student_id >= s.batch_start_id && student.student_id <= s.batch_end_id
+          }
+          return false
+        })
 
         if (!studentSchedule) {
           // 没有打卡安排的学员，使用默认值
           return {
             ...student,
             checkinDays: 0,
-            totalDays: 90,
+            totalDays: 0,
             completionRate: 0,
-            status: 'active',
-            records: []
+            status: 'not_started',
+            records: [],
+            schedule: null
           }
         }
 
-        const startDate = new Date(studentSchedule.start_date)
-        const endDate = new Date(studentSchedule.end_date)
-        const studentRecords = recordsData.records.filter((r: any) => r.student_id === student.student_id)
+        const startDate = new Date(studentSchedule.start_date + 'T00:00:00')
+        const endDate = new Date(studentSchedule.end_date + 'T23:59:59')
 
-        const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        // 只计算在打卡周期内的记录
+        const studentRecords = recordsData.records.filter((r: any) =>
+          r.student_id === student.student_id &&
+          r.checkin_date >= studentSchedule.start_date &&
+          r.checkin_date <= studentSchedule.end_date
+        )
+
+        const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
         const checkinDays = studentRecords.length
         const completionRate = totalDays > 0 ? (checkinDays / totalDays) * 100 : 0
 
-        // 根据新的三种状态分类：正在打卡、打卡合格、打卡不合格
+        // 使用北京时间进行状态判断
+        const todayStr = getBeijingDateString()
+        const todayDate = new Date(todayStr + 'T00:00:00')
+
         let status = 'active' // 默认为正在打卡
 
-        if (now > endDate) {
-          // 打卡期已结束，根据完成率判断
-          status = completionRate >= 80 ? 'qualified' : 'unqualified'
-        } else if (now < startDate) {
+        if (todayDate > endDate) {
+          // 打卡期已结束，根据93天内完成90次打卡的标准判断
+          // 计算打卡周期的实际天数（最多93天）
+          const actualPeriodDays = Math.min(93, totalDays)
+          const isQualified = checkinDays >= 90 && actualPeriodDays >= 90
+          status = isQualified ? 'qualified' : 'unqualified'
+
+          console.log(`📊 [打卡合格判断] 学员 ${student.student_id}:`, {
+            打卡天数: checkinDays,
+            周期天数: actualPeriodDays,
+            是否合格: isQualified,
+            判断标准: '93天内完成90次打卡'
+          })
+        } else if (todayDate < startDate) {
           // 打卡期还未开始
           status = 'not_started'
         } else {
-          // 打卡期进行中
-          const today = getBeijingDateString()
-          const daysSinceStart = Math.ceil((new Date(today).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-
-          if (daysSinceStart > 0 && checkinDays < daysSinceStart) {
-            // 有忘记打卡的天数 - 打卡不合格
-            status = 'unqualified'
-          } else {
-            // 正常打卡中 - 正在打卡
-            status = 'active'
-          }
+          // 打卡期进行中 - 正在打卡
+          status = 'active'
         }
 
         return {
@@ -242,6 +265,31 @@ export default function AdminDashboard() {
   const handleViewStudentDetail = (student: any) => {
     setSelectedStudent(student)
     setShowStudentDetail(true)
+  }
+
+  // 处理学员学号输入
+  const handleStudentIdInput = (value: string) => {
+    setScheduleStudentId(value)
+
+    if (value.trim()) {
+      // 过滤学员列表
+      const filtered = allStudents.filter(student =>
+        student.role === 'student' && (
+          student.student_id.toLowerCase().includes(value.toLowerCase()) ||
+          student.name.toLowerCase().includes(value.toLowerCase())
+        )
+      )
+      setFilteredStudents(filtered)
+      setShowStudentDropdown(true)
+    } else {
+      setShowStudentDropdown(false)
+    }
+  }
+
+  // 选择学员
+  const handleSelectStudent = (student: Student) => {
+    setScheduleStudentId(student.student_id)
+    setShowStudentDropdown(false)
   }
 
   // 设置打卡日期
@@ -579,7 +627,7 @@ export default function AdminDashboard() {
                   </h3>
                   <p className="text-white/60 text-sm">
                     {checkinType === 'active' ? '这些学员正在打卡中' :
-                     checkinType === 'qualified' ? '这些学员已完成打卡要求（完成率≥80%）' :
+                     checkinType === 'qualified' ? '这些学员已完成打卡要求（93天内完成90次打卡）' :
                      checkinType === 'unqualified' ? '这些学员打卡不合格或有忘记打卡情况' : '学员管理'}
                   </p>
                 </div>
@@ -603,6 +651,11 @@ export default function AdminDashboard() {
                             <p className="text-white/60 text-sm">学号：{student.student_id}</p>
                             {(student as any).real_name && (
                               <p className="text-white/60 text-sm">真实姓名：{(student as any).real_name}</p>
+                            )}
+                            {student.schedule && (
+                              <p className="text-white/50 text-xs">
+                                打卡周期：{student.schedule.start_date} 至 {student.schedule.end_date}
+                              </p>
                             )}
                             <p className="text-white/50 text-xs">
                               打卡进度：{student.checkinDays}/{student.totalDays} 天
@@ -773,14 +826,14 @@ export default function AdminDashboard() {
                               ✅ 已打卡
                             </span>
                           </div>
-                          {record.xiaohongshu_url && (
+                          {(record.xiaohongshu_link || record.xiaohongshu_url) && (
                             <a
-                              href={record.xiaohongshu_url}
+                              href={record.xiaohongshu_link || record.xiaohongshu_url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-400 hover:text-blue-300 text-sm break-all"
                             >
-                              🔗 {record.xiaohongshu_url}
+                              🔗 {record.xiaohongshu_link || record.xiaohongshu_url}
                             </a>
                           )}
                           {record.admin_comment && (
@@ -853,28 +906,42 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* 开始日期 */}
-                <div>
-                  <label className="block text-white/80 text-sm font-medium mb-2">开始日期</label>
-                  <input
-                    type="date"
-                    value={scheduleStartDate}
-                    onChange={(e) => setScheduleStartDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
-                  />
-                </div>
-
                 {/* 单个学员设置 */}
                 {scheduleMode === 'single' && (
-                  <div>
+                  <div className="relative">
                     <label className="block text-white/80 text-sm font-medium mb-2">学员学号</label>
                     <input
                       type="text"
                       value={scheduleStudentId}
-                      onChange={(e) => setScheduleStudentId(e.target.value)}
-                      placeholder="请输入学员学号"
+                      onChange={(e) => handleStudentIdInput(e.target.value)}
+                      onFocus={() => {
+                        if (scheduleStudentId.trim()) {
+                          handleStudentIdInput(scheduleStudentId)
+                        }
+                      }}
+                      onBlur={() => {
+                        // 延迟关闭下拉框，允许点击选择
+                        setTimeout(() => setShowStudentDropdown(false), 200)
+                      }}
+                      placeholder="请输入学员学号或姓名"
                       className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
                     />
+
+                    {/* 下拉选择列表 */}
+                    {showStudentDropdown && filteredStudents.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-white/20 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                        {filteredStudents.map((student) => (
+                          <div
+                            key={student.id}
+                            onClick={() => handleSelectStudent(student)}
+                            className="px-3 py-2 hover:bg-white/10 cursor-pointer border-b border-white/10 last:border-b-0"
+                          >
+                            <div className="text-white text-sm font-medium">{student.student_id}</div>
+                            <div className="text-white/70 text-xs">{student.name}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -887,7 +954,7 @@ export default function AdminDashboard() {
                         type="text"
                         value={scheduleBatchStart}
                         onChange={(e) => setScheduleBatchStart(e.target.value)}
-                        placeholder="例如：2024001"
+                        placeholder="例如：AXCF2025010001"
                         className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
                       />
                     </div>
@@ -897,12 +964,23 @@ export default function AdminDashboard() {
                         type="text"
                         value={scheduleBatchEnd}
                         onChange={(e) => setScheduleBatchEnd(e.target.value)}
-                        placeholder="例如：2024100"
+                        placeholder="例如：AXCF2025010020"
                         className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
                       />
                     </div>
                   </div>
                 )}
+
+                {/* 开始日期 */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">开始日期</label>
+                  <input
+                    type="date"
+                    value={scheduleStartDate}
+                    onChange={(e) => setScheduleStartDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                  />
+                </div>
 
                 {/* 消息显示 */}
                 {scheduleMessage && (

@@ -40,6 +40,16 @@ export default function CheckinPage() {
   const [checkinSchedule, setCheckinSchedule] = useState<any>(null)
   const [showNoScheduleModal, setShowNoScheduleModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
+  const [hasShownWelcomeToday, setHasShownWelcomeToday] = useState(false)
+
+  // 检查今天是否已经显示过欢迎弹窗
+  useEffect(() => {
+    const today = getBeijingDateString()
+    const welcomeShownKey = `welcome_shown_${today}`
+    const hasShown = localStorage.getItem(welcomeShownKey) === 'true'
+    setHasShownWelcomeToday(hasShown)
+    console.log('🔍 [欢迎弹窗] 检查今天是否已显示:', { today, hasShown })
+  }, [])
 
   // 检查认证状态和小红书主页
   useEffect(() => {
@@ -122,8 +132,19 @@ export default function CheckinPage() {
           setCheckinSchedule(activeSchedule)
           console.log('学员在打卡周期内:', activeSchedule)
 
-          // 显示欢迎弹窗
-          setShowWelcomeModal(true)
+          // 只有今天还没有显示过欢迎弹窗时才显示
+          if (!hasShownWelcomeToday) {
+            console.log('🎉 [欢迎弹窗] 今天首次显示欢迎弹窗')
+            setShowWelcomeModal(true)
+
+            // 记录今天已经显示过欢迎弹窗
+            const today = getBeijingDateString()
+            const welcomeShownKey = `welcome_shown_${today}`
+            localStorage.setItem(welcomeShownKey, 'true')
+            setHasShownWelcomeToday(true)
+          } else {
+            console.log('🔍 [欢迎弹窗] 今天已经显示过，跳过')
+          }
         } else {
           // 不在打卡周期内
           setHasCheckinSchedule(false)
@@ -164,10 +185,15 @@ export default function CheckinPage() {
 
       // 获取打卡记录，使用正确的API
       const timestamp = new Date().getTime()
-      const recordsResponse = await fetch(`/api/checkin/records?student_id=${studentId}&limit=90&_t=${timestamp}`)
+      const apiUrl = `/api/checkin/records?student_id=${studentId}&limit=90&_t=${timestamp}`
+      console.log('🔍 [前端] 请求打卡记录API:', apiUrl)
+
+      const recordsResponse = await fetch(apiUrl)
+      console.log('🔍 [前端] API响应状态:', recordsResponse.status, recordsResponse.statusText)
+
       if (recordsResponse.ok) {
         const recordsData = await recordsResponse.json()
-        console.log('打卡记录API响应:', recordsData)
+        console.log('🔍 [前端] 打卡记录API响应:', JSON.stringify(recordsData, null, 2))
 
         if (recordsData.success && recordsData.records) {
           // 转换数据格式以匹配前端期望的结构
@@ -183,8 +209,17 @@ export default function CheckinPage() {
           })) || []
 
           setCheckinRecords(records)
-          console.log('转换后的打卡记录:', records)
+          console.log('✅ [前端] 转换后的打卡记录:', records)
+          console.log('✅ [前端] 设置打卡记录数量:', records.length)
+        } else {
+          console.log('❌ [前端] API响应格式不正确或无数据:', recordsData)
+          setCheckinRecords([])
         }
+      } else {
+        console.error('❌ [前端] 获取打卡记录失败:', recordsResponse.status, recordsResponse.statusText)
+        const errorText = await recordsResponse.text()
+        console.error('❌ [前端] 错误响应内容:', errorText)
+        setCheckinRecords([])
       }
     } catch (error) {
       console.error('Error fetching checkin data:', error)
@@ -258,12 +293,12 @@ export default function CheckinPage() {
     })
 
     for (let i = 0; i < 42; i++) { // 6周 x 7天
-      // 直接使用current的日期，不进行时区转换
-      const dateStr = current.toISOString().split('T')[0]
+      // 使用北京时间格式化日期字符串
+      const dateStr = getBeijingDateString(current)
       const isCurrentMonth = current.getMonth() === month
       const isToday = dateStr === beijingToday
       const checkinRecord = checkinRecords.find(record => record.checkin_date === dateStr)
-      
+
       console.log(`📅 日历格子 ${current.getDate()}: ${dateStr}, 是今天: ${isToday}, 有打卡: ${!!checkinRecord}`);
 
       // 检查是否在打卡周期内
@@ -308,12 +343,16 @@ export default function CheckinPage() {
 
   // 提交打卡
   const handleSubmitCheckin = async () => {
+    console.log('🚀 [前端] 开始提交打卡')
+
     if (!xiaohongshuUrl.trim()) {
+      console.log('❌ [前端] 小红书链接为空')
       setMessage('请输入小红书链接')
       return
     }
 
     if (!xiaohongshuUrl.includes('xiaohongshu.com') && !xiaohongshuUrl.includes('xhslink.com')) {
+      console.log('❌ [前端] 小红书链接格式无效:', xiaohongshuUrl)
       setMessage('请输入有效的小红书链接')
       return
     }
@@ -321,27 +360,34 @@ export default function CheckinPage() {
     setLoading(true)
     setMessage('')
 
+    const requestData = {
+      student_id: studentId,
+      urls: [xiaohongshuUrl],
+      date: selectedDate
+    }
+    console.log('📤 [前端] 发送请求数据:', JSON.stringify(requestData, null, 2))
+
     try {
       const response = await fetch('/api/checkin/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          student_id: studentId,
-          urls: [xiaohongshuUrl],
-          date: selectedDate
-        })
+        body: JSON.stringify(requestData)
       })
 
+      console.log('📥 [前端] 收到响应状态:', response.status, response.statusText)
       const result = await response.json()
+      console.log('📥 [前端] 收到响应数据:', JSON.stringify(result, null, 2))
 
       if (response.ok && result.success) {
+        console.log('✅ [前端] 打卡提交成功')
         setMessage('✅ 打卡提交成功！日历已更新')
-        
+
         // 立即刷新打卡数据，确保UI同步更新
+        console.log('🔄 [前端] 刷新打卡数据')
         await fetchCheckinData()
-        
+
         // 立即更新本地打卡记录状态，确保日历颜色立即变化
         const newRecord: CheckinRecord = {
           id: result.data?.id || Date.now().toString(),
@@ -353,25 +399,28 @@ export default function CheckinPage() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
-        
+
+        console.log('🔄 [前端] 更新本地打卡记录:', newRecord)
+
         // 更新本地记录
         setCheckinRecords(prev => {
           const filtered = prev.filter(r => r.checkin_date !== selectedDate)
-          return [newRecord, ...filtered].sort((a, b) => 
+          return [newRecord, ...filtered].sort((a, b) =>
             new Date(b.checkin_date).getTime() - new Date(a.checkin_date).getTime()
           )
         })
-        
+
         // 延迟关闭模态框，让用户看到成功消息和绿色效果
         setTimeout(() => {
           setShowCheckinModal(false)
           setMessage('')
         }, 2000)
       } else {
+        console.log('❌ [前端] 打卡提交失败:', result.error)
         setMessage(result.error || '提交失败，请重试')
       }
     } catch (error) {
-      console.error('Submit checkin error:', error)
+      console.error('💥 [前端] 提交打卡失败:', error)
       setMessage('网络错误，请检查连接')
     } finally {
       setLoading(false)
@@ -764,37 +813,72 @@ export default function CheckinPage() {
               <div className="text-6xl mb-4">🎉</div>
               {(() => {
                 const todayStr = getBeijingDateString()
-                const isStartingToday = checkinSchedule.start_date === todayStr
+                const startDate = new Date(checkinSchedule.start_date)
+                const today = new Date(todayStr)
 
-                if (isStartingToday) {
-                  return (
-                    <>
-                      <h3 className="text-xl font-bold text-white mb-4">🌟 新的开始！</h3>
-                      <p className="text-white/80 mb-6">
-                        恭喜您！今天是您打卡之旅的第一天！
-                        <br /><br />
-                        您的打卡周期从 <span className="text-blue-300 font-medium">今天（{checkinSchedule.start_date}）</span> 开始，
-                        到 <span className="text-blue-300 font-medium">{checkinSchedule.end_date}</span> 结束。
-                        <br /><br />
-                        <span className="text-yellow-300 font-medium">✨ 每一个伟大的成就都始于勇敢的开始！</span>
-                        <br />
-                        相信自己，坚持下去，您一定能创造属于自己的精彩！💪
-                      </p>
-                    </>
-                  )
-                } else {
-                  return (
-                    <>
-                      <h3 className="text-xl font-bold text-white mb-4">打卡之旅继续中！</h3>
-                      <p className="text-white/80 mb-6">
+                // 计算当前是第几天
+                const daysDiff = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                const currentDay = Math.max(1, daysDiff) // 确保至少是第1天
+
+                // 根据天数生成不同的鼓励话语
+                const getEncouragementMessage = (day: number) => {
+                  if (day === 1) {
+                    return {
+                      title: "🌟 新的开始！",
+                      message: "✨ 每一个伟大的成就都始于勇敢的开始！相信自己，坚持下去，您一定能创造属于自己的精彩！💪"
+                    }
+                  } else if (day <= 7) {
+                    return {
+                      title: "🚀 起步阶段！",
+                      message: "🌱 万事开头难，您已经迈出了最重要的第一步！继续保持这份热情和坚持，好习惯正在养成中！"
+                    }
+                  } else if (day <= 21) {
+                    return {
+                      title: "💪 习惯养成中！",
+                      message: "🔥 科学研究表明，21天可以养成一个习惯！您正在朝着目标稳步前进，每一天的坚持都在为成功积累力量！"
+                    }
+                  } else if (day <= 30) {
+                    return {
+                      title: "🏆 坚持有成！",
+                      message: "⭐ 一个月的坚持，证明了您的毅力和决心！您已经超越了很多人，继续保持这份优秀！"
+                    }
+                  } else if (day <= 60) {
+                    return {
+                      title: "🌟 持续精进！",
+                      message: "🎯 两个月的坚持，您已经成为了自律的典范！每一天的积累都在让您变得更加优秀！"
+                    }
+                  } else if (day <= 90) {
+                    return {
+                      title: "👑 接近胜利！",
+                      message: "🏅 您已经走过了大部分的路程，胜利就在前方！坚持到底，您将收获满满的成就感！"
+                    }
+                  } else {
+                    return {
+                      title: "🎉 超越目标！",
+                      message: "🌈 您已经超越了既定目标，这份坚持和毅力值得所有人的敬佩！继续保持这份优秀！"
+                    }
+                  }
+                }
+
+                const encouragement = getEncouragementMessage(currentDay)
+
+                return (
+                  <>
+                    <h3 className="text-xl font-bold text-white mb-4">{encouragement.title}</h3>
+                    <div className="text-white/80 mb-6">
+                      <div className="text-lg font-medium text-yellow-300 mb-3">
+                        📅 今天是您打卡的第 <span className="text-2xl font-bold">{currentDay}</span> 天
+                      </div>
+                      <p className="mb-4">
                         您的打卡周期从 <span className="text-blue-300 font-medium">{checkinSchedule.start_date}</span> 开始，
                         到 <span className="text-blue-300 font-medium">{checkinSchedule.end_date}</span> 结束。
-                        <br /><br />
-                        坚持就是胜利，让我们一起努力，记录每一天的成长！💪
                       </p>
-                    </>
-                  )
-                }
+                      <p className="text-yellow-300 font-medium">
+                        {encouragement.message}
+                      </p>
+                    </div>
+                  </>
+                )
               })()}
               <button
                 onClick={() => setShowWelcomeModal(false)}
