@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getBeijingDateString } from '@/lib/date-utils'
 
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Getting checkin statistics...')
     
-    // 获取当前日期
-    const today = new Date()
-    const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
-    const todayStr = localToday.toISOString().split('T')[0]
+    // 获取当前日期（北京时间）
+    const todayStr = getBeijingDateString()
     
     console.log('今天日期:', todayStr)
     
@@ -69,8 +68,8 @@ export async function GET(request: NextRequest) {
 
     // 获取所有打卡记录
     const { data: allRecords, error: recordsError } = await supabase
-      .from('checkin_records')
-      .select('student_id, checkin_date, status')
+      .from('student_checkins')
+      .select('student_id, checkin_date')
 
     if (recordsError) {
       console.error('Error fetching records:', recordsError)
@@ -82,43 +81,82 @@ export async function GET(request: NextRequest) {
     let notStartedStudents = 0
     let forgotStudents = 0
 
-    const now = new Date()
+    console.log('开始计算学员状态...')
+    console.log('活跃学员ID列表:', activeStudentIds)
 
-    for (const student of allStudents || []) {
-      const studentSchedule = schedules.find((s: any) => s.student_id === student.student_id)
-      if (!studentSchedule) continue
+    // 只统计有活跃打卡安排的学员
+    for (const studentId of activeStudentIds) {
+      // 找到该学员的打卡安排
+      const studentSchedule = schedules.find((s: any) => {
+        if (s.checkin_mode === 'single') {
+          return s.student_id === studentId
+        } else if (s.checkin_mode === 'batch') {
+          return studentId >= s.batch_start_id && studentId <= s.batch_end_id
+        }
+        return false
+      })
+
+      if (!studentSchedule) {
+        console.log(`学员 ${studentId} 没有找到对应的打卡安排`)
+        continue
+      }
 
       const startDate = new Date(studentSchedule.start_date)
       const endDate = new Date(studentSchedule.end_date)
-      const studentRecords = (allRecords || []).filter((r: any) => r.student_id === student.student_id)
+      const todayDate = new Date(todayStr)
+
+      // 获取该学员的打卡记录（只计算在打卡周期内的记录）
+      const studentRecords = (allRecords || []).filter((r: any) =>
+        r.student_id === studentId &&
+        r.checkin_date >= studentSchedule.start_date &&
+        r.checkin_date <= studentSchedule.end_date
+      )
 
       const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
       const checkinDays = studentRecords.length
       const completionRate = totalDays > 0 ? (checkinDays / totalDays) * 100 : 0
 
-      if (now > endDate) {
+      console.log(`学员 ${studentId}: 总天数=${totalDays}, 已打卡=${checkinDays}, 完成率=${completionRate.toFixed(1)}%`)
+
+      if (todayDate > endDate) {
         // 打卡期已结束，根据完成率判断
         if (completionRate >= 80) {
           qualifiedStudents++
+          console.log(`学员 ${studentId}: 打卡合格（已结束）`)
         } else {
           forgotStudents++
+          console.log(`学员 ${studentId}: 打卡不合格（已结束）`)
         }
+      } else if (todayDate < startDate) {
+        // 打卡期还未开始
+        notStartedStudents++
+        console.log(`学员 ${studentId}: 未开始打卡`)
       } else {
-        // 打卡期进行中，检查是否有忘记打卡的情况
-        const daysSinceStart = Math.ceil((new Date(todayStr).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+        // 打卡期进行中
+        const daysSinceStart = Math.ceil((todayDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
-        if (daysSinceStart > 0 && checkinDays < daysSinceStart) {
-          // 有忘记打卡的天数
-          forgotStudents++
-        } else if (checkinDays === 0) {
+        if (checkinDays === 0) {
           // 还没有开始打卡
           notStartedStudents++
+          console.log(`学员 ${studentId}: 未开始打卡（进行中）`)
+        } else if (checkinDays < daysSinceStart) {
+          // 有忘记打卡的天数
+          forgotStudents++
+          console.log(`学员 ${studentId}: 忘记打卡（应打卡${daysSinceStart}天，实际${checkinDays}天）`)
         } else {
           // 正常打卡中
           qualifiedStudents++
+          console.log(`学员 ${studentId}: 正常打卡中`)
         }
       }
     }
+
+    console.log('统计结果:', {
+      activePunches,
+      qualifiedStudents,
+      notStartedStudents,
+      forgotStudents
+    })
 
     return NextResponse.json({
       success: true,

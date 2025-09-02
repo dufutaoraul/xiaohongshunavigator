@@ -16,6 +16,7 @@ import {
   isFileSizeOverLimit
 } from '@/utils/homework-utils';
 import LoginModal from '@/app/components/LoginModal';
+import GlobalUserMenu from '@/app/components/GlobalUserMenu';
 
 export default function SubmitAssignmentPage() {
   const { user, login } = useAuth();
@@ -565,7 +566,10 @@ export default function SubmitAssignmentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
       <div className="container mx-auto px-4 py-8">
         {/* 顶部导航 */}
         <div className="mb-8">

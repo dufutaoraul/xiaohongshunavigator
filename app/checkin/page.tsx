@@ -110,8 +110,10 @@ export default function CheckinPage() {
         console.log('打卡安排:', result.data)
 
         const activeSchedule = result.data.find((schedule: any) => {
-          console.log(`检查安排: ${schedule.start_date} <= ${todayStr} <= ${schedule.end_date}`)
-          return schedule.start_date <= todayStr && schedule.end_date >= todayStr && schedule.is_active
+          const isInDateRange = schedule.start_date <= todayStr && schedule.end_date >= todayStr
+          const isActive = schedule.is_active
+          console.log(`检查安排: ${schedule.start_date} <= ${todayStr} <= ${schedule.end_date}, 在日期范围内: ${isInDateRange}, 是否活跃: ${isActive}`)
+          return isInDateRange && isActive
         })
 
         if (activeSchedule) {
@@ -146,42 +148,89 @@ export default function CheckinPage() {
     }
   }, [isAuthenticated, studentId, currentDate])
 
+  // 当打卡记录或打卡安排变化时，重新计算统计数据
+  useEffect(() => {
+    if (checkinRecords.length >= 0 && checkinSchedule) {
+      const stats = calculateCheckinStats(checkinRecords, checkinSchedule)
+      setCheckinStats(stats)
+      console.log('重新计算统计数据:', stats)
+    }
+  }, [checkinRecords, checkinSchedule])
+
   const fetchCheckinData = async () => {
     try {
-      // 获取打卡记录，添加时间戳避免缓存
+      // 先获取打卡安排
+      await checkCheckinSchedule(studentId)
+
+      // 获取打卡记录，使用正确的API
       const timestamp = new Date().getTime()
-      const recordsResponse = await fetch(`/api/checkin/submit?student_id=${studentId}&days=90&_t=${timestamp}`)
+      const recordsResponse = await fetch(`/api/checkin/records?student_id=${studentId}&limit=90&_t=${timestamp}`)
       if (recordsResponse.ok) {
         const recordsData = await recordsResponse.json()
         console.log('打卡记录API响应:', recordsData)
-        
-        if (recordsData.success && recordsData.data) {
+
+        if (recordsData.success && recordsData.records) {
           // 转换数据格式以匹配前端期望的结构
-          const records = recordsData.data.checkins?.map((record: any) => ({
+          const records = recordsData.records.map((record: any) => ({
             id: record.id,
             student_id: record.student_id,
             student_name: record.student_name || '',
-            checkin_date: record.checkin_date, // 修复：使用正确的字段名
-            xiaohongshu_url: record.xiaohongshu_url || '', // 修复：使用正确的字段名
+            checkin_date: record.checkin_date,
+            xiaohongshu_url: record.xiaohongshu_link || record.xiaohongshu_url || '', // 兼容两种字段名
             status: record.status || 'pending',
             created_at: record.created_at,
             updated_at: record.updated_at
           })) || []
-          
+
           setCheckinRecords(records)
           console.log('转换后的打卡记录:', records)
-          
-          // 更新统计数据
-          setCheckinStats({
-            total_days: recordsData.data.total_checkin_days || 0,
-            consecutive_days: 0, // 需要计算连续天数
-            current_month_days: recordsData.data.passed_days || 0,
-            completion_rate: parseFloat(recordsData.data.pass_rate) || 0
-          })
         }
       }
     } catch (error) {
       console.error('Error fetching checkin data:', error)
+    }
+  }
+
+  // 计算统计数据的函数
+  const calculateCheckinStats = (records: any[], schedule: any) => {
+    // 如果没有打卡安排，总天数为0
+    if (!schedule) {
+      return {
+        total_days: 0,
+        consecutive_days: 0,
+        current_month_days: 0,
+        completion_rate: 0
+      }
+    }
+
+    // 只计算在打卡周期内的记录
+    const recordsInSchedule = records.filter(record =>
+      record.checkin_date >= schedule.start_date &&
+      record.checkin_date <= schedule.end_date
+    )
+
+    const totalDays = recordsInSchedule.length
+
+    // 计算当月打卡天数（在打卡周期内）
+    const beijingToday = getBeijingDateString()
+    const currentYear = parseInt(beijingToday.split('-')[0])
+    const currentMonth = parseInt(beijingToday.split('-')[1])
+    const currentMonthDays = recordsInSchedule.filter(record => {
+      const recordDate = new Date(record.checkin_date)
+      return recordDate.getFullYear() === currentYear && recordDate.getMonth() + 1 === currentMonth
+    }).length
+
+    // 计算完成率（基于打卡周期的总天数）
+    const scheduleStartDate = new Date(schedule.start_date)
+    const scheduleEndDate = new Date(schedule.end_date)
+    const totalScheduleDays = Math.ceil((scheduleEndDate.getTime() - scheduleStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    const completionRate = totalScheduleDays > 0 ? (totalDays / totalScheduleDays) * 100 : 0
+
+    return {
+      total_days: totalDays,
+      consecutive_days: 0, // 需要计算连续天数
+      current_month_days: currentMonthDays,
+      completion_rate: Math.round(completionRate * 100) / 100
     }
   }
 
@@ -713,13 +762,40 @@ export default function CheckinPage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-md w-full text-center">
               <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-xl font-bold text-white mb-4">打卡之旅开始啦！</h3>
-              <p className="text-white/80 mb-6">
-                您的打卡周期从 <span className="text-blue-300 font-medium">{checkinSchedule.start_date}</span> 开始，
-                到 <span className="text-blue-300 font-medium">{checkinSchedule.end_date}</span> 结束。
-                <br /><br />
-                坚持就是胜利，让我们一起努力，记录每一天的成长！💪
-              </p>
+              {(() => {
+                const todayStr = getBeijingDateString()
+                const isStartingToday = checkinSchedule.start_date === todayStr
+
+                if (isStartingToday) {
+                  return (
+                    <>
+                      <h3 className="text-xl font-bold text-white mb-4">🌟 新的开始！</h3>
+                      <p className="text-white/80 mb-6">
+                        恭喜您！今天是您打卡之旅的第一天！
+                        <br /><br />
+                        您的打卡周期从 <span className="text-blue-300 font-medium">今天（{checkinSchedule.start_date}）</span> 开始，
+                        到 <span className="text-blue-300 font-medium">{checkinSchedule.end_date}</span> 结束。
+                        <br /><br />
+                        <span className="text-yellow-300 font-medium">✨ 每一个伟大的成就都始于勇敢的开始！</span>
+                        <br />
+                        相信自己，坚持下去，您一定能创造属于自己的精彩！💪
+                      </p>
+                    </>
+                  )
+                } else {
+                  return (
+                    <>
+                      <h3 className="text-xl font-bold text-white mb-4">打卡之旅继续中！</h3>
+                      <p className="text-white/80 mb-6">
+                        您的打卡周期从 <span className="text-blue-300 font-medium">{checkinSchedule.start_date}</span> 开始，
+                        到 <span className="text-blue-300 font-medium">{checkinSchedule.end_date}</span> 结束。
+                        <br /><br />
+                        坚持就是胜利，让我们一起努力，记录每一天的成长！💪
+                      </p>
+                    </>
+                  )
+                }
+              })()}
               <button
                 onClick={() => setShowWelcomeModal(false)}
                 className="px-6 py-2 bg-green-500/20 text-green-300 hover:bg-green-500/30 hover:text-green-200 rounded-lg transition-all duration-300"

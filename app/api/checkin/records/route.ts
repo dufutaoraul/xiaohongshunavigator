@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getBeijingDateString } from '@/lib/date-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const today = checkin_date || new Date().toISOString().split('T')[0]
+    const today = checkin_date || getBeijingDateString()
 
     console.log(`📝 [Checkin Records API] 创建打卡记录: ${student_id} - ${today}`)
 

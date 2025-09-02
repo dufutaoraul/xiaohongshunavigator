@@ -47,6 +47,14 @@ export default function AdminDashboard() {
   const [checkinStudents, setCheckinStudents] = useState<any[]>([])
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
   const [showStudentDetail, setShowStudentDetail] = useState(false)
+  const [showCheckinScheduleModal, setShowCheckinScheduleModal] = useState(false)
+  const [scheduleMode, setScheduleMode] = useState<'single' | 'batch'>('single')
+  const [scheduleStudentId, setScheduleStudentId] = useState('')
+  const [scheduleBatchStart, setScheduleBatchStart] = useState('')
+  const [scheduleBatchEnd, setScheduleBatchEnd] = useState('')
+  const [scheduleStartDate, setScheduleStartDate] = useState('')
+  const [scheduleLoading, setScheduleLoading] = useState(false)
+  const [scheduleMessage, setScheduleMessage] = useState('')
 
   // 权限检查
   useEffect(() => {
@@ -236,6 +244,73 @@ export default function AdminDashboard() {
     setShowStudentDetail(true)
   }
 
+  // 设置打卡日期
+  const handleSetCheckinSchedule = async () => {
+    if (!scheduleStartDate) {
+      setScheduleMessage('请选择开始日期')
+      return
+    }
+
+    if (scheduleMode === 'single' && !scheduleStudentId) {
+      setScheduleMessage('请输入学员学号')
+      return
+    }
+
+    if (scheduleMode === 'batch' && (!scheduleBatchStart || !scheduleBatchEnd)) {
+      setScheduleMessage('请输入学号范围')
+      return
+    }
+
+    setScheduleLoading(true)
+    setScheduleMessage('')
+
+    try {
+      const requestBody = {
+        mode: scheduleMode,
+        start_date: scheduleStartDate,
+        created_by: user?.student_id || 'admin'
+      }
+
+      if (scheduleMode === 'single') {
+        Object.assign(requestBody, { student_id: scheduleStudentId })
+      } else {
+        Object.assign(requestBody, {
+          batch_start_id: scheduleBatchStart,
+          batch_end_id: scheduleBatchEnd
+        })
+      }
+
+      const response = await fetch('/api/admin/checkin-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setScheduleMessage(`✅ ${result.message}`)
+        // 清空表单
+        setScheduleStudentId('')
+        setScheduleBatchStart('')
+        setScheduleBatchEnd('')
+        setScheduleStartDate('')
+        // 3秒后关闭模态框
+        setTimeout(() => {
+          setShowCheckinScheduleModal(false)
+          setScheduleMessage('')
+        }, 3000)
+      } else {
+        setScheduleMessage(`❌ 设置失败：${result.error}`)
+      }
+    } catch (error) {
+      console.error('设置打卡日期失败:', error)
+      setScheduleMessage('❌ 设置失败，请重试')
+    } finally {
+      setScheduleLoading(false)
+    }
+  }
+
   if (!isAdmin) {
     return null
   }
@@ -369,6 +444,12 @@ export default function AdminDashboard() {
                     className="cosmic-button px-4 py-2 rounded-lg text-sm font-medium"
                   >
                     ➕ 新增学员
+                  </button>
+                  <button
+                    onClick={() => setShowCheckinScheduleModal(true)}
+                    className="px-4 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 text-sm font-medium"
+                  >
+                    📅 设置打卡日期
                   </button>
                 </div>
               </div>
@@ -724,6 +805,135 @@ export default function AdminDashboard() {
           onClose={() => setShowAddModal(false)}
           onSuccess={loadDashboardData}
         />
+
+        {/* 设置打卡日期模态框 */}
+        {showCheckinScheduleModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="glass-effect p-6 rounded-xl border border-white/20 max-w-md w-full">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">📅 设置打卡日期</h3>
+                <button
+                  onClick={() => {
+                    setShowCheckinScheduleModal(false)
+                    setScheduleMessage('')
+                  }}
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* 模式选择 */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">设置模式</label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="single"
+                        checked={scheduleMode === 'single'}
+                        onChange={(e) => setScheduleMode(e.target.value as 'single' | 'batch')}
+                        className="mr-2"
+                      />
+                      <span className="text-white/80">单个学员</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="batch"
+                        checked={scheduleMode === 'batch'}
+                        onChange={(e) => setScheduleMode(e.target.value as 'single' | 'batch')}
+                        className="mr-2"
+                      />
+                      <span className="text-white/80">批量设置</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 开始日期 */}
+                <div>
+                  <label className="block text-white/80 text-sm font-medium mb-2">开始日期</label>
+                  <input
+                    type="date"
+                    value={scheduleStartDate}
+                    onChange={(e) => setScheduleStartDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                  />
+                </div>
+
+                {/* 单个学员设置 */}
+                {scheduleMode === 'single' && (
+                  <div>
+                    <label className="block text-white/80 text-sm font-medium mb-2">学员学号</label>
+                    <input
+                      type="text"
+                      value={scheduleStudentId}
+                      onChange={(e) => setScheduleStudentId(e.target.value)}
+                      placeholder="请输入学员学号"
+                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                    />
+                  </div>
+                )}
+
+                {/* 批量设置 */}
+                {scheduleMode === 'batch' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">起始学号</label>
+                      <input
+                        type="text"
+                        value={scheduleBatchStart}
+                        onChange={(e) => setScheduleBatchStart(e.target.value)}
+                        placeholder="例如：2024001"
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">结束学号</label>
+                      <input
+                        type="text"
+                        value={scheduleBatchEnd}
+                        onChange={(e) => setScheduleBatchEnd(e.target.value)}
+                        placeholder="例如：2024100"
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 消息显示 */}
+                {scheduleMessage && (
+                  <div className="p-3 bg-white/10 rounded-lg">
+                    <p className="text-white/80 text-sm">{scheduleMessage}</p>
+                  </div>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setShowCheckinScheduleModal(false)
+                      setScheduleMessage('')
+                    }}
+                    className="flex-1 px-4 py-2 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white rounded-lg transition-all duration-300"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleSetCheckinSchedule}
+                    disabled={scheduleLoading}
+                    className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {scheduleLoading ? '设置中...' : '确认设置'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

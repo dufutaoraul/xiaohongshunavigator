@@ -4,13 +4,17 @@ import { useState } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import GlobalUserMenu from '@/app/components/GlobalUserMenu';
 
 export default function HomeworkPage() {
   const { user } = useAuth();
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold gradient-text mb-4">

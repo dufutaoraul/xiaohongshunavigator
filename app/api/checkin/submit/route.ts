@@ -65,21 +65,21 @@ export async function POST(request: NextRequest) {
 
     // 首先检查表是否存在
     const { data: tableCheck, error: tableError } = await supabase
-      .from('checkin_records')
+      .from('student_checkins')
       .select('count(*)')
       .limit(1)
 
     if (tableError) {
       console.error('检查表存在性失败:', tableError)
-      return NextResponse.json({ 
-        success: false, 
-        error: '数据库表不存在或无法访问: ' + tableError.message 
+      return NextResponse.json({
+        success: false,
+        error: '数据库表不存在或无法访问: ' + tableError.message
       }, { status: 500 })
     }
 
     // 检查今天是否已经打卡
     const { data: existingCheckin, error: checkError } = await supabase
-      .from('checkin_records')
+      .from('student_checkins')
       .select('*')
       .eq('student_id', student_id)
       .eq('checkin_date', checkinDate)
@@ -98,9 +98,9 @@ export async function POST(request: NextRequest) {
       // 更新现有打卡记录
       console.log(`🔄 [Checkin] 更新现有打卡记录 ID: ${existingCheckin.id}`)
       const { data, error } = await supabase
-        .from('checkin_records')
+        .from('student_checkins')
         .update({
-          xiaohongshu_url,
+          xiaohongshu_link: xiaohongshu_url, // 使用正确的字段名
           updated_at: new Date().toISOString()
         })
         .eq('id', existingCheckin.id)
@@ -129,10 +129,8 @@ export async function POST(request: NextRequest) {
 
       const insertData = {
         student_id,
-        student_name,
         checkin_date: checkinDate,
-        xiaohongshu_url,
-        status: 'pending',
+        xiaohongshu_link: xiaohongshu_url, // 使用正确的字段名
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -140,7 +138,7 @@ export async function POST(request: NextRequest) {
       console.log('准备插入数据:', insertData)
 
       const { data, error } = await supabase
-        .from('checkin_records')
+        .from('student_checkins')
         .insert(insertData)
         .select()
 
@@ -200,7 +198,7 @@ export async function GET(request: NextRequest) {
     const startDateStr = getBeijingDateString(startDate)
 
     const { data: checkins, error } = await supabase
-      .from('checkin_records')
+      .from('student_checkins')
       .select('*')
       .eq('student_id', student_id)
       .gte('checkin_date', startDateStr)

@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getBeijingDateString } from './date-utils'
 
 // 打卡记录接口定义
 export interface CheckinRecord {
@@ -155,21 +156,22 @@ export async function getCheckinStats(studentId: string): Promise<CheckinStats> 
     const records = data || []
     const totalDays = records.length
 
-    // 计算当月打卡天数
-    const currentDate = new Date()
-    const currentYear = currentDate.getFullYear()
-    const currentMonth = currentDate.getMonth() + 1
+    // 计算当月打卡天数（基于北京时间）
+    const beijingToday = getBeijingDateString()
+    const currentYear = parseInt(beijingToday.split('-')[0])
+    const currentMonth = parseInt(beijingToday.split('-')[1])
     const currentMonthDays = records.filter(record => {
       const recordDate = new Date(record.checkin_date)
       return recordDate.getFullYear() === currentYear && recordDate.getMonth() + 1 === currentMonth
     }).length
 
-    // 计算连续打卡天数
+    // 计算连续打卡天数（基于北京时间）
     let consecutiveDays = 0
     if (records.length > 0) {
-      const today = new Date()
-      const todayStr = today.toISOString().split('T')[0]
-      const yesterdayStr = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const todayStr = getBeijingDateString()
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = getBeijingDateString(yesterday)
       
       // 从最近的记录开始计算连续天数
       const sortedRecords = records.sort((a, b) => new Date(b.checkin_date).getTime() - new Date(a.checkin_date).getTime())
@@ -209,12 +211,10 @@ export async function getCheckinStats(studentId: string): Promise<CheckinStats> 
   }
 }
 
-// 检查指定日期是否可以修改打卡记录
+// 检查指定日期是否可以修改打卡记录（基于北京时间）
 export function canModifyCheckin(checkinDate: string): boolean {
-  const today = new Date()
-  const checkinDateObj = new Date(checkinDate)
-  const todayStr = today.toISOString().split('T')[0]
-  
+  const todayStr = getBeijingDateString()
+
   // 只有当天的打卡记录可以修改
   return checkinDate === todayStr
 }

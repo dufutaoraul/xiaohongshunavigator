@@ -7,6 +7,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Submission, Assignment, SubmissionWithAssignment } from '@/types/homework';
 import { getDayTextFromAssignment, formatDate, getStatusColor } from '@/utils/homework-utils';
+import GlobalUserMenu from '@/app/components/GlobalUserMenu';
 
 function MyAssignmentsContent() {
   const { user } = useAuth();
@@ -288,7 +289,10 @@ function MyAssignmentsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
       <div className="container mx-auto px-4 py-8">
         {/* 顶部导航 */}
         <div className="mb-8">

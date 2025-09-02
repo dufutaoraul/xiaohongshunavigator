@@ -78,7 +78,7 @@ export default function LoginModal({ isOpen, onClose, onLogin, loading = false }
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="请输入密码（初始密码与学号相同）"
+                placeholder="请输入密码"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -129,8 +129,9 @@ export default function LoginModal({ isOpen, onClose, onLogin, loading = false }
         <div className="mt-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
           <h4 className="text-blue-300 font-medium text-sm mb-2">💡 温馨提示</h4>
           <ul className="text-blue-200/70 text-xs space-y-1">
-            <li>• 初始密码默认与学号相同</li>
-            <li>• 首次登录后建议修改密码</li>
+            <li>• 请输入您的学号和密码</li>
+            <li>• 新学员的初始密码通常与学号相同</li>
+            <li>• 登录后建议修改密码保障安全</li>
             <li>• 如忘记密码请联系管理员</li>
           </ul>
         </div>

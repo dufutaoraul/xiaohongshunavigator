@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getBeijingDateString } from '@/lib/date-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
     let maxStreak = 0
     let tempStreak = 0
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = getBeijingDateString()
     const sortedDates = allDates.sort().reverse() // 从今天开始往前算
 
     for (const date of sortedDates) {
