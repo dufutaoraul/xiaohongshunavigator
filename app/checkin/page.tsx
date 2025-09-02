@@ -40,6 +40,7 @@ export default function CheckinPage() {
   const [checkinSchedule, setCheckinSchedule] = useState<any>(null)
   const [showNoScheduleModal, setShowNoScheduleModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
+  const [showCheckinEndedModal, setShowCheckinEndedModal] = useState(false)
   const [hasShownWelcomeToday, setHasShownWelcomeToday] = useState(false)
 
   // 检查今天是否已经显示过欢迎弹窗
@@ -122,34 +123,49 @@ export default function CheckinPage() {
         console.log('今天日期:', todayStr)
         console.log('打卡安排:', result.data)
 
-        const activeSchedule = result.data.find((schedule: any) => {
-          const isInDateRange = schedule.start_date <= todayStr && schedule.end_date >= todayStr
-          const isActive = schedule.is_active
-          console.log(`检查安排: ${schedule.start_date} <= ${todayStr} <= ${schedule.end_date}, 在日期范围内: ${isInDateRange}, 是否活跃: ${isActive}`)
-          return isInDateRange && isActive
-        })
+        // 找到学员的打卡安排（不管是否在日期范围内）
+        const userSchedule = result.data.find((schedule: any) => schedule.is_active)
 
-        if (activeSchedule) {
-          // 在打卡周期内
-          setHasCheckinSchedule(true)
-          setCheckinSchedule(activeSchedule)
-          console.log('学员在打卡周期内:', activeSchedule)
+        if (userSchedule) {
+          const isInDateRange = userSchedule.start_date <= todayStr && userSchedule.end_date >= todayStr
+          const isBeforeStart = todayStr < userSchedule.start_date
+          const isAfterEnd = todayStr > userSchedule.end_date
 
-          // 只有今天还没有显示过欢迎弹窗时才显示
-          if (!hasShownWelcomeToday) {
-            console.log('🎉 [欢迎弹窗] 今天首次显示欢迎弹窗')
-            setShowWelcomeModal(true)
+          console.log(`检查安排: ${userSchedule.start_date} <= ${todayStr} <= ${userSchedule.end_date}`)
+          console.log(`在日期范围内: ${isInDateRange}, 开始前: ${isBeforeStart}, 结束后: ${isAfterEnd}`)
 
-            // 记录今天已经显示过欢迎弹窗
-            const today = getBeijingDateString()
-            const welcomeShownKey = `welcome_shown_${today}`
-            localStorage.setItem(welcomeShownKey, 'true')
-            setHasShownWelcomeToday(true)
+          if (isAfterEnd) {
+            // 打卡已结束
+            setHasCheckinSchedule(true)
+            setCheckinSchedule(userSchedule)
+            setShowCheckinEndedModal(true)
+            console.log('学员打卡已结束:', userSchedule)
+          } else if (isInDateRange) {
+            // 在打卡周期内
+            setHasCheckinSchedule(true)
+            setCheckinSchedule(userSchedule)
+            console.log('学员在打卡周期内:', userSchedule)
+
+            // 只有今天还没有显示过欢迎弹窗时才显示
+            if (!hasShownWelcomeToday) {
+              console.log('🎉 [欢迎弹窗] 今天首次显示欢迎弹窗')
+              setShowWelcomeModal(true)
+
+              // 记录今天已经显示过欢迎弹窗
+              const today = getBeijingDateString()
+              const welcomeShownKey = `welcome_shown_${today}`
+              localStorage.setItem(welcomeShownKey, 'true')
+              setHasShownWelcomeToday(true)
+            } else {
+              console.log('🔍 [欢迎弹窗] 今天已经显示过，跳过')
+            }
           } else {
-            console.log('🔍 [欢迎弹窗] 今天已经显示过，跳过')
+            // 打卡还未开始
+            setHasCheckinSchedule(false)
+            setShowNoScheduleModal(true)
           }
         } else {
-          // 不在打卡周期内
+          // 没有打卡安排
           setHasCheckinSchedule(false)
           setShowNoScheduleModal(true)
         }
@@ -258,11 +274,9 @@ export default function CheckinPage() {
       return recordDate.getFullYear() === currentYear && recordDate.getMonth() + 1 === currentMonth
     }).length
 
-    // 计算完成率（基于打卡周期的总天数）
-    const scheduleStartDate = new Date(schedule.start_date)
-    const scheduleEndDate = new Date(schedule.end_date)
-    const totalScheduleDays = Math.ceil((scheduleEndDate.getTime() - scheduleStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    const completionRate = totalScheduleDays > 0 ? (totalDays / totalScheduleDays) * 100 : 0
+    // 计算完成率（基于90天目标，不是93天周期）
+    const targetDays = 90
+    const completionRate = targetDays > 0 ? (totalDays / targetDays) * 100 : 0
 
     return {
       total_days: totalDays,
@@ -922,6 +936,31 @@ export default function CheckinPage() {
                 className="px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300"
               >
                 我知道了
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 打卡已结束的提示模态框 */}
+        {showCheckinEndedModal && checkinSchedule && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-md w-full text-center">
+              <div className="text-6xl mb-4">🎯</div>
+              <h3 className="text-xl font-bold text-white mb-4">您的打卡已经结束</h3>
+              <p className="text-white/80 mb-4">
+                打卡周期：{checkinSchedule.start_date} 至 {checkinSchedule.end_date}
+              </p>
+              <p className="text-white/60 mb-6">
+                点击下方按钮查看您的打卡详情
+              </p>
+              <button
+                onClick={() => {
+                  setShowCheckinEndedModal(false)
+                  router.push(`/checkin-details?student_id=${studentId}`)
+                }}
+                className="px-6 py-2 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 hover:text-purple-200 rounded-lg transition-all duration-300"
+              >
+                查看打卡详情
               </button>
             </div>
           </div>

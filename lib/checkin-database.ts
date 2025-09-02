@@ -195,9 +195,9 @@ export async function getCheckinStats(studentId: string): Promise<CheckinStats> 
       }
     }
 
-    // 计算完成率（假设目标是90天）
+    // 计算完成率（基于90天目标，不限制最大值为100%）
     const targetDays = 90
-    const completionRate = Math.min((totalDays / targetDays) * 100, 100)
+    const completionRate = targetDays > 0 ? (totalDays / targetDays) * 100 : 0
 
     return {
       total_days: totalDays,

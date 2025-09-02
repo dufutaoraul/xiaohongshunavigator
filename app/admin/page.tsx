@@ -167,14 +167,9 @@ export default function AdminDashboard() {
 
       // 计算每个学员的打卡状态
       const studentStats = allStudents.map((student: any) => {
-        // 找到该学员的打卡安排（支持单个和批量模式）
+        // 找到该学员的打卡安排
         const studentSchedule = schedules.find((s: any) => {
-          if (s.checkin_mode === 'single') {
-            return s.student_id === student.student_id
-          } else if (s.checkin_mode === 'batch') {
-            return student.student_id >= s.batch_start_id && student.student_id <= s.batch_end_id
-          }
-          return false
+          return s.student_id === student.student_id
         })
 
         if (!studentSchedule) {
@@ -202,7 +197,9 @@ export default function AdminDashboard() {
 
         const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
         const checkinDays = studentRecords.length
-        const completionRate = totalDays > 0 ? (checkinDays / totalDays) * 100 : 0
+        // 完成率基于90天目标计算，不是基于93天周期
+        const targetDays = 90
+        const completionRate = targetDays > 0 ? (checkinDays / targetDays) * 100 : 0
 
         // 使用北京时间进行状态判断
         const todayStr = getBeijingDateString()
@@ -678,7 +675,7 @@ export default function AdminDashboard() {
                   <p className="text-white/60 text-sm">
                     {checkinType === 'active' ? '这些学员正在打卡中' :
                      checkinType === 'qualified' ? '这些学员已完成打卡要求（93天内完成90次打卡）' :
-                     checkinType === 'unqualified' ? '这些学员打卡不合格或有忘记打卡情况' : '学员管理'}
+                     checkinType === 'unqualified' ? '这些学员未完成打卡要求(93天内完成90次打卡)' : '学员管理'}
                   </p>
                 </div>
 
