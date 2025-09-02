@@ -67,8 +67,7 @@ export async function POST(request: NextRequest) {
           .update({
             start_date,
             end_date,
-            created_by,
-            updated_at: new Date().toISOString()
+            created_by
           })
           .eq('id', existingSchedule.id)
           .select()
