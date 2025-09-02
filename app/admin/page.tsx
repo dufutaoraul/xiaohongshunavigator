@@ -245,12 +245,12 @@ export default function AdminDashboard() {
       // 添加调试信息
       console.log(`📊 [打卡数据加载] 类型: ${type}`, {
         总学员数: allStudents.length,
-        有安排的学员数: studentStats.filter(s => s.schedule).length,
+        有安排的学员数: studentStats.filter((s: any) => s.schedule).length,
         各状态学员数: {
-          active: studentStats.filter(s => s.status === 'active').length,
-          qualified: studentStats.filter(s => s.status === 'qualified').length,
-          unqualified: studentStats.filter(s => s.status === 'unqualified').length,
-          not_started: studentStats.filter(s => s.status === 'not_started').length
+          active: studentStats.filter((s: any) => s.status === 'active').length,
+          qualified: studentStats.filter((s: any) => s.status === 'qualified').length,
+          unqualified: studentStats.filter((s: any) => s.status === 'unqualified').length,
+          not_started: studentStats.filter((s: any) => s.status === 'not_started').length
         },
         过滤后学员数: checkinFilteredStudents.length
       })
