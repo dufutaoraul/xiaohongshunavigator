@@ -243,8 +243,8 @@ export default function AdminDashboard() {
       })
 
       // 根据类型过滤学员
-      const filteredStudents = studentStats.filter((s: any) => s.status === type)
-      setCheckinStudents(filteredStudents)
+      const checkinFilteredStudents = studentStats.filter((s: any) => s.status === type)
+      setCheckinStudents(checkinFilteredStudents)
 
     } catch (error) {
       console.error('Failed to load checkin data:', error)
