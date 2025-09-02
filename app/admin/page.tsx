@@ -244,6 +244,20 @@ export default function AdminDashboard() {
 
       // 根据类型过滤学员
       const checkinFilteredStudents = studentStats.filter((s: any) => s.status === type)
+
+      // 添加调试信息
+      console.log(`📊 [打卡数据加载] 类型: ${type}`, {
+        总学员数: allStudents.length,
+        有安排的学员数: studentStats.filter(s => s.schedule).length,
+        各状态学员数: {
+          active: studentStats.filter(s => s.status === 'active').length,
+          qualified: studentStats.filter(s => s.status === 'qualified').length,
+          unqualified: studentStats.filter(s => s.status === 'unqualified').length,
+          not_started: studentStats.filter(s => s.status === 'not_started').length
+        },
+        过滤后学员数: checkinFilteredStudents.length
+      })
+
       setCheckinStudents(checkinFilteredStudents)
 
     } catch (error) {
@@ -418,39 +432,6 @@ export default function AdminDashboard() {
         {/* 条件渲染：统计面板、学员管理或打卡管理 */}
         {!showStudentManagement && !showCheckinManagement ? (
           <>
-            {/* 快速操作区域 */}
-            <div className="glass-effect p-6 rounded-xl mb-8">
-              <h2 className="text-2xl font-bold text-white mb-6 text-center">⚡ 快速操作</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                  onClick={() => window.open('/api/admin/checkin-review?status=pending', '_blank')}
-                  className="p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg hover:bg-yellow-500/30 transition-colors"
-                >
-                  <div className="text-2xl mb-2">📋</div>
-                  <div className="text-white font-medium">待审核记录</div>
-                  <div className="text-yellow-300 text-sm">查看待审核的打卡</div>
-                </button>
-
-                <button
-                  onClick={() => window.open('/api/admin/export?type=checkin_records&format=csv', '_blank')}
-                  className="p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors"
-                >
-                  <div className="text-2xl mb-2">📊</div>
-                  <div className="text-white font-medium">导出数据</div>
-                  <div className="text-blue-300 text-sm">导出打卡记录CSV</div>
-                </button>
-
-                <button
-                  onClick={() => window.open('/api/admin/export?type=statistics&format=json', '_blank')}
-                  className="p-4 bg-green-500/20 border border-green-500/30 rounded-lg hover:bg-green-500/30 transition-colors"
-                >
-                  <div className="text-2xl mb-2">📈</div>
-                  <div className="text-white font-medium">统计报告</div>
-                  <div className="text-green-300 text-sm">生成统计报告</div>
-                </button>
-              </div>
-            </div>
-
             {/* 统计卡片 */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <div className="glass-effect p-6 rounded-xl">

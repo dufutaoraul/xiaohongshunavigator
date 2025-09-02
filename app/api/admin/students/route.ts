@@ -42,6 +42,24 @@ async function verifyAdminAuth(request: NextRequest) {
   }
 }
 
+// 生成学号范围的函数
+function generateStudentIdRange(startId: string, endId: string): string[] {
+  const studentIds: string[] = []
+
+  // 简单的数字递增逻辑
+  const startNum = parseInt(startId.replace(/\D/g, ''))
+  const endNum = parseInt(endId.replace(/\D/g, ''))
+  const prefix = startId.replace(/\d+$/, '')
+
+  if (startNum && endNum && startNum <= endNum) {
+    for (let i = startNum; i <= endNum; i++) {
+      studentIds.push(prefix + i.toString().padStart(startId.replace(/\D/g, '').length, '0'))
+    }
+  }
+
+  return studentIds
+}
+
 // GET - 获取所有学员列表
 export async function GET(request: NextRequest) {
   try {
@@ -55,6 +73,9 @@ export async function GET(request: NextRequest) {
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     // }
 
+    console.log('🔍 [学员列表] 开始获取学员数据...')
+
+    // 获取所有学员基本信息
     const { data: students, error } = await supabaseAdmin
       .from('users')
       .select(`
@@ -78,9 +99,61 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    console.log(`📊 [学员列表] 获取到 ${students?.length || 0} 个学员`)
+
+    // 获取所有活跃的打卡安排
+    const { data: schedules, error: schedulesError } = await supabaseAdmin
+      .from('checkin_schedules')
+      .select('*')
+      .eq('is_active', true)
+
+    if (schedulesError) {
+      console.error('Failed to fetch schedules:', schedulesError)
+      return NextResponse.json(
+        { error: 'Failed to fetch schedules' },
+        { status: 500 }
+      )
+    }
+
+    console.log(`📅 [学员列表] 获取到 ${schedules?.length || 0} 个活跃打卡安排`)
+
+    // 为每个学员匹配对应的打卡安排
+    const studentsWithSchedules = (students || []).map(student => {
+      let matchedSchedule = null
+
+      if (schedules && schedules.length > 0) {
+        // 查找匹配的打卡安排
+        for (const schedule of schedules) {
+          if (schedule.student_id && !schedule.batch_start_id && !schedule.batch_end_id) {
+            // 单个学员模式
+            if (schedule.student_id === student.student_id) {
+              matchedSchedule = schedule
+              break
+            }
+          } else if (schedule.batch_start_id && schedule.batch_end_id) {
+            // 批量模式 - 检查学员ID是否在范围内
+            const batchStudentIds = generateStudentIdRange(schedule.batch_start_id, schedule.batch_end_id)
+            if (batchStudentIds.includes(student.student_id)) {
+              matchedSchedule = schedule
+              break
+            }
+          }
+        }
+      }
+
+      console.log(`👤 [学员列表] 学员 ${student.student_id} 匹配到安排: ${matchedSchedule ? 'YES' : 'NO'}`)
+
+      return {
+        ...student,
+        schedule: matchedSchedule
+      }
+    })
+
+    console.log(`✅ [学员列表] 完成学员数据处理，返回 ${studentsWithSchedules.length} 个学员`)
+
     return NextResponse.json({
       success: true,
-      students: students || []
+      students: studentsWithSchedules
     })
 
   } catch (error) {
