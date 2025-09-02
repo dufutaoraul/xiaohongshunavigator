@@ -67,7 +67,8 @@ export default function ProfilePage() {
         real_name: decodeURIComponent(editRealName || ''),
         persona: '',
         keywords: '',
-        vision: ''
+        vision: '',
+        xiaohongshu_profile_url: ''
       })
       setIsExistingUser(true)
       setIsAuthenticated(true)
@@ -90,7 +91,8 @@ export default function ProfilePage() {
             real_name: userData.real_name || '',
             persona: userData.persona || '',
             keywords: userData.keywords || '',
-            vision: userData.vision || ''
+            vision: userData.vision || '',
+            xiaohongshu_profile_url: userData.xiaohongshu_profile_url || ''
           })
         }
       }
@@ -175,7 +177,8 @@ export default function ProfilePage() {
             real_name: userData.real_name || '',
             persona: userData.persona || '',
             keywords: userData.keywords || '',
-            vision: userData.vision || ''
+            vision: userData.vision || '',
+            xiaohongshu_profile_url: userData.xiaohongshu_profile_url || ''
           }))
           
           // 判断是否为老用户（有内容）
@@ -232,7 +235,8 @@ export default function ProfilePage() {
           real_name: result.user.real_name || '',
           persona: result.user.persona || '',
           keywords: result.user.keywords || '',
-          vision: result.user.vision || ''
+          vision: result.user.vision || '',
+          xiaohongshu_profile_url: result.user.xiaohongshu_profile_url || ''
         })
         
         const hasContent = Boolean(result.user.persona || result.user.keywords || result.user.vision)
@@ -303,7 +307,8 @@ export default function ProfilePage() {
         real_name: student.real_name || '',
         persona: student.persona || '',
         keywords: student.keywords || '',
-        vision: student.vision || ''
+        vision: student.vision || '',
+        xiaohongshu_profile_url: student.xiaohongshu_profile_url || ''
       })
       
       // 判断是否为老用户（有内容）
@@ -317,7 +322,8 @@ export default function ProfilePage() {
         real_name: '',
         persona: '',
         keywords: '',
-        vision: ''
+        vision: '',
+        xiaohongshu_profile_url: ''
       })
       setIsExistingUser(false)
     }
