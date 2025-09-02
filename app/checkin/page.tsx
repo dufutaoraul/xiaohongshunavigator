@@ -90,19 +90,22 @@ export default function CheckinPage() {
           // 检查打卡安排
           checkCheckinSchedule(studentId)
         } else {
-          console.log('用户没有小红书主页，显示绑定模态框')
+          console.log('用户没有小红书主页，跳转到绑定页面')
           setHasXiaohongshuProfile(false)
-          setShowProfileModal(true) // 显示绑定小红书主页的模态框
+          // 跳转到profile页面进行小红书主页绑定
+          window.location.href = '/profile'
         }
       } else {
         console.error('获取用户信息失败:', response.status)
         setHasXiaohongshuProfile(false)
-        setShowProfileModal(true)
+        // 跳转到profile页面进行小红书主页绑定
+        window.location.href = '/profile'
       }
     } catch (error) {
       console.error('检查小红书主页失败:', error)
       setHasXiaohongshuProfile(false)
-      setShowProfileModal(true)
+      // 跳转到profile页面进行小红书主页绑定
+      window.location.href = '/profile'
     }
   }
 
