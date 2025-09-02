@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getBeijingDateString } from '@/lib/date-utils'
 
+// 生成学号范围的函数
+function generateStudentIdRange(startId: string, endId: string): string[] {
+  const studentIds: string[] = []
+
+  // 简单的数字递增逻辑
+  const startNum = parseInt(startId.replace(/\D/g, ''))
+  const endNum = parseInt(endId.replace(/\D/g, ''))
+  const prefix = startId.replace(/\d+$/, '')
+
+  if (startNum && endNum && startNum <= endNum) {
+    for (let i = startNum; i <= endNum; i++) {
+      studentIds.push(prefix + i.toString().padStart(startId.replace(/\D/g, '').length, '0'))
+    }
+  }
+
+  return studentIds
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Getting checkin statistics...')
@@ -32,21 +50,24 @@ export async function GET(request: NextRequest) {
       for (const schedule of schedules) {
         if (schedule.start_date <= todayStr && schedule.end_date >= todayStr) {
           // 这个安排在今天是活跃的
-          if (schedule.checkin_mode === 'single' && schedule.student_id) {
+          console.log('活跃的打卡安排:', schedule)
+
+          if (schedule.student_id && !schedule.batch_start_id && !schedule.batch_end_id) {
+            // 单个学员模式（有 student_id，没有 batch 字段）
             activePunches += 1
             activeStudentIds.push(schedule.student_id)
-          } else if (schedule.checkin_mode === 'batch' && schedule.batch_start_id && schedule.batch_end_id) {
-            // 批量模式，需要计算范围内的学员数量
-            const { data: batchStudents, error: batchError } = await supabase
-              .from('users')
-              .select('student_id')
-              .eq('role', 'student')
-              .gte('student_id', schedule.batch_start_id)
-              .lte('student_id', schedule.batch_end_id)
-            
-            if (!batchError && batchStudents) {
-              activePunches += batchStudents.length
-              activeStudentIds.push(...batchStudents.map(s => s.student_id))
+            console.log('单个学员:', schedule.student_id)
+          } else if (schedule.batch_start_id && schedule.batch_end_id) {
+            // 批量模式（有 batch 字段）
+            console.log('批量模式:', schedule.batch_start_id, 'to', schedule.batch_end_id)
+
+            // 生成学号范围
+            const batchStudentIds = generateStudentIdRange(schedule.batch_start_id, schedule.batch_end_id)
+
+            if (batchStudentIds.length > 0) {
+              activePunches += batchStudentIds.length
+              activeStudentIds.push(...batchStudentIds)
+              console.log('批量学员数量:', batchStudentIds.length)
             }
           }
         }
@@ -69,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     // 获取所有打卡记录
     const { data: allRecords, error: recordsError } = await supabase
-      .from('student_checkins')
+      .from('checkin_records')
       .select('student_id, checkin_date')
 
     if (recordsError) {
@@ -89,9 +110,11 @@ export async function GET(request: NextRequest) {
     for (const studentId of activeStudentIds) {
       // 找到该学员的打卡安排
       const studentSchedule = schedules.find((s: any) => {
-        if (s.checkin_mode === 'single') {
+        if (s.student_id && !s.batch_start_id && !s.batch_end_id) {
+          // 单个学员模式
           return s.student_id === studentId
-        } else if (s.checkin_mode === 'batch') {
+        } else if (s.batch_start_id && s.batch_end_id) {
+          // 批量模式
           return studentId >= s.batch_start_id && studentId <= s.batch_end_id
         }
         return false
