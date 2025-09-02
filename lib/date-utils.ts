@@ -7,12 +7,16 @@
  */
 export function getBeijingDateString(date?: Date): string {
   const now = date || new Date()
-  
-  // 获取北京时间（UTC+8）
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000)
-  const beijingTime = new Date(utcTime + (8 * 3600000))
-  
-  return beijingTime.toISOString().split('T')[0]
+
+  // 使用更可靠的方法获取北京时间
+  const beijingTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
+
+  // 格式化为 YYYY-MM-DD
+  const year = beijingTime.getFullYear()
+  const month = String(beijingTime.getMonth() + 1).padStart(2, '0')
+  const day = String(beijingTime.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
 }
 
 /**
@@ -20,12 +24,9 @@ export function getBeijingDateString(date?: Date): string {
  */
 export function getBeijingDate(date?: Date): Date {
   const now = date || new Date()
-  
-  // 获取北京时间（UTC+8）
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000)
-  const beijingTime = new Date(utcTime + (8 * 3600000))
-  
-  return beijingTime
+
+  // 使用更可靠的方法获取北京时间
+  return new Date(now.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
 }
 
 /**

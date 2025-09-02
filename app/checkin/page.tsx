@@ -286,9 +286,21 @@ export default function CheckinPage() {
     const days = []
     const current = new Date(startDate)
 
+    // 详细的时间调试信息
+    const now = new Date()
+    const beijingTimeNew = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
+    const beijingDateStrNew = `${beijingTimeNew.getFullYear()}-${String(beijingTimeNew.getMonth() + 1).padStart(2, '0')}-${String(beijingTimeNew.getDate()).padStart(2, '0')}`
+
     console.log('🗓️ 日历生成调试信息:', {
       当前选择年月: `${year}-${month + 1}`,
-      北京时间今天: beijingToday,
+      系统本地时间: now.toISOString(),
+      系统本地时间字符串: now.toString(),
+      系统时区: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      系统时区偏移: now.getTimezoneOffset(),
+      新方法北京时间: beijingTimeNew.toString(),
+      新方法北京日期: beijingDateStrNew,
+      工具函数北京时间今天: beijingToday,
+      是否一致: beijingDateStrNew === beijingToday,
       日历开始日期: startDate.toISOString().split('T')[0]
     })
 
@@ -315,7 +327,7 @@ export default function CheckinPage() {
         hasCheckin: !!checkinRecord,
         checkinStatus: checkinRecord?.status || null,
         checkinRecord: checkinRecord, // 添加完整的打卡记录
-        canCheckin: isToday && isInSchedule,
+        canCheckin: isToday && isInSchedule, // 只有今天且在打卡周期内才能打卡
         isInSchedule // 是否在打卡周期内
       })
 
