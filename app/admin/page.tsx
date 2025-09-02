@@ -43,6 +43,8 @@ export default function AdminDashboard() {
   const [showStudentManagement, setShowStudentManagement] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCheckinManagement, setShowCheckinManagement] = useState(false)
+  const [showEditStudentModal, setShowEditStudentModal] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [checkinType, setCheckinType] = useState<'active' | 'qualified' | 'unqualified'>('active')
   const [checkinStudents, setCheckinStudents] = useState<any[]>([])
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
@@ -267,9 +269,40 @@ export default function AdminDashboard() {
 
   // 编辑学员
   const handleEditStudent = (student: Student) => {
-    // 跳转到学员资料设置界面
-    const editUrl = `/profile?edit=true&student_id=${student.student_id}&name=${encodeURIComponent(student.name)}&real_name=${encodeURIComponent((student as any).real_name || '')}`
-    window.open(editUrl, '_blank')
+    setEditingStudent(student)
+    setShowEditStudentModal(true)
+  }
+
+  // 更新学员信息
+  const handleUpdateStudent = async (studentId: string, name: string) => {
+    try {
+      const response = await fetch('/api/admin/students', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_id: studentId,
+          name: name
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        // 更新本地学员列表
+        setStudents(prev => prev.map(s =>
+          s.student_id === studentId ? { ...s, name } : s
+        ))
+        setShowEditStudentModal(false)
+        setEditingStudent(null)
+        return true
+      } else {
+        console.error('更新学员失败:', result.error)
+        return false
+      }
+    } catch (error) {
+      console.error('更新学员失败:', error)
+      return false
+    }
   }
 
   // 查看学员打卡详情
@@ -1059,6 +1092,125 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* 编辑学员模态框 */}
+        {showEditStudentModal && editingStudent && (
+          <EditStudentModal
+            student={editingStudent}
+            onClose={() => {
+              setShowEditStudentModal(false)
+              setEditingStudent(null)
+            }}
+            onUpdate={handleUpdateStudent}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// 编辑学员模态框组件
+function EditStudentModal({
+  student,
+  onClose,
+  onUpdate
+}: {
+  student: Student
+  onClose: () => void
+  onUpdate: (studentId: string, name: string) => Promise<boolean>
+}) {
+  const [name, setName] = useState(student.name)
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!name.trim()) {
+      setMessage('请输入学员姓名')
+      return
+    }
+
+    setLoading(true)
+    setMessage('')
+
+    const success = await onUpdate(student.student_id, name.trim())
+
+    if (success) {
+      setMessage('✅ 更新成功！')
+      setTimeout(() => {
+        onClose()
+      }, 1500)
+    } else {
+      setMessage('❌ 更新失败，请重试')
+    }
+
+    setLoading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="glass-effect p-6 rounded-xl border border-white/20 max-w-md w-full">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-white">✏️ 编辑学员信息</h3>
+          <button
+            onClick={onClose}
+            className="text-white/60 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-white/80 text-sm font-medium mb-2">学号</label>
+            <input
+              type="text"
+              value={student.student_id}
+              disabled
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white/60 cursor-not-allowed"
+            />
+            <p className="text-white/50 text-xs mt-1">学号不可修改</p>
+          </div>
+
+          <div>
+            <label className="block text-white/80 text-sm font-medium mb-2">姓名 *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="请输入学员姓名"
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+              disabled={loading}
+            />
+          </div>
+
+          {message && (
+            <div className="p-3 bg-white/10 rounded-lg">
+              <p className="text-white/80 text-sm">{message}</p>
+            </div>
+          )}
+
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white rounded-lg transition-all duration-300 disabled:opacity-50"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !name.trim()}
+              className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? '更新中...' : '确认更新'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

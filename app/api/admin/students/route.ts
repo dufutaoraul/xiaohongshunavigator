@@ -265,31 +265,32 @@ export async function PUT(request: NextRequest) {
     // }
 
     const body = await request.json()
-    const { id, student_id, name, real_name, role, password } = body
+    const { student_id, name, real_name, role, password } = body
 
-    if (!id) {
+    if (!student_id) {
       return NextResponse.json(
-        { error: 'Missing student ID' },
+        { error: 'Missing student_id' },
         { status: 400 }
       )
     }
 
     // 准备更新数据
     const updateData: any = {}
-    if (student_id) updateData.student_id = student_id
     if (name) updateData.name = name
     if (real_name !== undefined) updateData.real_name = real_name
     if (role) updateData.role = role
-    
+
     // 如果提供了新密码，进行加密
     if (password) {
       updateData.password = await bcrypt.hash(password, 10)
     }
 
+    console.log('更新学员信息:', { student_id, updateData })
+
     const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('users')
       .update(updateData)
-      .eq('id', id)
+      .eq('student_id', student_id)
       .select()
       .single()
 

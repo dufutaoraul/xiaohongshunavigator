@@ -3,10 +3,23 @@ import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 [Checkin Schedule API] 开始处理打卡日期设置请求')
+
+    // 检查环境变量
+    console.log('🔍 [Checkin Schedule API] 环境变量检查:', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...'
+    })
+
     const body = await request.json()
     const { mode, student_id, batch_start_id, batch_end_id, start_date, created_by, force_update } = body
 
+    console.log('🔍 [Checkin Schedule API] 请求参数:', { mode, student_id, batch_start_id, batch_end_id, start_date, created_by, force_update })
+
     if (!start_date || !created_by) {
+      console.error('❌ [Checkin Schedule API] 缺少必要参数')
       return NextResponse.json({
         success: false,
         error: 'Missing required fields: start_date, created_by'
@@ -18,6 +31,35 @@ export async function POST(request: NextRequest) {
     const endDateObj = new Date(startDateObj.getTime() + (92 * 24 * 60 * 60 * 1000))
 
     const end_date = endDateObj.toISOString().split('T')[0]
+
+    console.log('🔍 [Checkin Schedule API] 日期计算:', { start_date, end_date })
+
+    // 测试 Supabase 连接
+    console.log('🔍 [Checkin Schedule API] 测试数据库连接...')
+    try {
+      const { data: testData, error: testError } = await supabase
+        .from('checkin_schedules')
+        .select('count(*)')
+        .limit(1)
+
+      if (testError) {
+        console.error('❌ [Checkin Schedule API] 数据库连接测试失败:', testError)
+        return NextResponse.json({
+          success: false,
+          error: 'Database connection failed',
+          details: testError.message
+        }, { status: 500 })
+      }
+
+      console.log('✅ [Checkin Schedule API] 数据库连接正常')
+    } catch (dbError) {
+      console.error('❌ [Checkin Schedule API] 数据库连接异常:', dbError)
+      return NextResponse.json({
+        success: false,
+        error: 'Database connection exception',
+        details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+      }, { status: 500 })
+    }
 
     if (mode === 'single') {
       if (!student_id) {
