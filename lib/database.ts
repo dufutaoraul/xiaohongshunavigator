@@ -10,9 +10,11 @@ export interface StudentInfo {
   id?: string
   student_id: string
   name: string
+  real_name?: string  // 真实姓名，用于生成证书
   persona?: string
   keywords?: string
   vision?: string
+  xiaohongshu_profile_url?: string  // 小红书主页链接
   created_at?: string
 }
 
@@ -43,11 +45,13 @@ export async function getStudentByStudentId(studentId: string): Promise<StudentI
 // 创建或更新学员信息
 export async function upsertStudent(studentData: StudentInfo): Promise<boolean> {
   try {
+    console.log('Upserting student data:', studentData)
     const { error } = await supabase
       .from('users')
       .upsert({
         student_id: studentData.student_id,
         name: studentData.name,
+        real_name: studentData.real_name,
         persona: studentData.persona,
         keywords: studentData.keywords,
         vision: studentData.vision
@@ -55,7 +59,11 @@ export async function upsertStudent(studentData: StudentInfo): Promise<boolean> 
         onConflict: 'student_id'
       })
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase upsert error:', error)
+      throw error
+    }
+    console.log('Student data upserted successfully')
     return true
   } catch (error) {
     console.error('Error upserting student:', error)

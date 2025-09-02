@@ -46,23 +46,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { student_id, persona, keywords, vision } = body
+    const { student_id, name, real_name, persona, keywords, vision, xiaohongshu_profile_url } = body
 
-    if (!student_id || !persona || !keywords || !vision) {
+    if (!student_id) {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'student_id is required' },
         { status: 400 }
       )
     }
 
+    // 构建更新数据对象，只包含提供的字段
+    const updateData: any = { student_id }
+    if (name !== undefined) updateData.name = name
+    if (real_name !== undefined) updateData.real_name = real_name
+    if (persona !== undefined) updateData.persona = persona
+    if (keywords !== undefined) updateData.keywords = keywords
+    if (vision !== undefined) updateData.vision = vision
+    if (xiaohongshu_profile_url !== undefined) updateData.xiaohongshu_profile_url = xiaohongshu_profile_url
+
+    console.log('Updating user data:', updateData)
+
     const { data, error } = await supabase
       .from('users')
-      .upsert({
-        student_id,
-        persona,
-        keywords,
-        vision
-      }, {
+      .upsert(updateData, {
         onConflict: 'student_id'
       })
       .select()
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json({ success: true, data })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json(
@@ -84,4 +90,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// PUT /api/user - 更新用户信息（与POST相同逻辑）
+export async function PUT(request: NextRequest) {
+  return POST(request) // 复用POST方法的逻辑
 }

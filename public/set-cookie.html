@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie配置助手</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #ff2442;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #e01e3c;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍪 小红书Cookie配置助手</h1>
+        
+        <div style="margin: 20px 0;">
+            <h3>快速测试真实数据</h3>
+            <p>使用您提供的Cookie测试真实的小红书搜索功能：</p>
+            
+            <button onclick="testWithRealCookie()">测试真实搜索（美食+最多点赞）</button>
+            <button onclick="testTimeSort()">测试最新发布排序</button>
+            <button onclick="testGeneralSort()">测试综合排序</button>
+            
+            <div id="result"></div>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h3>Cookie信息</h3>
+            <p><strong>当前Cookie:</strong></p>
+            <pre id="cookieDisplay">abRequestId=85e4a98f-1e65-5593-9ad0-97c2b56a542f; a1=1951352c076nndtsnmfm02bcakbnkomtr4d6nwszn50000394623; webId=ff36210716579653650871d7b15d612c; gid=yj2yq2JSYWFYyj2yq2JS84EMWKIIf9MI6i68fuIJDS0TDK28ITl69I888qj4KJq8Kjq8yf0Y; xsecappid=xhs-pc-web; webBuild=4.76.0; loadts=1755751145321; acw_tc=0a0bb22417557511454984619e0fa4de974ed3380c8f7e4c3ffe5018727e69; websectiga=2845367ec3848418062e761c09db7caf0e8b79d132ccdd1a4f8e64a11d0cac0d; sec_poison_id=39e33dc7-8b83-443a-8bbd-a7355b1231bb; web_session=040069b6d4ee5a7980e176eb933a4bd6c25b6b; unread={%22ub%22:%2268a57ea7000000001c031c25%22%2C%22ue%22:%226889ed0500000000020010ae%22%2C%22uc%22:18}</pre>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <p><a href="/test-xhs-api.html" target="_blank">→ 打开完整测试页面</a></p>
+        </div>
+    </div>
+
+    <script>
+        const COOKIE = 'abRequestId=85e4a98f-1e65-5593-9ad0-97c2b56a542f; a1=1951352c076nndtsnmfm02bcakbnkomtr4d6nwszn50000394623; webId=ff36210716579653650871d7b15d612c; gid=yj2yq2JSYWFYyj2yq2JS84EMWKIIf9MI6i68fuIJDS0TDK28ITl69I888qj4KJq8Kjq8yf0Y; xsecappid=xhs-pc-web; webBuild=4.76.0; loadts=1755751145321; acw_tc=0a0bb22417557511454984619e0fa4de974ed3380c8f7e4c3ffe5018727e69; websectiga=2845367ec3848418062e761c09db7caf0e8b79d132ccdd1a4f8e64a11d0cac0d; sec_poison_id=39e33dc7-8b83-443a-8bbd-a7355b1231bb; web_session=040069b6d4ee5a7980e176eb933a4bd6c25b6b; unread={%22ub%22:%2268a57ea7000000001c031c25%22%2C%22ue%22:%226889ed0500000000020010ae%22%2C%22uc%22:18}';
+
+        async function testSearch(keyword, sortBy, description) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<p>正在测试 ${description}...</p>`;
+            
+            try {
+                const response = await fetch('/api/xhs/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'search',
+                        keyword: keyword,
+                        sortBy: sortBy,
+                        pageSize: 3,
+                        cookies: COOKIE
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && !data.error) {
+                    let statusHtml = '';
+                    if (data.status === 'success') {
+                        statusHtml = `
+                            <div class="result">
+                                <h4>✅ 真实数据获取成功！</h4>
+                                <p><strong>关键词:</strong> ${data.keyword}</p>
+                                <p><strong>排序方式:</strong> ${data.sort_name}</p>
+                                <p><strong>结果数量:</strong> ${data.total_count}</p>
+                                <p><strong>数据类型:</strong> 真实小红书数据</p>
+                                <h5>笔记列表:</h5>
+                                <div style="max-height: 300px; overflow-y: auto;">
+                        `;
+                        
+                        data.notes.forEach((note, index) => {
+                            statusHtml += `
+                                <div style="border: 1px solid #eee; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                                    <h6>${index + 1}. ${note.title || '无标题'}</h6>
+                                    <p><strong>作者:</strong> ${note.user?.nickname || '未知'}</p>
+                                    <p><strong>类型:</strong> ${note.type}</p>
+                                    <p><strong>笔记ID:</strong> <code>${note.note_id}</code></p>
+                                    ${note.interact_info ? `<p><strong>互动:</strong> 👍${note.interact_info.liked_count || 0} 💬${note.interact_info.comment_count || 0} ⭐${note.interact_info.collected_count || 0}</p>` : ''}
+                                    ${note.desc ? `<p><strong>描述:</strong> ${note.desc.substring(0, 100)}${note.desc.length > 100 ? '...' : ''}</p>` : ''}
+                                </div>
+                            `;
+                        });
+                        
+                        statusHtml += '</div></div>';
+                    } else {
+                        statusHtml = `
+                            <div class="result error">
+                                <h4>⚠️ 获取演示数据</h4>
+                                <p><strong>状态:</strong> ${data.status}</p>
+                                <p><strong>说明:</strong> ${data.message}</p>
+                                <p>可能原因：Cookie已过期或需要更新</p>
+                            </div>
+                        `;
+                    }
+                    
+                    resultDiv.innerHTML = statusHtml;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h4>❌ 测试失败</h4>
+                            <p><strong>错误:</strong> ${data.error || '未知错误'}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h4>❌ 网络错误</h4>
+                        <p><strong>错误详情:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testWithRealCookie() {
+            await testSearch('美食', 'likes', '真实搜索 - 美食 + 最多点赞');
+        }
+
+        async function testTimeSort() {
+            await testSearch('旅游', 'time', '真实搜索 - 旅游 + 最新发布');
+        }
+
+        async function testGeneralSort() {
+            await testSearch('穿搭', 'general', '真实搜索 - 穿搭 + 综合排序');
+        }
+    </script>
+</body>
+</html>

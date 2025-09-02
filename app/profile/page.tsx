@@ -8,14 +8,17 @@ import Button from '../components/Button'
 import StudentInputWithAutocomplete from '../components/StudentInputWithAutocomplete'
 import LoginModal from '../components/LoginModal'
 import PasswordChangeModal from '../components/PasswordChangeModal'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 import { StudentInfo, upsertStudent } from '../../lib/database'
 
 interface UserProfile {
   student_id: string
   name: string
+  real_name: string
   persona: string
   keywords: string
   vision: string
+  xiaohongshu_profile_url: string
 }
 
 export default function ProfilePage() {
@@ -24,9 +27,11 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile>({
     student_id: '',
     name: '',
+    real_name: '',
     persona: '',
     keywords: '',
-    vision: ''
+    vision: '',
+    xiaohongshu_profile_url: ''
   })
   const [isExistingUser, setIsExistingUser] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -39,10 +44,62 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
 
-  // 页面加载时检查登录状态
+  // 页面加载时检查登录状态和编辑模式
   useEffect(() => {
     checkAuthStatus()
+    checkEditMode()
   }, [])
+
+  // 检查是否是编辑模式
+  const checkEditMode = () => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const isEdit = urlParams.get('edit') === 'true'
+    const editStudentId = urlParams.get('student_id')
+    const editName = urlParams.get('name')
+    const editRealName = urlParams.get('real_name')
+
+    if (isEdit && editStudentId) {
+      // 编辑模式：预填学员信息
+      setStudentId(editStudentId)
+      setProfile({
+        student_id: editStudentId,
+        name: decodeURIComponent(editName || ''),
+        real_name: decodeURIComponent(editRealName || ''),
+        persona: '',
+        keywords: '',
+        vision: '',
+        xiaohongshu_profile_url: ''
+      })
+      setIsExistingUser(true)
+      setIsAuthenticated(true)
+
+      // 加载完整的学员信息
+      loadStudentProfile(editStudentId)
+    }
+  }
+
+  // 加载学员完整信息（用于编辑模式）
+  const loadStudentProfile = async (studentId: string) => {
+    try {
+      const response = await fetch(`/api/user?student_id=${studentId}`)
+      if (response.ok) {
+        const userData = await response.json()
+        if (userData) {
+          setProfile({
+            student_id: userData.student_id,
+            name: userData.name || '',
+            real_name: userData.real_name || '',
+            persona: userData.persona || '',
+            keywords: userData.keywords || '',
+            vision: userData.vision || '',
+            xiaohongshu_profile_url: userData.xiaohongshu_profile_url || ''
+          })
+        }
+      }
+    } catch (error) {
+      console.error('加载学员信息失败:', error)
+    }
+  }
 
   const checkAuthStatus = async () => {
     try {
@@ -117,9 +174,11 @@ export default function ProfilePage() {
             ...prev,
             student_id: userData.student_id,
             name: userData.name || prev.name,
+            real_name: userData.real_name || '',
             persona: userData.persona || '',
             keywords: userData.keywords || '',
-            vision: userData.vision || ''
+            vision: userData.vision || '',
+            xiaohongshu_profile_url: userData.xiaohongshu_profile_url || ''
           }))
           
           // 判断是否为老用户（有内容）
@@ -165,6 +224,7 @@ export default function ProfilePage() {
         localStorage.setItem('userSession', JSON.stringify({
           student_id: inputStudentId,
           name: result.user.name,
+          role: result.user.role || 'student',
           isAuthenticated: true
         }))
         
@@ -172,9 +232,11 @@ export default function ProfilePage() {
         setProfile({
           student_id: inputStudentId,
           name: result.user.name || '',
+          real_name: result.user.real_name || '',
           persona: result.user.persona || '',
           keywords: result.user.keywords || '',
-          vision: result.user.vision || ''
+          vision: result.user.vision || '',
+          xiaohongshu_profile_url: result.user.xiaohongshu_profile_url || ''
         })
         
         const hasContent = Boolean(result.user.persona || result.user.keywords || result.user.vision)
@@ -242,9 +304,11 @@ export default function ProfilePage() {
       setProfile({
         student_id: student.student_id,
         name: student.name,
+        real_name: student.real_name || '',
         persona: student.persona || '',
         keywords: student.keywords || '',
-        vision: student.vision || ''
+        vision: student.vision || '',
+        xiaohongshu_profile_url: student.xiaohongshu_profile_url || ''
       })
       
       // 判断是否为老用户（有内容）
@@ -255,13 +319,22 @@ export default function ProfilePage() {
       setProfile({
         student_id: studentId,
         name: '',
+        real_name: '',
         persona: '',
         keywords: '',
-        vision: ''
+        vision: '',
+        xiaohongshu_profile_url: ''
       })
       setIsExistingUser(false)
     }
   }, [studentId])
+
+  // 验证小红书链接格式
+  const validateXiaohongshuUrl = (url: string): boolean => {
+    if (!url.trim()) return false
+    const xiaohongshuRegex = /^https?:\/\/(www\.)?xiaohongshu\.com\/user\/profile\/[a-zA-Z0-9]+(\?.*)?$/
+    return xiaohongshuRegex.test(url.trim())
+  }
 
   const handleSave = async () => {
     if (!profile.student_id.trim()) {
@@ -271,6 +344,21 @@ export default function ProfilePage() {
 
     if (!profile.name.trim()) {
       setMessage('请先输入正确的学号以获取姓名信息')
+      return
+    }
+
+    if (!profile.real_name.trim()) {
+      setMessage('请填写真实姓名（用于后续生成证书）')
+      return
+    }
+
+    if (!profile.xiaohongshu_profile_url.trim()) {
+      setMessage('请填写小红书主页链接')
+      return
+    }
+
+    if (!validateXiaohongshuUrl(profile.xiaohongshu_profile_url)) {
+      setMessage('请输入有效的小红书主页链接格式')
       return
     }
 
@@ -328,6 +416,7 @@ export default function ProfilePage() {
     localStorage.setItem('userSession', JSON.stringify({
       student_id: profile.student_id,
       name: profile.name,
+      role: 'student', // 默认为学员
       isAuthenticated: true
     }))
     router.push('/generate')
@@ -357,7 +446,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
+      <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center fade-in-up">
         <h1 className="text-4xl font-bold gradient-text mb-6">🧑‍💼 个人IP资料库</h1>
         <p className="text-xl text-white/80">
@@ -367,6 +460,19 @@ export default function ProfilePage() {
 
       <Card title="学员信息" icon="👤" className="mb-8">
         <div className="space-y-6">
+          {/* 小红书绑定提示 */}
+          {!profile.xiaohongshu_profile_url && (
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="flex items-center">
+                <span className="text-2xl mr-3">🔔</span>
+                <div>
+                  <p className="text-yellow-300 font-medium">需要绑定小红书主页</p>
+                  <p className="text-yellow-200/80 text-sm">请完成小红书主页绑定，这是进行打卡验证的必要步骤</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 显示已登录的学员信息 */}
           <div className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/30 rounded-lg">
             <div className="flex items-center justify-between mb-4">
@@ -408,6 +514,32 @@ export default function ProfilePage() {
         )}
       </Card>
 
+      <Card title="基本信息" icon="📝" className="mb-8">
+        <div className="space-y-6">
+          <Textarea
+            label="真实姓名 *"
+            placeholder="请输入您的真实姓名"
+            value={profile.real_name}
+            onChange={(value) => setProfile({ ...profile, real_name: value })}
+            required
+            rows={1}
+          />
+          <Textarea
+            label="小红书主页链接 *"
+            placeholder="请输入您的小红书主页链接，格式：https://www.xiaohongshu.com/user/profile/xxxxxx"
+            value={profile.xiaohongshu_profile_url}
+            onChange={(value) => setProfile({ ...profile, xiaohongshu_profile_url: value })}
+            required
+            rows={1}
+          />
+
+          <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+            <span className="font-medium">📋 说明：</span>
+            真实姓名用于后续生成证书，小红书主页用于打卡验证，请如实填写。
+          </div>
+        </div>
+      </Card>
+
       <Card title="个人IP设定" icon="⚙️">
         <div className="space-y-6">
           <Textarea
@@ -438,9 +570,9 @@ export default function ProfilePage() {
           />
 
           <div className="pt-4 space-y-4">
-            <Button 
-              onClick={handleSave} 
-              disabled={loading || !profile.name}
+            <Button
+              onClick={handleSave}
+              disabled={loading || !profile.name || !profile.real_name.trim()}
               className="w-full sm:w-auto"
             >
               {getButtonText()}
@@ -478,6 +610,7 @@ export default function ProfilePage() {
         currentPassword={currentPassword}
         loading={authLoading}
       />
+      </div>
     </div>
   )
 }

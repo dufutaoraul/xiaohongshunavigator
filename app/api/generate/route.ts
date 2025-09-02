@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     if (userError || !supabaseUserData) {
       console.error('Supabase query error or user not found:', userError)
       console.log('使用测试用户数据绕过Supabase问题')
-      
+
       // 为了测试，使用模拟用户数据
       userData = {
         student_id: student_id,
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         keywords: 'AI工具,效率提升,学习方法',
         vision: '90天后成为AI应用专家，帮助更多人提升工作效率'
       }
-      
+
       console.log('使用模拟用户数据:', userData)
     } else {
       userData = supabaseUserData
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       hasApiKey: !!process.env.DIFY_API_KEY,
       apiUrl: process.env.DIFY_API_URL
     })
-    
+
     if (process.env.DIFY_API_URL && process.env.DIFY_API_KEY) {
       try {
         // 构建Dify API请求 - 根据提供的准确格式
@@ -66,10 +66,10 @@ export async function POST(request: NextRequest) {
           user: student_id
         }
         console.log('Request body:', JSON.stringify(requestBody, null, 2))
-        
+
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时
-        
+
         const difyResponse = await fetch(process.env.DIFY_API_URL, {
           method: 'POST',
           headers: {
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(requestBody),
           signal: controller.signal
         })
-        
+
         clearTimeout(timeoutId)
 
         console.log('Dify response status:', difyResponse.status)
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
           const responseText = await difyResponse.text()
           console.log('Raw response text length:', responseText.length)
           console.log('Raw response text preview:', responseText.substring(0, 200) + '...')
-          
+
           // 尝试解析为JSON
           let rawResult
           try {
@@ -103,29 +103,29 @@ export async function POST(request: NextRequest) {
           console.log('===== DIFY RESPONSE ANALYSIS =====')
           console.log('Raw Dify response:', JSON.stringify(rawResult, null, 2))
           console.log('Response type:', typeof rawResult)
-          
+
           let result = rawResult
-          
+
           // 检查是否返回的是字符串化的JSON（被双引号包裹）
           if (typeof rawResult === 'string') {
             try {
               // 清理字符串格式
               let cleanedString = rawResult
-              
+
               // 移除最外层的双重引号包装 ""content""
               if (cleanedString.startsWith('""') && cleanedString.endsWith('""')) {
                 cleanedString = cleanedString.slice(2, -2)
                 console.log('Removed double quotes wrapper')
               }
-              
+
               // 处理转义字符和换行符
               cleanedString = cleanedString
                 .replace(/\\n/g, '\n')  // 转义的换行符转为真实换行符
                 .replace(/\\"/g, '"')   // 转义的引号转为真实引号
                 .replace(/\\\\/g, '\\') // 转义的反斜杠
-              
+
               console.log('Cleaned string sample:', cleanedString.substring(0, 200) + '...')
-              
+
               result = JSON.parse(cleanedString)
               console.log('Successfully parsed cleaned JSON')
             } catch (parseError) {
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
               throw new Error(`JSON parsing failed: ${errorMessage}`)
             }
           }
-          
+
           // 如果result中有字符串字段包含JSON，也尝试解析
           if (result.answer && typeof result.answer === 'string' && result.answer.startsWith('{')) {
             try {
@@ -146,15 +146,15 @@ export async function POST(request: NextRequest) {
               console.log('answer field is not valid JSON, keeping as string')
             }
           }
-          
+
           console.log('Final processed result keys:', Object.keys(result))
-          console.log('====================================')
-          
+          console.log('=====================================')
+
           // 首先检查直接的structured_output格式（新的Dify输出）
           if (result.structured_output) {
             const structuredData = result.structured_output
             console.log('Found direct structured_output:', structuredData)
-            
+
             // 处理缺失的hashtags字段
             let hashtags = []
             if (Array.isArray(structuredData.hashtags)) {
@@ -164,13 +164,13 @@ export async function POST(request: NextRequest) {
               hashtags = ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "AI工具", "效率提升", "学习方法"]
               console.log('Using default hashtags as none provided')
             }
-            
+
             // 处理visuals字段
             const visuals = {
               images: structuredData.visuals?.images || [],
               videos: structuredData.visuals?.videos || []
             }
-            
+
             // 如果没有videos，添加默认建议
             if (visuals.videos.length === 0) {
               visuals.videos = [
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
               ]
               console.log('Added default video suggestions')
             }
-            
+
             return NextResponse.json({
               titles: structuredData.titles || [],
               bodies: structuredData.bodies || [],
@@ -189,12 +189,12 @@ export async function POST(request: NextRequest) {
               source: 'direct_structured_output'
             })
           }
-          
+
           // 检查parsedAnswer中的structured_output
           if (result.parsedAnswer && result.parsedAnswer.structured_output) {
             const structuredData = result.parsedAnswer.structured_output
             console.log('Found structured_output in parsed answer:', structuredData)
-            
+
             // 处理缺失的hashtags字段
             let hashtags = []
             if (Array.isArray(structuredData.hashtags)) {
@@ -203,13 +203,13 @@ export async function POST(request: NextRequest) {
               hashtags = ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "AI工具", "效率提升", "学习方法"]
               console.log('Using default hashtags as none provided in parsed answer')
             }
-            
+
             // 处理visuals字段
             const visuals = {
               images: structuredData.visuals?.images || [],
               videos: structuredData.visuals?.videos || []
             }
-            
+
             if (visuals.videos.length === 0) {
               visuals.videos = [
                 { id: 1, suggestion: "制作操作演示视频，展示完整的实践过程" },
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
               ]
               console.log('Added default video suggestions in parsed answer')
             }
-            
+
             return NextResponse.json({
               titles: structuredData.titles || [],
               bodies: structuredData.bodies || [],
@@ -227,12 +227,12 @@ export async function POST(request: NextRequest) {
               source: 'parsed_answer_structured_output'
             })
           }
-          
+
           // 处理传统的Dify响应格式 - 数据在data.outputs.structured_output中
           if (result.data && result.data.outputs && result.data.outputs.structured_output) {
             const structuredData = result.data.outputs.structured_output
             console.log('Found Dify structured_output:', structuredData)
-            
+
             return NextResponse.json({
               titles: structuredData.titles || [],
               bodies: structuredData.bodies || [],
@@ -248,12 +248,12 @@ export async function POST(request: NextRequest) {
               total_tokens: result.data.total_tokens
             })
           }
-          
+
           // 兜底：检查旧的structured_output格式
           if (result.structured_output) {
             const structuredData = result.structured_output
             console.log('Found legacy structured_output:', structuredData)
-            
+
             return NextResponse.json({
               titles: structuredData.titles || [],
               bodies: structuredData.bodies || [],
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
               dify: true // 标记这是Dify生成的数据
             })
           }
-          
+
           // 兜底：检查其他可能的数据格式
           if (result.data && (result.data.titles || result.data.bodies)) {
             return NextResponse.json({
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
               dify: true
             })
           }
-          
+
           // 最后的兜底方案
           const content = result.answer || result.data?.answer || result.content
           if (content) {
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
               titles: [{ id: 1, content: "✨ AI生成的专属内容分享" }],
               bodies: [{ id: 1, content: content, style: "AI智能生成" }],
               hashtags: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "AI工具", "学习方法", "个人成长"],
-              visuals: { 
+              visuals: {
                 images: [{ id: 1, suggestion: "根据内容主题制作相关配图，突出重点信息" }],
                 videos: [{ id: 1, suggestion: "制作内容相关的短视频，增强表达效果" }]
               },
@@ -311,12 +311,12 @@ export async function POST(request: NextRequest) {
         console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
         console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
         console.error('Request was attempting to:', process.env.DIFY_API_URL)
-        
+
         // 特别处理超时错误
         if (error instanceof Error && error.name === 'AbortError') {
           console.error('Request was aborted due to timeout (60s)')
         }
-        
+
         console.error('==================================')
         // 如果Dify请求失败，降级到模拟数据
       }
@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
     console.log('- DIFY_API_KEY exists:', !!process.env.DIFY_API_KEY)
     console.log('- DIFY_API_URL value:', process.env.DIFY_API_URL)
     console.log('============================')
-    
+
     const mockResponse = {
       titles: [
         { id: 1, content: "🚀 90天AI学习计划，从小白到高手的华丽转身！" },
@@ -383,7 +383,7 @@ export async function POST(request: NextRequest) {
         }
       ],
       hashtags: ["#爱学AI创富营", "#爱学AI社区", "#爱学AI90天陪跑打卡", "#爱学AI深潜计划", "ChatGPT", "思维导图", "职场技能", "副业赚钱", "AI工具", "学习方法"],
-      visuals: { 
+      visuals: {
         images: [
           { id: 1, suggestion: "制作一张对比图，展示使用AI前后的工作效率差异，用数字和图表直观表现提升效果" },
           { id: 2, suggestion: "设计思维导图截图，展示AI辅助整理的知识结构，配色要清晰美观" }
@@ -395,7 +395,7 @@ export async function POST(request: NextRequest) {
       },
       mock: true
     }
-    
+
     console.log('Mock response prepared:', JSON.stringify(mockResponse, null, 2))
     return NextResponse.json(mockResponse)
   } catch (error) {

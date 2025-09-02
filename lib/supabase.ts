@@ -3,12 +3,33 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// 在构建时检查环境变量
+if (typeof window === 'undefined' && (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co')) {
+  console.warn('Supabase URL not configured properly for build')
+}
+
+// 创建Supabase客户端，确保RLS策略正确应用
+export const supabase = supabaseUrl && supabaseUrl !== 'https://placeholder.supabase.co' 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          'x-client-info': 'supabase-js/homework-system'
+        }
+      }
+    })
+  : createClient('https://placeholder.supabase.co', 'placeholder-key')
 
 // 数据类型定义
 export interface User {
   id: string
   student_id: string
+  name?: string
+  real_name?: string  // 真实姓名，用于生成证书
   created_at: string
   persona: string
   keywords: string

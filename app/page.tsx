@@ -5,39 +5,50 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import LoginModal from './components/LoginModal'
 import XiaohongshuProfileModal from './components/XiaohongshuProfileModal'
-import { createClient } from '@supabase/supabase-js'
+import { useAuth } from './contexts/AuthContext'
 
-// 创建Supabase客户端
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+
+import GlobalUserMenu from './components/GlobalUserMenu'
 
 export default function Home() {
   const router = useRouter()
+  const { isAuthenticated, login } = useAuth()
+
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
 
+  // 处理登录模态框
+  useEffect(() => {
+    // 设置全局函数供其他组件调用
+    (window as any).openLoginModal = () => {
+      setShowLoginModal(true)
+    }
+
+    // 检查URL参数
+    const search = window.location.search
+    if (search.includes('login=true')) {
+      setShowLoginModal(true)
+      // 清除URL参数
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  // 监听showLoginModal状态变化
+  useEffect(() => {
+    console.log('🔍 首页: showLoginModal 状态变化为', showLoginModal)
+  }, [showLoginModal])
+
   // 检查认证并导航
   const handleNavigation = (path: string) => {
-    const userSession = localStorage.getItem('userSession')
-    const lastCredentials = localStorage.getItem('lastCredentials')
-    
     if (path === '/profile' || path === '/generate') {
       // 这两个页面需要认证
-      if (userSession) {
-        try {
-          const { isAuthenticated } = JSON.parse(userSession)
-          if (isAuthenticated) {
-            router.push(path)
-            return
-          }
-        } catch {
-          // 忽略解析错误
-        }
+      if (isAuthenticated) {
+        router.push(path)
+        return
       }
       
-      // 如果有保存的凭证，直接跳转到对应页面（会触发登录）
+      // 检查是否有保存的凭证
+      const lastCredentials = localStorage.getItem('lastCredentials')
       if (lastCredentials) {
         router.push(path)
       } else {
@@ -67,13 +78,10 @@ export default function Home() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // 保存认证状态
-        localStorage.setItem('userSession', JSON.stringify({
-          student_id: studentId,
-          name: result.user.name,
-          isAuthenticated: true
-        }))
+        // 使用AuthContext的login方法
+        login(result.user)
         
+        // 保存凭证用于自动登录
         localStorage.setItem('lastCredentials', JSON.stringify({
           student_id: studentId,
           password: password
@@ -94,7 +102,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
       <div className="max-w-6xl mx-auto py-20 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="text-6xl font-bold gradient-text mb-8 fade-in-up">
@@ -106,8 +117,11 @@ export default function Home() {
           <p className="text-lg text-white/60 mb-12 fade-in-up" style={{animationDelay: '0.4s'}}>
             为爱学AI创富营学员打造的一体化IP孵化工具
           </p>
+
+
         </div>
-        
+
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
           <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
             <div className="text-5xl mb-6 breathing-glow">🧑‍💼</div>
@@ -127,13 +141,27 @@ export default function Home() {
             <div className="text-5xl mb-6 breathing-glow">🤖</div>
             <h3 className="text-xl font-bold text-white mb-4 gradient-text">AI灵感引擎</h3>
             <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
-              基于你的人设，AI生成高质量小红书内容，让创意如星河般闪耀。智能分析你的特色定位，自动生成吸引人的标题和正文内容。
+              基于你的人设，AI生成高质量小红书内容模板，并智能搜索相关爆款内容。一站式创作工具，从模板生成到热门搜索，让创意如星河般闪耀。
             </p>
             <button
               onClick={() => handleNavigation('/generate')}
               className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
             >
               智慧生成 🚀
+            </button>
+          </div>
+
+          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
+            <div className="text-5xl mb-6 breathing-glow">📝</div>
+            <h3 className="text-xl font-bold text-white mb-4 gradient-text">作业系统</h3>
+            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
+              智能化作业提交与批改平台，AI助力学习进度追踪。提交创作作品，获得专业点评反馈，系统化提升内容创作能力。
+            </p>
+            <button
+              onClick={() => handleNavigation('/homework')}
+              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
+            >
+              提交作业 📚
             </button>
           </div>
 
@@ -150,20 +178,6 @@ export default function Home() {
               进度追踪 📈
             </button>
           </div>
-
-          <div className="glass-effect p-8 text-center floating-card group cursor-pointer flex flex-col">
-            <div className="text-5xl mb-6 breathing-glow">🏆</div>
-            <h3 className="text-xl font-bold text-white mb-4 gradient-text">优秀案例</h3>
-            <p className="text-white/70 text-sm mb-6 leading-relaxed flex-grow">
-              学习优秀学员的爆款内容和经验，在星光指引下前行。精选创富营内最具影响力的成功案例，深度解析爆款内容的创作技巧。
-            </p>
-            <button
-              onClick={() => handleNavigation('/showcase')}
-              className="inline-block cosmic-button px-6 py-3 rounded-lg font-semibold transition-all duration-300"
-            >
-              灵感探索 🌠
-            </button>
-          </div>
         </div>
 
         <div className="text-center mt-16">
@@ -174,6 +188,10 @@ export default function Home() {
           </div>
           
         </div>
+
+
+
+
 
         {/* 调试入口 - 仅开发环境显示 */}
         {process.env.NODE_ENV === 'development' && (

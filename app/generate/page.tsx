@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 
 export default function GeneratePage() {
   const [studentId, setStudentId] = useState('')
@@ -19,7 +20,7 @@ export default function GeneratePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userProfile, setUserProfile] = useState({ persona: '', keywords: '', vision: '' })
   const router = useRouter()
-  
+
   // 检查认证状态并获取用户信息
   useEffect(() => {
     const userSession = localStorage.getItem('userSession')
@@ -116,6 +117,16 @@ export default function GeneratePage() {
       return
     }
 
+    // 检查人设信息是否完整
+    if (!userProfile.persona || !userProfile.keywords || !userProfile.vision) {
+      setMessage('请先完善人设信息后再生成内容')
+      // 3秒后自动跳转到人设页面
+      setTimeout(() => {
+        router.push('/profile')
+      }, 3000)
+      return
+    }
+
     setLoading(true)
     setMessage('')
     setGeneratedContent('')
@@ -138,12 +149,12 @@ export default function GeneratePage() {
 
       if (!response.ok) {
         console.error('Response not ok:', response.status, response.statusText)
-        
+
         // 特别处理504网关超时
         if (response.status === 504) {
           throw new Error('服务器响应超时，请稍后重试。如果问题持续存在，可能是Dify API响应缓慢。')
         }
-        
+
         // 尝试获取错误详情
         try {
           const errorData = await response.json()
@@ -161,7 +172,7 @@ export default function GeneratePage() {
         throw new Error('服务器返回了无效的数据格式，请重试')
       }
       console.log('API response:', result)
-      
+
       // 处理API响应数据格式
       let mockData
       if (result.dify) {
@@ -174,7 +185,7 @@ export default function GeneratePage() {
       if (result.titles && result.bodies) {
         mockData = {
           titles: result.titles,
-          bodies: result.bodies, 
+          bodies: result.bodies,
           hashtags: result.hashtags || [],
           visuals: result.visuals || { images: [], videos: [] }
         }
@@ -183,7 +194,7 @@ export default function GeneratePage() {
         mockData = generateMockData()
         setMessage('⚠️ 响应格式错误，使用模拟数据')
       }
-      
+
       // 保存数据和输入参数到localStorage
       const contentWithParams = {
         ...mockData,
@@ -201,58 +212,20 @@ export default function GeneratePage() {
         mock: result.mock
       }
       localStorage.setItem('generatedContent', JSON.stringify(contentWithParams))
-      
-      // 设置成功消息
+
+      // 设置成功消息并跳转到结果页面
       setMessage(`内容生成成功${result.dify ? ' (Dify AI生成)' : ' (模拟数据)'}！正在跳转到结果页面...`)
-      
+
       // 延迟跳转，让用户看到成功消息
       setTimeout(() => {
         router.push('/result')
-      }, 1000)
-      
+      }, 1500)
+
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '网络错误，请检查连接')
       console.error('Generate error:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  // 转换Dify响应为前端所需格式的函数
-  const convertDifyResponseToMockFormat = (content: string, visualSuggestions: string) => {
-    // 尝试从content中提取标题和正文
-    const lines = content.split('\n').filter(line => line.trim())
-    
-    // 提取可能的标题（以emoji开头或较短的行）
-    const titles = lines
-      .filter(line => line.length < 100 && (line.includes('🔥') || line.includes('✨') || line.includes('💡')))
-      .slice(0, 3)
-      .map(title => ({ content: title }))
-    
-    // 如果没有找到合适的标题，生成一些默认标题
-    if (titles.length === 0) {
-      titles.push({ content: "✨ AI生成的专属内容分享" })
-    }
-
-    // 从内容中提取标签
-    const hashtagMatches = content.match(/#[\u4e00-\u9fa5a-zA-Z0-9]+/g) || []
-    const extractedTags = hashtagMatches.map(tag => tag.replace('#', ''))
-    
-    return {
-      titles,
-      bodies: [{
-        content: content,
-        style: "AI智能生成"
-      }],
-      hashtags: ["AI学习", "创富营", "效率提升"].concat(extractedTags.length > 0 ? extractedTags : ["AI工具", "学习方法", "个人成长"]),
-      visuals: {
-        images: [
-          { id: 1, suggestion: visualSuggestions || "根据内容主题制作相关配图，突出重点信息" }
-        ],
-        videos: [
-          { id: 1, suggestion: "制作内容相关的短视频，增强表达效果" }
-        ]
-      }
     }
   }
 
@@ -269,7 +242,11 @@ export default function GeneratePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen relative">
+      {/* 全局用户菜单 - 左上角 */}
+      <GlobalUserMenu className="absolute top-6 left-6 z-50" />
+
+      <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center fade-in-up">
         <h1 className="text-4xl font-bold gradient-text mb-6">🤖 AI灵感内容引擎</h1>
         <p className="text-xl text-white/80">
@@ -294,6 +271,46 @@ export default function GeneratePage() {
                   已通过身份验证，可使用AI内容生成功能
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* 人设信息显示 */}
+          <div className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-400/30 rounded-lg">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center mb-3">
+                  <span className="text-xl mr-3">🎭</span>
+                  <h3 className="text-white font-medium">当前人设信息</h3>
+                </div>
+
+                {userProfile.persona && userProfile.keywords && userProfile.vision ? (
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-purple-300 font-medium">人设定位：</span>
+                      <span className="text-white/80 ml-2">{userProfile.persona}</span>
+                    </div>
+                    <div>
+                      <span className="text-purple-300 font-medium">关键词：</span>
+                      <span className="text-white/80 ml-2">{userProfile.keywords}</span>
+                    </div>
+                    <div>
+                      <span className="text-purple-300 font-medium">90天愿景：</span>
+                      <span className="text-white/80 ml-2">{userProfile.vision}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-yellow-300 text-sm">
+                    ⚠️ 尚未完善人设信息，请先设置人设后再生成内容
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => router.push('/profile')}
+                className="ml-4 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 rounded-lg text-purple-300 hover:text-purple-200 transition-colors text-sm"
+              >
+                {userProfile.persona ? '修改人设' : '设置人设'}
+              </button>
             </div>
           </div>
 
@@ -363,8 +380,8 @@ export default function GeneratePage() {
 
           {message && (
             <div className={`p-4 rounded-lg glass-effect border-l-4 ${
-              message.includes('成功') 
-                ? 'border-green-400 text-green-200' 
+              message.includes('成功')
+                ? 'border-green-400 text-green-200'
                 : 'border-red-400 text-red-200'
             }`}>
               {message}
@@ -373,28 +390,7 @@ export default function GeneratePage() {
         </div>
       </Card>
 
-      {(generatedContent || visualSuggestions) && (
-        <>
-          <Card title="生成的文案内容" icon="✨" className="mb-8">
-            <div className="glass-effect p-6 rounded-lg border border-white/10">
-              <pre className="whitespace-pre-wrap text-sm text-white/90 leading-relaxed">
-                {generatedContent || '✨ 内容生成中，请稍候...'}
-              </pre>
-            </div>
-            <Button variant="outline" className="mt-4" onClick={() => navigator.clipboard.writeText(generatedContent)}>
-              📋 复制文案
-            </Button>
-          </Card>
-
-          <Card title="配图/视频建议" icon="🎨">
-            <div className="glass-effect p-6 rounded-lg border border-white/10">
-              <pre className="whitespace-pre-wrap text-sm text-white/90 leading-relaxed">
-                {visualSuggestions || '🎨 视觉建议生成中，请稍候...'}
-              </pre>
-            </div>
-          </Card>
-        </>
-      )}
+      </div>
     </div>
   )
 }

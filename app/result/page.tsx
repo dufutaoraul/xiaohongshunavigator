@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import GlobalUserMenu from '../components/GlobalUserMenu'
 
 interface GeneratedContent {
   titles: Array<{ id?: number, content: string }>
