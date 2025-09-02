@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import Image from 'next/image'
-import QRCode from 'qrcode'
+import * as QRCode from 'qrcode'
 
 interface QRCodeModalProps {
   isOpen: boolean
