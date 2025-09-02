@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // 查询打卡记录
     const { data: records, error } = await supabase
-      .from('student_checkins')
+      .from('checkin_records')
       .select('*')
       .eq('student_id', studentId)
       .order('checkin_date', { ascending: false })

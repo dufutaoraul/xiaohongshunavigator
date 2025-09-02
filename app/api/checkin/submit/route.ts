@@ -69,26 +69,34 @@ export async function POST(request: NextRequest) {
     // 使用第一个有效URL作为小红书链接
     const xiaohongshu_url = validUrls[0]
 
-    // 首先检查表是否存在
-    console.log('🔍 [Checkin Submit API] 检查数据库表是否存在...')
-    const { data: tableCheck, error: tableError } = await supabase
-      .from('student_checkins')
-      .select('count(*)')
+    // 首先检查表是否存在并验证连接
+    console.log('🔍 [Checkin Submit API] 检查数据库连接和表结构...')
+
+    // 检查 checkin_records 表结构
+    const { data: tableInfo, error: tableError } = await supabase
+      .from('checkin_records')
+      .select('*')
       .limit(1)
 
     if (tableError) {
-      console.error('❌ [Checkin Submit API] 检查表存在性失败:', tableError)
+      console.error('❌ [Checkin Submit API] 数据库连接或表结构错误:', {
+        error: tableError,
+        code: tableError.code,
+        message: tableError.message,
+        details: tableError.details,
+        hint: tableError.hint
+      })
       return NextResponse.json({
         success: false,
-        error: '数据库表不存在或无法访问: ' + tableError.message
+        error: '数据库连接失败: ' + tableError.message
       }, { status: 500 })
     }
-    console.log('✅ [Checkin Submit API] 数据库表检查通过')
+    console.log('✅ [Checkin Submit API] 数据库连接正常，表结构:', tableInfo)
 
     // 检查今天是否已经打卡
     console.log('🔍 [Checkin Submit API] 检查是否已有打卡记录:', { student_id, checkinDate })
     const { data: existingCheckin, error: checkError } = await supabase
-      .from('student_checkins')
+      .from('checkin_records')
       .select('*')
       .eq('student_id', student_id)
       .eq('checkin_date', checkinDate)
@@ -109,13 +117,14 @@ export async function POST(request: NextRequest) {
       // 更新现有打卡记录
       console.log(`🔄 [Checkin Submit API] 更新现有打卡记录 ID: ${existingCheckin.id}`)
       const updateData = {
-        xiaohongshu_link: xiaohongshu_url, // 使用正确的字段名
+        xiaohongshu_url: xiaohongshu_url, // 使用正确的字段名
+        xhs_url: xiaohongshu_url, // 兼容两个字段
         updated_at: new Date().toISOString()
       }
       console.log('🔄 [Checkin Submit API] 更新数据:', updateData)
 
       const { data, error } = await supabase
-        .from('student_checkins')
+        .from('checkin_records')
         .update(updateData)
         .eq('id', existingCheckin.id)
         .select()
@@ -139,25 +148,46 @@ export async function POST(request: NextRequest) {
       // 创建新的打卡记录
       console.log(`✨ [Checkin Submit API] 创建新打卡记录`)
 
-      // 获取学员姓名
-      console.log('🔍 [Checkin Submit API] 获取学员信息:', student_id)
+      // 获取学员信息并验证学员是否存在
+      console.log('🔍 [Checkin Submit API] 验证学员是否存在:', student_id)
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('name')
+        .select('id, student_id, name, role')
         .eq('student_id', student_id)
         .single()
 
       if (userError) {
-        console.error('❌ [Checkin Submit API] 获取学员信息失败:', userError)
+        console.error('❌ [Checkin Submit API] 学员不存在或查询失败:', {
+          student_id,
+          error: userError,
+          code: userError.code,
+          message: userError.message
+        })
+        return NextResponse.json({
+          success: false,
+          error: `学员 ${student_id} 不存在或查询失败: ` + userError.message
+        }, { status: 404 })
       }
-      console.log('🔍 [Checkin Submit API] 学员信息查询结果:', userData)
+
+      console.log('✅ [Checkin Submit API] 学员信息验证成功:', userData)
+
+      if (!userData) {
+        console.error('❌ [Checkin Submit API] 学员数据为空:', student_id)
+        return NextResponse.json({
+          success: false,
+          error: `学员 ${student_id} 不存在`
+        }, { status: 404 })
+      }
 
       const student_name = userData?.name || '未知学员'
 
       const insertData = {
         student_id,
         checkin_date: checkinDate,
-        xiaohongshu_link: xiaohongshu_url, // 使用正确的字段名
+        xiaohongshu_url: xiaohongshu_url, // 使用正确的字段名
+        xhs_url: xiaohongshu_url, // 兼容字段
+        student_name: student_name, // 添加学员姓名
+        status: 'pending', // 默认状态
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -165,7 +195,7 @@ export async function POST(request: NextRequest) {
       console.log('✨ [Checkin Submit API] 准备插入数据:', JSON.stringify(insertData, null, 2))
 
       const { data, error } = await supabase
-        .from('student_checkins')
+        .from('checkin_records')
         .insert(insertData)
         .select()
 
