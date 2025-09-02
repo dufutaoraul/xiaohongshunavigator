@@ -119,7 +119,7 @@ export default function AdminDashboard() {
   }
 
   // 过滤学员 - 支持三种搜索方式
-  const filteredStudents = students.filter(student => {
+  const displayedStudents = students.filter(student => {
     if (!searchTerm.trim()) return true
 
     const searchLower = searchTerm.toLowerCase()
@@ -555,12 +555,12 @@ export default function AdminDashboard() {
                   <div className="text-center py-8">
                     <div className="text-white/60">加载中...</div>
                   </div>
-                ) : filteredStudents.length === 0 ? (
+                ) : displayedStudents.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-white/60">暂无学员数据</div>
                   </div>
                 ) : (
-                  filteredStudents.map((student) => (
+                  displayedStudents.map((student) => (
                     <div key={student.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
                       <div className="flex items-center space-x-4">
                         <div className="text-2xl">
