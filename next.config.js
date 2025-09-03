@@ -24,4 +24,8 @@ const nextConfig = {
   ],
 }
 
+nextConfig.generateBuildId = async () => {
+  return 'nvj9ne-1756865228719'
+}
+
 module.exports = nextConfig

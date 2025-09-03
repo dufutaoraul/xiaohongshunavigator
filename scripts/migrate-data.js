@@ -1,15 +1,15 @@
 const { createClient } = require('@supabase/supabase-js')
 
-// Master分支数据库（只读）
-const masterSupabase = createClient(
-  'https://jwfthdjxmqexsvzyiral.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3ZnRoZGp4bXFleHN2enlpcmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MzU1NDcsImV4cCI6MjA3MDIxMTU0N30.4bpCHJseDIaxvYs0c7Gk-M0dIVVDuwiGZZztl2nbz-4'
-)
-
-// 开发数据库（可写）
+// 开发数据库（源数据库）
 const devSupabase = createClient(
   'https://edoljoofbxinghqidgmr.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkb2xqb29mYnhpbmdocWlkZ21yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDkxMzcxNCwiZXhwIjoyMDcwNDg5NzE0fQ.aN3NjbYp-57tUsK7OXvNFpPevTPZ1eO9ci9oTcVjEQ4'
+)
+
+// 生产数据库（目标数据库）
+const prodSupabase = createClient(
+  'https://jwfthdjxmqexsvzyiral.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3ZnRoZGp4bXFleHN2enlpcmFsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDYzNTU0NywiZXhwIjoyMDcwMjExNTQ3fQ.SUPABASE_SERVICE_ROLE_KEY_HERE'
 )
 
 async function migrateUserData() {
