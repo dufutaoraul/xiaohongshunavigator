@@ -8,7 +8,11 @@
     "build:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "check-deployment": "node scripts/check-deployment.js",
+    "test-db": "node test-db-connection.js",
+    "test-checkin-fix": "node test-checkin-schedule-fix.js",
+    "check-foreign-keys": "node check-foreign-keys.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

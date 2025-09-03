@@ -429,11 +429,32 @@ export default function AdminDashboard() {
           setScheduleMessage('❌ 操作已取消')
         }
       } else {
-        setScheduleMessage(`❌ 设置失败：${result.error}`)
+        // 根据错误类型显示不同的错误信息
+        let errorMessage = '❌ 设置失败'
+
+        if (result.error === 'Database connection failed') {
+          errorMessage = '❌ 数据库连接失败'
+          if (result.message) {
+            errorMessage += `：${result.message}`
+          }
+        } else if (result.error === 'Database configuration error') {
+          errorMessage = '❌ 数据库配置错误：请联系管理员检查环境变量设置'
+        } else if (result.error === 'STUDENT_NOT_FOUND') {
+          errorMessage = `❌ ${result.message || '学号不存在'}`
+        } else if (result.error === 'STUDENTS_NOT_FOUND') {
+          errorMessage = `❌ ${result.message || '部分学号不存在'}`
+          if (result.missingStudentIds) {
+            errorMessage += `\n不存在的学号：${result.missingStudentIds.join(', ')}`
+          }
+        } else {
+          errorMessage = `❌ 设置失败：${result.message || result.error || '未知错误'}`
+        }
+
+        setScheduleMessage(errorMessage)
       }
     } catch (error) {
       console.error('设置打卡日期失败:', error)
-      setScheduleMessage('❌ 设置失败，请重试')
+      setScheduleMessage('❌ 网络错误，请检查网络连接后重试')
     } finally {
       setScheduleLoading(false)
     }

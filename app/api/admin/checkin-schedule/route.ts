@@ -6,12 +6,29 @@ export async function POST(request: NextRequest) {
     console.log('🔍 [Checkin Schedule API] 开始处理打卡日期设置请求')
 
     // 检查环境变量
-    console.log('🔍 [Checkin Schedule API] 环境变量检查:', {
+    const envCheck = {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...'
-    })
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
+      actualUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
+    }
+
+    console.log('🔍 [Checkin Schedule API] 环境变量检查:', envCheck)
+
+    // 检查是否使用了placeholder值
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL ||
+        process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co' ||
+        !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'placeholder-key') {
+      console.error('❌ [Checkin Schedule API] Supabase环境变量未正确配置')
+      return NextResponse.json({
+        success: false,
+        error: 'Database configuration error',
+        message: '数据库配置错误，请检查环境变量设置',
+        details: 'Supabase环境变量未正确配置，请联系管理员'
+      }, { status: 500 })
+    }
 
     const body = await request.json()
     const { mode, student_id, batch_start_id, batch_end_id, start_date, created_by, force_update } = body
@@ -47,7 +64,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: false,
           error: 'Database connection failed',
-          details: testError.message
+          message: '数据库连接失败，请检查网络连接或联系管理员',
+          details: testError.message,
+          troubleshooting: {
+            possibleCauses: [
+              '网络连接问题',
+              'Supabase服务暂时不可用',
+              '环境变量配置错误',
+              'API密钥已过期'
+            ],
+            solutions: [
+              '检查网络连接',
+              '稍后重试',
+              '联系管理员检查配置'
+            ]
+          }
         }, { status: 500 })
       }
 
@@ -68,6 +99,33 @@ export async function POST(request: NextRequest) {
           error: 'Missing student_id for single mode'
         }, { status: 400 })
       }
+
+      // 首先验证学号是否存在于 users 表中
+      console.log('🔍 [Checkin Schedule API] 验证学号是否存在:', student_id)
+      const { data: userExists, error: userCheckError } = await supabase
+        .from('users')
+        .select('student_id, name')
+        .eq('student_id', student_id)
+        .maybeSingle()
+
+      if (userCheckError) {
+        console.error('❌ [Checkin Schedule API] 验证学号时发生错误:', userCheckError)
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to verify student ID: ' + userCheckError.message
+        }, { status: 500 })
+      }
+
+      if (!userExists) {
+        console.error('❌ [Checkin Schedule API] 学号不存在:', student_id)
+        return NextResponse.json({
+          success: false,
+          error: 'STUDENT_NOT_FOUND',
+          message: `学号 ${student_id} 不存在，请检查输入是否正确`
+        }, { status: 404 })
+      }
+
+      console.log('✅ [Checkin Schedule API] 学号验证通过:', userExists.name)
 
       // 检查该学员是否已有打卡安排
       const { data: existingSchedule, error: checkError } = await supabase
@@ -164,6 +222,36 @@ export async function POST(request: NextRequest) {
           error: 'Invalid student ID range'
         }, { status: 400 })
       }
+
+      // 验证批量学号是否都存在于 users 表中
+      console.log('🔍 [Checkin Schedule API] 验证批量学号是否存在:', studentIds)
+      const { data: existingUsers, error: userCheckError } = await supabase
+        .from('users')
+        .select('student_id, name')
+        .in('student_id', studentIds)
+
+      if (userCheckError) {
+        console.error('❌ [Checkin Schedule API] 验证批量学号时发生错误:', userCheckError)
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to verify student IDs: ' + userCheckError.message
+        }, { status: 500 })
+      }
+
+      const existingUserIds = existingUsers?.map(u => u.student_id) || []
+      const missingUserIds = studentIds.filter(id => !existingUserIds.includes(id))
+
+      if (missingUserIds.length > 0) {
+        console.error('❌ [Checkin Schedule API] 以下学号不存在:', missingUserIds)
+        return NextResponse.json({
+          success: false,
+          error: 'STUDENTS_NOT_FOUND',
+          message: `以下学号不存在：${missingUserIds.join(', ')}，请检查输入是否正确`,
+          missingStudentIds: missingUserIds
+        }, { status: 404 })
+      }
+
+      console.log('✅ [Checkin Schedule API] 批量学号验证通过，找到用户:', existingUsers?.length)
 
       // 检查批量学员中是否有已存在的打卡安排
       const { data: existingSchedules, error: checkError } = await supabase
