@@ -142,9 +142,11 @@ export default function CheckinPage() {
     try {
       // 首先检查自主设定权限
       const selfScheduleData = await checkSelfSchedulePermission(studentId)
+      console.log('🔍 [打卡安排检查] 自主设定权限数据:', selfScheduleData)
 
       const response = await fetch(`/api/admin/checkin-schedule?student_id=${studentId}`)
       const result = await response.json()
+      console.log('🔍 [打卡安排检查] API响应:', result)
 
       if (result.success && result.data && result.data.length > 0) {
         // 获取本地日期，避免时区问题
@@ -189,26 +191,50 @@ export default function CheckinPage() {
             } else {
               console.log('🔍 [欢迎弹窗] 今天已经显示过，跳过')
             }
+          } else if (isBeforeStart) {
+            // 打卡还未开始，但有安排
+            setHasCheckinSchedule(true)
+            setCheckinSchedule(userSchedule)
+            setShowNoScheduleModal(true)
+            console.log('学员打卡还未开始，但有安排:', userSchedule)
           } else {
-            // 打卡还未开始
+            // 其他情况，显示无安排提示
             setHasCheckinSchedule(false)
             setShowNoScheduleModal(true)
           }
         } else {
-          // 没有打卡安排，检查是否有自主设定权限
+          // 没有找到活跃的打卡安排，检查是否有自主设定权限
+          console.log('🔍 [打卡安排检查] 没有找到活跃的打卡安排')
           setHasCheckinSchedule(false)
+
+          // 如果有自主设定权限且还没使用过，显示自主设定模态框
           if (selfScheduleData?.can_self_schedule && !selfScheduleData?.has_used_opportunity) {
+            console.log('🔍 [打卡安排检查] 显示自主设定模态框')
             setShowSelfScheduleModal(true)
+          } else if (selfScheduleData?.can_self_schedule && selfScheduleData?.has_used_opportunity) {
+            // 已经使用过自主设定权限，但没有找到安排，可能是数据问题
+            console.log('🔍 [打卡安排检查] 已使用自主设定权限但没找到安排，显示无安排提示')
+            setShowNoScheduleModal(true)
           } else {
+            // 没有自主设定权限，显示无安排提示
+            console.log('🔍 [打卡安排检查] 没有自主设定权限，显示无安排提示')
             setShowNoScheduleModal(true)
           }
         }
       } else {
-        // 没有打卡安排，检查是否有自主设定权限
+        // API返回没有打卡安排，检查是否有自主设定权限
+        console.log('🔍 [打卡安排检查] API返回没有打卡安排')
         setHasCheckinSchedule(false)
+
         if (selfScheduleData?.can_self_schedule && !selfScheduleData?.has_used_opportunity) {
+          console.log('🔍 [打卡安排检查] 显示自主设定模态框')
           setShowSelfScheduleModal(true)
+        } else if (selfScheduleData?.can_self_schedule && selfScheduleData?.has_used_opportunity) {
+          // 已经使用过自主设定权限，但API没有返回安排，可能是数据问题
+          console.log('🔍 [打卡安排检查] 已使用自主设定权限但API没返回安排，显示无安排提示')
+          setShowNoScheduleModal(true)
         } else {
+          console.log('🔍 [打卡安排检查] 没有自主设定权限，显示无安排提示')
           setShowNoScheduleModal(true)
         }
       }
