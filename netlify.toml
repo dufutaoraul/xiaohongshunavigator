@@ -4,6 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # 强制清空缓存重新部署 - 修复打卡日期设置问题
+  NETLIFY_CACHE_ID = "v2-20250903-checkin-fix"
 
 [[redirects]]
   from = "/*"
