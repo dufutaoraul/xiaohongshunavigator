@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, created_at, student_id, name, real_name, persona, keywords, vision, xiaohongshu_profile_url, role, password')
       .eq('student_id', studentId)
       .single()
 

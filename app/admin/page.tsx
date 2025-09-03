@@ -61,6 +61,17 @@ export default function AdminDashboard() {
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([])
   const [allStudents, setAllStudents] = useState<Student[]>([])
 
+  // 自主设定权限管理相关状态
+  const [showSelfScheduleManagement, setShowSelfScheduleManagement] = useState(false)
+  const [selfScheduleStudents, setSelfScheduleStudents] = useState<any[]>([])
+  const [selfScheduleLoading, setSelfScheduleLoading] = useState(false)
+  const [selfScheduleMessage, setSelfScheduleMessage] = useState('')
+  const [showSelfScheduleModal, setShowSelfScheduleModal] = useState(false)
+  const [selfScheduleMode, setSelfScheduleMode] = useState<'individual' | 'range'>('individual')
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
+  const [rangeStartId, setRangeStartId] = useState('')
+  const [rangeEndId, setRangeEndId] = useState('')
+
   // 权限检查
   useEffect(() => {
     if (!user) {
@@ -138,6 +149,30 @@ export default function AdminDashboard() {
   })
 
   // 加载打卡管理数据
+  // 加载自主设定权限数据
+  const loadSelfScheduleData = async () => {
+    try {
+      setSelfScheduleLoading(true)
+      const response = await fetch('/api/admin/self-schedule-permission', {
+        headers: {
+          'Authorization': `Bearer ${user?.student_id}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSelfScheduleStudents(data.students || [])
+      } else {
+        setSelfScheduleMessage('加载自主设定权限数据失败')
+      }
+    } catch (error) {
+      console.error('加载自主设定权限数据失败:', error)
+      setSelfScheduleMessage('网络错误，请重试')
+    } finally {
+      setSelfScheduleLoading(false)
+    }
+  }
+
   const loadCheckinData = async (type: 'active' | 'qualified' | 'unqualified') => {
     try {
       setLoading(true)
@@ -336,6 +371,37 @@ export default function AdminDashboard() {
     setShowStudentDropdown(false)
   }
 
+  // 移除自主设定权限
+  const handleRemoveSelfSchedulePermission = async (studentIds: string[]) => {
+    try {
+      setSelfScheduleLoading(true)
+      const response = await fetch('/api/admin/self-schedule-permission', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.student_id}`
+        },
+        body: JSON.stringify({
+          action: 'remove_permission',
+          student_ids: studentIds
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSelfScheduleMessage(data.message)
+        loadSelfScheduleData() // 重新加载数据
+      } else {
+        setSelfScheduleMessage('移除权限失败')
+      }
+    } catch (error) {
+      console.error('移除自主设定权限失败:', error)
+      setSelfScheduleMessage('网络错误，请重试')
+    } finally {
+      setSelfScheduleLoading(false)
+    }
+  }
+
   // 设置打卡日期
   const handleSetCheckinSchedule = async () => {
     if (!scheduleStartDate) {
@@ -480,11 +546,11 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* 条件渲染：统计面板、学员管理或打卡管理 */}
-        {!showStudentManagement && !showCheckinManagement ? (
+        {/* 条件渲染：统计面板、学员管理、打卡管理或自主设定权限管理 */}
+        {!showStudentManagement && !showCheckinManagement && !showSelfScheduleManagement ? (
           <>
             {/* 统计卡片 */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               <div className="glass-effect p-6 rounded-xl">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
@@ -564,6 +630,28 @@ export default function AdminDashboard() {
                     loadCheckinData('unqualified')
                   }}
                   className="w-full px-4 py-2 bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 hover:text-orange-200 rounded-lg transition-all duration-300 text-sm"
+                >
+                  进入管理
+                </button>
+              </div>
+
+              {/* 自主设定权限管理卡片 */}
+              <div className="glass-effect p-6 rounded-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="text-3xl mr-4">⚙️</div>
+                    <div>
+                      <p className="text-white/60 text-sm">自主设定权限</p>
+                      <p className="text-2xl font-bold text-white">管理</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSelfScheduleManagement(true)
+                    loadSelfScheduleData()
+                  }}
+                  className="w-full px-4 py-2 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 hover:text-purple-200 rounded-lg transition-all duration-300 text-sm"
                 >
                   进入管理
                 </button>
@@ -1137,6 +1225,92 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+        ) : showSelfScheduleManagement ? (
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center mb-6">
+              <button
+                onClick={() => setShowSelfScheduleManagement(false)}
+                className="mr-4 p-2 text-white/70 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div>
+                <h2 className="text-2xl font-bold text-white">⚙️ 自主设定权限管理</h2>
+                <p className="text-white/60">管理学员自主设定打卡时间的权限</p>
+              </div>
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="flex space-x-4 mb-6">
+              <button
+                onClick={() => setShowSelfScheduleModal(true)}
+                className="px-4 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300"
+              >
+                ➕ 设置权限
+              </button>
+            </div>
+
+            {/* 学员权限列表 */}
+            <div className="glass-effect p-6 rounded-xl">
+              <h3 className="text-xl font-bold text-white mb-4">学员权限状态</h3>
+
+              {selfScheduleLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+                  <p className="text-white/60 mt-2">加载中...</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selfScheduleStudents.filter(student => student.can_self_schedule).map((student) => (
+                    <div key={student.student_id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                      <div>
+                        <p className="text-white font-medium">{student.name}</p>
+                        <p className="text-white/60 text-sm">{student.student_id}</p>
+                        <p className="text-white/50 text-xs">
+                          截止时间: {new Date(student.self_schedule_deadline).toLocaleDateString()}
+                        </p>
+                        <p className="text-white/50 text-xs">
+                          状态: {student.has_used_self_schedule ? '已设置' : '未设置'}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded text-xs">
+                          有权限
+                        </span>
+                        <button
+                          onClick={() => handleRemoveSelfSchedulePermission([student.student_id])}
+                          className="px-3 py-1 bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 rounded text-xs transition-all duration-300"
+                        >
+                          移除权限
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {selfScheduleStudents.filter(student => student.can_self_schedule).length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-white/60">暂无学员拥有自主设定权限</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 自主设定权限设置模态框 */}
+        {showSelfScheduleModal && (
+          <SelfSchedulePermissionModal
+            onClose={() => setShowSelfScheduleModal(false)}
+            onSuccess={() => {
+              setShowSelfScheduleModal(false)
+              loadSelfScheduleData()
+            }}
+            allStudents={allStudents}
+            adminStudentId={user?.student_id || ''}
+          />
         )}
 
         {/* 编辑学员模态框 */}
@@ -1254,6 +1428,211 @@ function EditStudentModal({
               className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '更新中...' : '确认更新'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// 自主设定权限设置模态框组件
+function SelfSchedulePermissionModal({
+  onClose,
+  onSuccess,
+  allStudents,
+  adminStudentId
+}: {
+  onClose: () => void
+  onSuccess: () => void
+  allStudents: Student[]
+  adminStudentId: string
+}) {
+  const [mode, setMode] = useState<'individual' | 'range'>('individual')
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
+  const [rangeStartId, setRangeStartId] = useState('')
+  const [rangeEndId, setRangeEndId] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (mode === 'individual' && selectedStudentIds.length === 0) {
+      setMessage('请选择至少一个学员')
+      return
+    }
+
+    if (mode === 'range' && (!rangeStartId.trim() || !rangeEndId.trim())) {
+      setMessage('请输入学号范围')
+      return
+    }
+
+    setLoading(true)
+    setMessage('')
+
+    try {
+      const response = await fetch('/api/admin/self-schedule-permission', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminStudentId}`
+        },
+        body: JSON.stringify({
+          action: mode === 'individual' ? 'set_individual' : 'set_range',
+          student_ids: mode === 'individual' ? selectedStudentIds : undefined,
+          start_student_id: mode === 'range' ? rangeStartId.trim() : undefined,
+          end_student_id: mode === 'range' ? rangeEndId.trim() : undefined
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setMessage(`✅ ${data.message}`)
+        setTimeout(() => {
+          onSuccess()
+        }, 1500)
+      } else {
+        const errorData = await response.json()
+        setMessage(`❌ ${errorData.error || '设置失败'}`)
+      }
+    } catch (error) {
+      console.error('设置自主权限失败:', error)
+      setMessage('❌ 网络错误，请重试')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudentIds(prev =>
+      prev.includes(studentId)
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900/90 backdrop-blur-sm border border-white/20 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-white">设置自主设定权限</h3>
+          <button
+            onClick={onClose}
+            className="text-white/60 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 设置模式选择 */}
+          <div>
+            <label className="block text-white/80 text-sm font-medium mb-2">设置模式</label>
+            <div className="flex space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="individual"
+                  checked={mode === 'individual'}
+                  onChange={(e) => setMode(e.target.value as 'individual' | 'range')}
+                  className="mr-2"
+                />
+                <span className="text-white/80">逐个设置</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="range"
+                  checked={mode === 'range'}
+                  onChange={(e) => setMode(e.target.value as 'individual' | 'range')}
+                  className="mr-2"
+                />
+                <span className="text-white/80">批量范围设置</span>
+              </label>
+            </div>
+          </div>
+
+          {/* 逐个设置 */}
+          {mode === 'individual' && (
+            <div>
+              <label className="block text-white/80 text-sm font-medium mb-2">
+                选择学员 (已选择 {selectedStudentIds.length} 个)
+              </label>
+              <div className="max-h-48 overflow-y-auto border border-white/20 rounded-lg p-3 space-y-2">
+                {allStudents.filter(s => s.role === 'student').map((student) => (
+                  <label key={student.student_id} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedStudentIds.includes(student.student_id)}
+                      onChange={() => toggleStudentSelection(student.student_id)}
+                      className="mr-2"
+                    />
+                    <span className="text-white/80 text-sm">
+                      {student.student_id} - {student.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 批量范围设置 */}
+          {mode === 'range' && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-white/80 text-sm font-medium mb-2">起始学号</label>
+                <input
+                  type="text"
+                  value={rangeStartId}
+                  onChange={(e) => setRangeStartId(e.target.value)}
+                  placeholder="例如：AXCF2025050001"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                />
+              </div>
+              <div>
+                <label className="block text-white/80 text-sm font-medium mb-2">结束学号</label>
+                <input
+                  type="text"
+                  value={rangeEndId}
+                  onChange={(e) => setRangeEndId(e.target.value)}
+                  placeholder="例如：AXCF2025050100"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                />
+              </div>
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-blue-300 text-sm">
+                  💡 批量设置会为范围内的现有学员开启权限，同时为未来新增的学号自动分配权限
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 消息显示 */}
+          {message && (
+            <div className="p-3 bg-white/10 rounded-lg">
+              <p className="text-white/80 text-sm">{message}</p>
+            </div>
+          )}
+
+          {/* 操作按钮 */}
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white rounded-lg transition-all duration-300 disabled:opacity-50"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? '设置中...' : '确认设置'}
             </button>
           </div>
         </form>

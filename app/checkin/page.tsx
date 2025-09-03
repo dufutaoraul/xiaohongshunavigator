@@ -43,6 +43,12 @@ export default function CheckinPage() {
   const [showCheckinEndedModal, setShowCheckinEndedModal] = useState(false)
   const [hasShownWelcomeToday, setHasShownWelcomeToday] = useState(false)
 
+  // 自主设定权限相关状态
+  const [canSelfSchedule, setCanSelfSchedule] = useState(false)
+  const [selfScheduleStatus, setSelfScheduleStatus] = useState<any>(null)
+  const [showSelfScheduleModal, setShowSelfScheduleModal] = useState(false)
+  const [showSelfScheduleSetupModal, setShowSelfScheduleSetupModal] = useState(false)
+
   // 检查今天是否已经显示过欢迎弹窗
   useEffect(() => {
     const today = getBeijingDateString()
@@ -110,9 +116,33 @@ export default function CheckinPage() {
     }
   }
 
+  // 检查学员的自主设定权限
+  const checkSelfSchedulePermission = async (studentId: string) => {
+    try {
+      const response = await fetch(`/api/student/self-schedule`, {
+        headers: {
+          'Authorization': `Bearer ${studentId}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSelfScheduleStatus(data)
+        setCanSelfSchedule(data.can_self_schedule)
+        return data
+      }
+    } catch (error) {
+      console.error('检查自主设定权限失败:', error)
+    }
+    return null
+  }
+
   // 检查学员的打卡安排
   const checkCheckinSchedule = async (studentId: string) => {
     try {
+      // 首先检查自主设定权限
+      const selfScheduleData = await checkSelfSchedulePermission(studentId)
+
       const response = await fetch(`/api/admin/checkin-schedule?student_id=${studentId}`)
       const result = await response.json()
 
@@ -165,14 +195,22 @@ export default function CheckinPage() {
             setShowNoScheduleModal(true)
           }
         } else {
-          // 没有打卡安排
+          // 没有打卡安排，检查是否有自主设定权限
           setHasCheckinSchedule(false)
-          setShowNoScheduleModal(true)
+          if (selfScheduleData?.can_self_schedule && !selfScheduleData?.has_used_opportunity) {
+            setShowSelfScheduleModal(true)
+          } else {
+            setShowNoScheduleModal(true)
+          }
         }
       } else {
-        // 没有打卡安排
+        // 没有打卡安排，检查是否有自主设定权限
         setHasCheckinSchedule(false)
-        setShowNoScheduleModal(true)
+        if (selfScheduleData?.can_self_schedule && !selfScheduleData?.has_used_opportunity) {
+          setShowSelfScheduleModal(true)
+        } else {
+          setShowNoScheduleModal(true)
+        }
       }
     } catch (error) {
       console.error('检查打卡安排失败:', error)
@@ -964,6 +1002,213 @@ export default function CheckinPage() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* 自主设定权限提示模态框 */}
+        {showSelfScheduleModal && selfScheduleStatus && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-lg w-full text-center">
+              <div className="text-6xl mb-4">⚙️</div>
+              <h3 className="text-xl font-bold text-white mb-4">您可以自主设定打卡时间</h3>
+              <p className="text-white/80 mb-6 leading-relaxed">
+                您可以在 <span className="text-blue-300 font-medium">{selfScheduleStatus.deadline}</span> 前设置您的打卡开始时间，
+                <span className="text-red-300 font-medium">有且只有一次设置机会</span>，
+                一旦设置之后，93天内完成90次打卡，则算合格，可以退还课程保证金，
+                如果不合格，则无法退还，请珍惜机会。
+              </p>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => {
+                    setShowSelfScheduleModal(false)
+                    setShowSelfScheduleSetupModal(true)
+                  }}
+                  className="flex-1 px-6 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 font-medium"
+                >
+                  确认设置打卡时间
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSelfScheduleModal(false)
+                    router.push('/')
+                  }}
+                  className="flex-1 px-6 py-3 bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 hover:text-gray-200 rounded-lg transition-all duration-300"
+                >
+                  我再想想先返回
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 自主设定打卡时间设置模态框 */}
+        {showSelfScheduleSetupModal && selfScheduleStatus && (
+          <SelfScheduleSetupModal
+            selfScheduleStatus={selfScheduleStatus}
+            studentId={studentId}
+            onClose={() => setShowSelfScheduleSetupModal(false)}
+            onSuccess={() => {
+              setShowSelfScheduleSetupModal(false)
+              // 重新检查打卡安排
+              checkCheckinSchedule(studentId)
+            }}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// 自主设定打卡时间设置模态框组件
+function SelfScheduleSetupModal({
+  selfScheduleStatus,
+  studentId,
+  onClose,
+  onSuccess
+}: {
+  selfScheduleStatus: any
+  studentId: string
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [step, setStep] = useState<'tutorial' | 'setup'>('tutorial')
+  const [selectedDate, setSelectedDate] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const handleSetSchedule = async () => {
+    if (!selectedDate) {
+      setMessage('请选择打卡开始日期')
+      return
+    }
+
+    setLoading(true)
+    setMessage('')
+
+    try {
+      const response = await fetch('/api/student/self-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${studentId}`
+        },
+        body: JSON.stringify({
+          start_date: selectedDate
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setMessage(`✅ ${data.message}`)
+        setTimeout(() => {
+          onSuccess()
+        }, 2000)
+      } else {
+        const errorData = await response.json()
+        setMessage(`❌ ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('设置打卡时间失败:', error)
+      setMessage('❌ 网络错误，请重试')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        {step === 'tutorial' ? (
+          <>
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">📖</div>
+              <h3 className="text-xl font-bold text-white mb-4">打卡教程须知</h3>
+              <p className="text-white/80 mb-6">
+                请先阅读完整的打卡教程，了解打卡规则和要求
+              </p>
+            </div>
+
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+              <a
+                href="https://pcnxm41ut6t0.feishu.cn/wiki/QCCGwbgmuifXVRkIwKvc7ZPsnib?from=from_copylink"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <span>点击阅读打卡教程须知</span>
+              </a>
+            </div>
+
+            <div className="flex space-x-4">
+              <button
+                onClick={onClose}
+                className="flex-1 px-6 py-3 bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 hover:text-gray-200 rounded-lg transition-all duration-300"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => setStep('setup')}
+                className="flex-1 px-6 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300"
+              >
+                我已阅读完成，继续设置
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">📅</div>
+              <h3 className="text-xl font-bold text-white mb-4">设置打卡开始时间</h3>
+              <p className="text-white/80 mb-2">
+                请选择您的打卡开始日期（93天内完成90次打卡）
+              </p>
+              <p className="text-red-300 text-sm">
+                ⚠️ 只有一次设置机会，设置后不可修改，请慎重选择
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-white/80 text-sm font-medium mb-2">
+                打卡开始日期
+              </label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                min={selfScheduleStatus.date_range?.earliest}
+                max={selfScheduleStatus.date_range?.latest}
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-400"
+              />
+              <p className="text-white/50 text-xs mt-1">
+                可选择范围：{selfScheduleStatus.date_range?.earliest} 至 {selfScheduleStatus.date_range?.latest}
+              </p>
+            </div>
+
+            {message && (
+              <div className="mb-4 p-3 bg-white/10 rounded-lg">
+                <p className="text-white/80 text-sm">{message}</p>
+              </div>
+            )}
+
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setStep('tutorial')}
+                disabled={loading}
+                className="flex-1 px-6 py-3 bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 hover:text-gray-200 rounded-lg transition-all duration-300 disabled:opacity-50"
+              >
+                返回
+              </button>
+              <button
+                onClick={handleSetSchedule}
+                disabled={loading || !selectedDate}
+                className="flex-1 px-6 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? '设置中...' : '确认设置'}
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>

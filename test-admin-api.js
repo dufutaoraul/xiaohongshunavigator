@@ -3,10 +3,34 @@
 async function testAdminAPI() {
   console.log('🧪 测试管理员API修复效果...\n')
 
-  const baseUrl = 'http://localhost:3000'
+  const baseUrl = 'http://localhost:3003'
+
+  // 首先检查管理员用户
+  console.log('👑 检查管理员用户:')
+
+  try {
+    const response = await fetch(`${baseUrl}/api/user?student_id=AXCF2025010006`)
+    const result = await response.json()
+
+    console.log(`   状态码: ${response.status}`)
+    console.log(`   响应: ${JSON.stringify(result, null, 2)}`)
+
+    if (result.success && result.data) {
+      const user = result.data
+      console.log(`   ✅ 用户信息:`)
+      console.log(`      学号: ${user.student_id}`)
+      console.log(`      姓名: ${user.name}`)
+      console.log(`      角色: ${user.role}`)
+      console.log(`      是否管理员: ${user.role === 'admin' ? '是' : '否'}`)
+    } else {
+      console.log(`   ❌ 获取失败: ${result.error || result.message}`)
+    }
+  } catch (error) {
+    console.log(`   ❌ 请求失败: ${error.message}`)
+  }
 
   // 测试设置打卡日期API
-  console.log('📅 测试设置打卡日期API:')
+  console.log('\n📅 测试设置打卡日期API:')
   
   const testData = {
     mode: 'single',
@@ -96,7 +120,7 @@ async function testAdminAPI() {
 // 检查本地服务器是否运行
 async function checkLocalServer() {
   try {
-    const response = await fetch('http://localhost:3000/api/test-db')
+    const response = await fetch('http://localhost:3003/api/test-db')
     if (response.ok) {
       console.log('✅ 本地开发服务器正在运行\n')
       return true
