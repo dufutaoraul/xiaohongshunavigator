@@ -18,7 +18,6 @@ interface UserProfile {
   persona: string
   keywords: string
   vision: string
-  xiaohongshu_profile_url: string
 }
 
 export default function ProfilePage() {
@@ -30,8 +29,7 @@ export default function ProfilePage() {
     real_name: '',
     persona: '',
     keywords: '',
-    vision: '',
-    xiaohongshu_profile_url: ''
+    vision: ''
   })
   const [isExistingUser, setIsExistingUser] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -67,8 +65,7 @@ export default function ProfilePage() {
         real_name: decodeURIComponent(editRealName || ''),
         persona: '',
         keywords: '',
-        vision: '',
-        xiaohongshu_profile_url: ''
+        vision: ''
       })
       setIsExistingUser(true)
       setIsAuthenticated(true)
@@ -91,8 +88,7 @@ export default function ProfilePage() {
             real_name: userData.real_name || '',
             persona: userData.persona || '',
             keywords: userData.keywords || '',
-            vision: userData.vision || '',
-            xiaohongshu_profile_url: userData.xiaohongshu_profile_url || ''
+            vision: userData.vision || ''
           })
         }
       }
@@ -329,12 +325,7 @@ export default function ProfilePage() {
     }
   }, [studentId])
 
-  // 验证小红书链接格式
-  const validateXiaohongshuUrl = (url: string): boolean => {
-    if (!url.trim()) return false
-    const xiaohongshuRegex = /^https?:\/\/(www\.)?xiaohongshu\.com\/user\/profile\/[a-zA-Z0-9]+(\?.*)?$/
-    return xiaohongshuRegex.test(url.trim())
-  }
+
 
   const handleSave = async () => {
     if (!profile.student_id.trim()) {
@@ -352,15 +343,7 @@ export default function ProfilePage() {
       return
     }
 
-    if (!profile.xiaohongshu_profile_url.trim()) {
-      setMessage('请填写小红书主页链接')
-      return
-    }
 
-    if (!validateXiaohongshuUrl(profile.xiaohongshu_profile_url)) {
-      setMessage('请输入有效的小红书主页链接格式')
-      return
-    }
 
     if (!profile.persona.trim() || !profile.keywords.trim() || !profile.vision.trim()) {
       setMessage('请填写所有必填项')
@@ -460,18 +443,7 @@ export default function ProfilePage() {
 
       <Card title="学员信息" icon="👤" className="mb-8">
         <div className="space-y-6">
-          {/* 小红书绑定提示 */}
-          {!profile.xiaohongshu_profile_url && (
-            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <div className="flex items-center">
-                <span className="text-2xl mr-3">🔔</span>
-                <div>
-                  <p className="text-yellow-300 font-medium">需要绑定小红书主页</p>
-                  <p className="text-yellow-200/80 text-sm">请完成小红书主页绑定，这是进行打卡验证的必要步骤</p>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           {/* 显示已登录的学员信息 */}
           <div className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/30 rounded-lg">
@@ -524,18 +496,9 @@ export default function ProfilePage() {
             required
             rows={1}
           />
-          <Textarea
-            label="小红书主页链接 *"
-            placeholder="请输入您的小红书主页链接，格式：https://www.xiaohongshu.com/user/profile/xxxxxx"
-            value={profile.xiaohongshu_profile_url}
-            onChange={(value) => setProfile({ ...profile, xiaohongshu_profile_url: value })}
-            required
-            rows={1}
-          />
-
           <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
             <span className="font-medium">📋 说明：</span>
-            真实姓名用于后续生成证书，小红书主页用于打卡验证，请如实填写。
+            真实姓名用于后续生成证书。
           </div>
         </div>
       </Card>

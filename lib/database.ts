@@ -14,7 +14,6 @@ export interface StudentInfo {
   persona?: string
   keywords?: string
   vision?: string
-  xiaohongshu_profile_url?: string  // 小红书主页链接
   created_at?: string
 }
 
