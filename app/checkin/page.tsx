@@ -119,20 +119,28 @@ export default function CheckinPage() {
   // 检查学员的自主设定权限
   const checkSelfSchedulePermission = async (studentId: string) => {
     try {
+      console.log('🔍 [自主设定权限] 开始检查学员:', studentId)
       const response = await fetch(`/api/student/self-schedule`, {
         headers: {
           'Authorization': `Bearer ${studentId}`
         }
       })
 
+      console.log('🔍 [自主设定权限] API响应状态:', response.status, response.statusText)
+
       if (response.ok) {
         const data = await response.json()
+        console.log('🔍 [自主设定权限] API响应数据:', data)
         setSelfScheduleStatus(data)
         setCanSelfSchedule(data.can_self_schedule)
         return data
+      } else {
+        console.error('🔍 [自主设定权限] API响应失败:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('🔍 [自主设定权限] 错误详情:', errorText)
       }
     } catch (error) {
-      console.error('检查自主设定权限失败:', error)
+      console.error('🔍 [自主设定权限] 检查失败:', error)
     }
     return null
   }
@@ -147,6 +155,7 @@ export default function CheckinPage() {
       const response = await fetch(`/api/admin/checkin-schedule?student_id=${studentId}`)
       const result = await response.json()
       console.log('🔍 [打卡安排检查] API响应:', result)
+      console.log('🔍 [打卡安排检查] API响应状态:', response.status, response.statusText)
 
       if (result.success && result.data && result.data.length > 0) {
         // 获取本地日期，避免时区问题
@@ -156,7 +165,16 @@ export default function CheckinPage() {
         console.log('打卡安排:', result.data)
 
         // 找到学员的打卡安排（不管是否在日期范围内）
+        console.log('🔍 [打卡安排检查] 所有安排:', result.data.map((s: any) => ({
+          id: s.id,
+          student_id: s.student_id,
+          is_active: s.is_active,
+          start_date: s.start_date,
+          end_date: s.end_date
+        })))
+
         const userSchedule = result.data.find((schedule: any) => schedule.is_active)
+        console.log('🔍 [打卡安排检查] 找到的活跃安排:', userSchedule)
 
         if (userSchedule) {
           const isInDateRange = userSchedule.start_date <= todayStr && userSchedule.end_date >= todayStr
@@ -263,6 +281,9 @@ export default function CheckinPage() {
 
   const fetchCheckinData = async () => {
     try {
+      console.log('🔍 [数据加载] 开始获取打卡数据')
+      setLoading(true)
+
       // 先获取打卡安排
       await checkCheckinSchedule(studentId)
 
@@ -306,6 +327,9 @@ export default function CheckinPage() {
       }
     } catch (error) {
       console.error('Error fetching checkin data:', error)
+    } finally {
+      console.log('🔍 [数据加载] 数据加载完成')
+      setLoading(false)
     }
   }
 
@@ -562,7 +586,7 @@ export default function CheckinPage() {
   }
 
   // 如果没有打卡安排，显示提示
-  if (hasXiaohongshuProfile && !hasCheckinSchedule && !showNoScheduleModal) {
+  if (hasXiaohongshuProfile && !hasCheckinSchedule && !showNoScheduleModal && !showSelfScheduleModal) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
