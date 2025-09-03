@@ -87,18 +87,35 @@ export async function POST(request: NextRequest) {
 
     if (action === 'set_individual') {
       // 单个设置
+      console.log('处理单个设置请求:', { student_ids })
+
       if (!student_ids || !Array.isArray(student_ids)) {
+        console.log('无效的student_ids:', student_ids)
         return NextResponse.json({ error: 'Invalid student_ids' }, { status: 400 })
       }
 
+      if (student_ids.length === 0) {
+        console.log('student_ids为空数组')
+        return NextResponse.json({ error: 'No students selected' }, { status: 400 })
+      }
+
       // 首先获取用户的创建时间，然后计算截止时间
+      console.log('查询用户数据，student_ids:', student_ids)
       const { data: users, error: fetchError } = await supabaseAdmin
         .from('users')
         .select('student_id, created_at')
         .in('student_id', student_ids)
 
+      console.log('查询用户结果:', { users, fetchError })
+
       if (fetchError) {
+        console.error('获取用户数据失败:', fetchError)
         return NextResponse.json({ error: 'Failed to fetch user data' }, { status: 500 })
+      }
+
+      if (!users || users.length === 0) {
+        console.log('没有找到匹配的用户')
+        return NextResponse.json({ error: 'No matching users found' }, { status: 404 })
       }
 
       // 为每个用户更新权限和截止时间
@@ -106,7 +123,9 @@ export async function POST(request: NextRequest) {
         const deadline = new Date(user.created_at)
         deadline.setMonth(deadline.getMonth() + 6)
 
-        return supabaseAdmin
+        console.log(`更新用户 ${user.student_id} 的权限，截止时间: ${deadline.toISOString()}`)
+
+        const result = await supabaseAdmin
           .from('users')
           .update({
             can_self_schedule: true,
@@ -115,19 +134,27 @@ export async function POST(request: NextRequest) {
           .eq('student_id', user.student_id)
           .select('student_id, name')
           .single()
+
+        console.log(`用户 ${user.student_id} 更新结果:`, result)
+        return result
       })
 
       const results = await Promise.all(updatePromises)
       const data = results.map(result => result.data).filter(Boolean)
 
       // 检查是否有错误
-      const hasError = results.some(result => result.error)
-      if (hasError) {
-        return NextResponse.json({ error: 'Failed to update permissions' }, { status: 500 })
+      const errors = results.filter(result => result.error)
+      if (errors.length > 0) {
+        console.error('更新权限时出现错误:', errors)
+        return NextResponse.json({
+          error: 'Failed to update permissions',
+          details: errors.map(e => e.error)
+        }, { status: 500 })
       }
 
-      return NextResponse.json({ 
-        success: true, 
+      console.log('权限设置成功，更新的学员:', data)
+      return NextResponse.json({
+        success: true,
         message: `已为 ${data.length} 名学员开启自主设定权限`,
         updated_students: data
       })

@@ -1457,6 +1457,7 @@ function SelfSchedulePermissionModal({
   const [rangeEndId, setRangeEndId] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1475,29 +1476,34 @@ function SelfSchedulePermissionModal({
     setMessage('')
 
     try {
+      const requestData = {
+        action: mode === 'individual' ? 'set_individual' : 'set_range',
+        student_ids: mode === 'individual' ? selectedStudentIds : undefined,
+        start_student_id: mode === 'range' ? rangeStartId.trim() : undefined,
+        end_student_id: mode === 'range' ? rangeEndId.trim() : undefined
+      }
+
+      console.log('发送权限设置请求:', requestData)
+
       const response = await fetch('/api/admin/self-schedule-permission', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminStudentId}`
         },
-        body: JSON.stringify({
-          action: mode === 'individual' ? 'set_individual' : 'set_range',
-          student_ids: mode === 'individual' ? selectedStudentIds : undefined,
-          start_student_id: mode === 'range' ? rangeStartId.trim() : undefined,
-          end_student_id: mode === 'range' ? rangeEndId.trim() : undefined
-        })
+        body: JSON.stringify(requestData)
       })
 
+      const data = await response.json()
+      console.log('权限设置响应:', { status: response.status, data })
+
       if (response.ok) {
-        const data = await response.json()
         setMessage(`✅ ${data.message}`)
         setTimeout(() => {
           onSuccess()
         }, 1500)
       } else {
-        const errorData = await response.json()
-        setMessage(`❌ ${errorData.error || '设置失败'}`)
+        setMessage(`❌ ${data.error || '设置失败'}`)
       }
     } catch (error) {
       console.error('设置自主权限失败:', error)
@@ -1514,6 +1520,18 @@ function SelfSchedulePermissionModal({
         : [...prev, studentId]
     )
   }
+
+  // 过滤学员列表
+  const filteredStudents = allStudents
+    .filter(s => s.role === 'student')
+    .filter(student => {
+      if (!searchTerm.trim()) return true
+      const term = searchTerm.toLowerCase()
+      return (
+        student.student_id.toLowerCase().includes(term) ||
+        student.name.toLowerCase().includes(term)
+      )
+    })
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1564,20 +1582,38 @@ function SelfSchedulePermissionModal({
               <label className="block text-white/80 text-sm font-medium mb-2">
                 选择学员 (已选择 {selectedStudentIds.length} 个)
               </label>
+
+              {/* 搜索框 */}
+              <div className="mb-3">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="搜索学号或昵称..."
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400"
+                />
+              </div>
+
               <div className="max-h-48 overflow-y-auto border border-white/20 rounded-lg p-3 space-y-2">
-                {allStudents.filter(s => s.role === 'student').map((student) => (
-                  <label key={student.student_id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedStudentIds.includes(student.student_id)}
-                      onChange={() => toggleStudentSelection(student.student_id)}
-                      className="mr-2"
-                    />
-                    <span className="text-white/80 text-sm">
-                      {student.student_id} - {student.name}
-                    </span>
-                  </label>
-                ))}
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => (
+                    <label key={student.student_id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedStudentIds.includes(student.student_id)}
+                        onChange={() => toggleStudentSelection(student.student_id)}
+                        className="mr-2"
+                      />
+                      <span className="text-white/80 text-sm">
+                        {student.student_id} - {student.name}
+                      </span>
+                    </label>
+                  ))
+                ) : (
+                  <div className="text-white/50 text-sm text-center py-4">
+                    {searchTerm ? '没有找到匹配的学员' : '没有学员数据'}
+                  </div>
+                )}
               </div>
             </div>
           )}
