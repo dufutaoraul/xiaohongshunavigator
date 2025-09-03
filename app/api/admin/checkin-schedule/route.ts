@@ -185,10 +185,14 @@ export async function POST(request: NextRequest) {
         data = updateResult.data
         error = updateResult.error
       } else {
-        // 创建新记录
+        // 创建新记录 - 手动生成UUID以避免数据库约束错误
+        const { randomUUID } = await import('crypto')
+        const newId = randomUUID()
+
         const insertResult = await supabase
           .from('checkin_schedules')
           .insert({
+            id: newId,
             student_id,
             start_date,
             end_date,
@@ -300,7 +304,10 @@ export async function POST(request: NextRequest) {
           .eq('is_active', true)
       }
 
+      // 为每个学员生成UUID
+      const { randomUUID } = await import('crypto')
       const schedules = studentIds.map(id => ({
+        id: randomUUID(),
         student_id: id,
         start_date,
         end_date,
