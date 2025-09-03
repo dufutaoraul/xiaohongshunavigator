@@ -1060,15 +1060,33 @@ export default function CheckinPage() {
             <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-lg w-full text-center">
               <div className="text-6xl mb-4">⚙️</div>
               <h3 className="text-xl font-bold text-white mb-4">您可以自主设定打卡时间</h3>
-              <p className="text-white/80 mb-6 leading-relaxed">
+              <p className="text-white/80 mb-4 leading-relaxed">
                 您可以在 <span className="text-blue-300 font-medium">{selfScheduleStatus.deadline}</span> 前设置您的打卡开始时间，
                 <span className="text-red-300 font-medium">有且只有一次设置机会</span>，
                 一旦设置之后，93天内完成90次打卡，则算合格，可以退还课程保证金，
                 如果不合格，则无法退还，请珍惜机会。
               </p>
+
+              {/* 飞书文档链接 */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+                <p className="text-white/80 text-sm mb-2">设置前请先阅读打卡须知：</p>
+                <a
+                  href="https://pcnxm41ut6t0.feishu.cn/wiki/QCCGwbgmuifXVRkIwKvc7ZPsnib?from=from_copylink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span className="text-sm">点击阅读打卡教程须知</span>
+                </a>
+              </div>
+
               <div className="flex space-x-4">
                 <button
                   onClick={() => {
+                    console.log('点击确认设置打卡时间')
                     setShowSelfScheduleModal(false)
                     setShowSelfScheduleSetupModal(true)
                   }}
@@ -1095,13 +1113,26 @@ export default function CheckinPage() {
           <SelfScheduleSetupModal
             selfScheduleStatus={selfScheduleStatus}
             studentId={studentId}
-            onClose={() => setShowSelfScheduleSetupModal(false)}
+            onClose={() => {
+              console.log('关闭设置模态框')
+              setShowSelfScheduleSetupModal(false)
+            }}
             onSuccess={() => {
+              console.log('设置成功')
               setShowSelfScheduleSetupModal(false)
               // 重新检查打卡安排
               checkCheckinSchedule(studentId)
             }}
           />
+        )}
+
+        {/* 调试信息 */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="fixed bottom-4 left-4 bg-black/80 text-white p-2 rounded text-xs">
+            <div>showSelfScheduleModal: {showSelfScheduleModal.toString()}</div>
+            <div>showSelfScheduleSetupModal: {showSelfScheduleSetupModal.toString()}</div>
+            <div>selfScheduleStatus: {selfScheduleStatus ? 'exists' : 'null'}</div>
+          </div>
         )}
       </div>
     </div>
