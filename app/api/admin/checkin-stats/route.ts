@@ -42,40 +42,46 @@ export async function GET(request: NextRequest) {
     
     console.log('活跃的打卡安排:', schedules)
     
-    // 计算正在打卡的人数（今天在打卡周期内的学员）
+    // 获取所有有打卡安排的学员ID（不仅仅是当前活跃的）
     let activePunches = 0
+    const allStudentIds: string[] = []
     const activeStudentIds: string[] = []
-    
+
     if (schedules && schedules.length > 0) {
       for (const schedule of schedules) {
-        if (schedule.start_date <= todayStr && schedule.end_date >= todayStr) {
-          // 这个安排在今天是活跃的
-          console.log('活跃的打卡安排:', schedule)
+        let studentIds: string[] = []
 
-          if (schedule.student_id && !schedule.batch_start_id && !schedule.batch_end_id) {
-            // 单个学员模式（有 student_id，没有 batch 字段）
-            activePunches += 1
-            activeStudentIds.push(schedule.student_id)
-            console.log('单个学员:', schedule.student_id)
-          } else if (schedule.batch_start_id && schedule.batch_end_id) {
-            // 批量模式（有 batch 字段）
-            console.log('批量模式:', schedule.batch_start_id, 'to', schedule.batch_end_id)
+        if (schedule.student_id && !schedule.batch_start_id && !schedule.batch_end_id) {
+          // 单个学员模式
+          studentIds = [schedule.student_id]
+        } else if (schedule.batch_start_id && schedule.batch_end_id) {
+          // 批量模式
+          studentIds = generateStudentIdRange(schedule.batch_start_id, schedule.batch_end_id)
+        }
 
-            // 生成学号范围
-            const batchStudentIds = generateStudentIdRange(schedule.batch_start_id, schedule.batch_end_id)
-
-            if (batchStudentIds.length > 0) {
-              activePunches += batchStudentIds.length
-              activeStudentIds.push(...batchStudentIds)
-              console.log('批量学员数量:', batchStudentIds.length)
-            }
+        // 添加到所有学员列表（去重）
+        studentIds.forEach(id => {
+          if (!allStudentIds.includes(id)) {
+            allStudentIds.push(id)
           }
+        })
+
+        // 检查是否在当前打卡周期内
+        if (schedule.start_date <= todayStr && schedule.end_date >= todayStr) {
+          activePunches += studentIds.length
+          activeStudentIds.push(...studentIds)
+          console.log('当前活跃的打卡安排:', schedule.student_id || `${schedule.batch_start_id}-${schedule.batch_end_id}`)
         }
       }
     }
-    
+
+    // 去重活跃学员ID
+    const uniqueActiveStudentIds = [...new Set(activeStudentIds)]
+    activePunches = uniqueActiveStudentIds.length
+
+    console.log('所有有安排的学员数:', allStudentIds.length)
     console.log('正在打卡人数:', activePunches)
-    console.log('正在打卡的学员ID:', activeStudentIds)
+    console.log('正在打卡的学员ID:', uniqueActiveStudentIds)
     
     // 获取所有学员信息
     const { data: allStudents, error: studentsError } = await supabase
@@ -104,21 +110,12 @@ export async function GET(request: NextRequest) {
     let forgotStudents = 0
 
     console.log('开始计算学员状态...')
-    console.log('活跃学员ID列表:', activeStudentIds)
+    console.log('所有学员ID列表:', allStudentIds)
 
-    // 只统计有活跃打卡安排的学员
-    for (const studentId of activeStudentIds) {
-      // 找到该学员的打卡安排
-      const studentSchedule = schedules.find((s: any) => {
-        if (s.student_id && !s.batch_start_id && !s.batch_end_id) {
-          // 单个学员模式
-          return s.student_id === studentId
-        } else if (s.batch_start_id && s.batch_end_id) {
-          // 批量模式
-          return studentId >= s.batch_start_id && studentId <= s.batch_end_id
-        }
-        return false
-      })
+    // 统计所有有打卡安排的学员（包括已结束的）
+    for (const studentId of allStudentIds) {
+      // 找到该学员的打卡安排（只查找单个学员模式，因为allStudentIds已经展开了批量）
+      const studentSchedule = schedules.find((s: any) => s.student_id === studentId)
 
       if (!studentSchedule) {
         console.log(`学员 ${studentId} 没有找到对应的打卡安排`)
@@ -143,35 +140,26 @@ export async function GET(request: NextRequest) {
       console.log(`学员 ${studentId}: 总天数=${totalDays}, 已打卡=${checkinDays}, 完成率=${completionRate.toFixed(1)}%`)
 
       if (todayDate > endDate) {
-        // 打卡期已结束，根据完成率判断
-        if (completionRate >= 80) {
+        // 打卡期已结束，使用与前端页面一致的判断标准：93天内完成90次打卡
+        const actualPeriodDays = Math.min(93, totalDays)
+        const isQualified = checkinDays >= 90 && actualPeriodDays >= 90
+
+        if (isQualified) {
           qualifiedStudents++
-          console.log(`学员 ${studentId}: 打卡合格（已结束）`)
+          console.log(`学员 ${studentId}: 打卡合格（已结束，${checkinDays}天/${actualPeriodDays}天）`)
         } else {
           forgotStudents++
-          console.log(`学员 ${studentId}: 打卡不合格（已结束）`)
+          console.log(`学员 ${studentId}: 打卡不合格（已结束，${checkinDays}天/${actualPeriodDays}天，需要90天）`)
         }
       } else if (todayDate < startDate) {
         // 打卡期还未开始
         notStartedStudents++
         console.log(`学员 ${studentId}: 未开始打卡`)
       } else {
-        // 打卡期进行中
-        const daysSinceStart = Math.ceil((todayDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-
-        if (checkinDays === 0) {
-          // 还没有开始打卡
-          notStartedStudents++
-          console.log(`学员 ${studentId}: 未开始打卡（进行中）`)
-        } else if (checkinDays < daysSinceStart) {
-          // 有忘记打卡的天数
-          forgotStudents++
-          console.log(`学员 ${studentId}: 忘记打卡（应打卡${daysSinceStart}天，实际${checkinDays}天）`)
-        } else {
-          // 正常打卡中
-          qualifiedStudents++
-          console.log(`学员 ${studentId}: 正常打卡中`)
-        }
+        // 打卡期进行中 - 统一归类为"未开始"，与前端逻辑保持一致
+        // 只有打卡期结束后才能最终判断是否合格
+        notStartedStudents++
+        console.log(`学员 ${studentId}: 正在打卡中（${checkinDays}天）`)
       }
     }
 
@@ -188,7 +176,7 @@ export async function GET(request: NextRequest) {
       qualifiedStudents,
       notStartedStudents,
       forgotStudents,
-      activeStudentIds,
+      activeStudentIds: uniqueActiveStudentIds,
       todayStr
     })
     
