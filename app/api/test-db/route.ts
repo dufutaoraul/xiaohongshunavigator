@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     // 测试表访问权限
     const tables = ['users', 'checkin_schedules', 'checkin_records']
-    const tableTests = {}
+    const tableTests: Record<string, { accessible: boolean; error: string | null }> = {}
 
     for (const table of tables) {
       try {
