@@ -1225,7 +1225,10 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        ) : showSelfScheduleManagement ? (
+        )}
+
+        {/* 自主设定权限管理界面 */}
+        {showSelfScheduleManagement && (
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center mb-6">
               <button

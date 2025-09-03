@@ -91,16 +91,38 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid student_ids' }, { status: 400 })
       }
 
-      const { data, error } = await supabaseAdmin
+      // 首先获取用户的创建时间，然后计算截止时间
+      const { data: users, error: fetchError } = await supabaseAdmin
         .from('users')
-        .update({ 
-          can_self_schedule: true,
-          self_schedule_deadline: supabaseAdmin.raw('created_at + INTERVAL \'6 months\'')
-        })
+        .select('student_id, created_at')
         .in('student_id', student_ids)
-        .select('student_id, name')
 
-      if (error) {
+      if (fetchError) {
+        return NextResponse.json({ error: 'Failed to fetch user data' }, { status: 500 })
+      }
+
+      // 为每个用户更新权限和截止时间
+      const updatePromises = users.map(async (user) => {
+        const deadline = new Date(user.created_at)
+        deadline.setMonth(deadline.getMonth() + 6)
+
+        return supabaseAdmin
+          .from('users')
+          .update({
+            can_self_schedule: true,
+            self_schedule_deadline: deadline.toISOString()
+          })
+          .eq('student_id', user.student_id)
+          .select('student_id, name')
+          .single()
+      })
+
+      const results = await Promise.all(updatePromises)
+      const data = results.map(result => result.data).filter(Boolean)
+
+      // 检查是否有错误
+      const hasError = results.some(result => result.error)
+      if (hasError) {
         return NextResponse.json({ error: 'Failed to update permissions' }, { status: 500 })
       }
 
@@ -130,17 +152,39 @@ export async function POST(request: NextRequest) {
       }
 
       // 2. 为范围内现有学员开启权限
-      const { data, error } = await supabaseAdmin
+      // 首先获取范围内的用户
+      const { data: rangeUsers, error: fetchRangeError } = await supabaseAdmin
         .from('users')
-        .update({ 
-          can_self_schedule: true,
-          self_schedule_deadline: supabaseAdmin.raw('created_at + INTERVAL \'6 months\'')
-        })
+        .select('student_id, created_at, name')
         .gte('student_id', start_student_id)
         .lte('student_id', end_student_id)
-        .select('student_id, name')
 
-      if (error) {
+      if (fetchRangeError) {
+        return NextResponse.json({ error: 'Failed to fetch range users' }, { status: 500 })
+      }
+
+      // 为每个用户更新权限和截止时间
+      const rangeUpdatePromises = rangeUsers.map(async (user) => {
+        const deadline = new Date(user.created_at)
+        deadline.setMonth(deadline.getMonth() + 6)
+
+        return supabaseAdmin
+          .from('users')
+          .update({
+            can_self_schedule: true,
+            self_schedule_deadline: deadline.toISOString()
+          })
+          .eq('student_id', user.student_id)
+          .select('student_id, name')
+          .single()
+      })
+
+      const rangeResults = await Promise.all(rangeUpdatePromises)
+      const data = rangeResults.map(result => result.data).filter(Boolean)
+
+      // 检查是否有错误
+      const hasRangeError = rangeResults.some(result => result.error)
+      if (hasRangeError) {
         return NextResponse.json({ error: 'Failed to update range permissions' }, { status: 500 })
       }
 
