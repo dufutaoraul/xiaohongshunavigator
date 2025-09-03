@@ -831,35 +831,44 @@ export default function AdminDashboard() {
                 {/* 打卡日历视图 */}
                 <div className="mb-6 p-4 bg-white/5 rounded-lg">
                   <h4 className="text-lg font-medium text-white mb-4">📅 打卡日历</h4>
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                    {/* 星期标题 */}
-                    {['日', '一', '二', '三', '四', '五', '六'].map(day => (
-                      <div key={day} className="p-2 text-white/60 font-medium">{day}</div>
-                    ))}
 
-                    {/* 生成日历格子 */}
-                    {(() => {
-                      if (!selectedStudent?.schedule) return null
+                  {(() => {
+                    if (!selectedStudent?.schedule) return <div className="text-white/60 text-center py-4">暂无打卡安排</div>
 
-                      const startDate = new Date(selectedStudent.schedule.start_date)
-                      const endDate = new Date(selectedStudent.schedule.end_date)
-                      const checkinDates = new Set(selectedStudent.records?.map((r: any) => r.checkin_date) || [])
+                    const startDate = new Date(selectedStudent.schedule.start_date)
+                    const endDate = new Date(selectedStudent.schedule.end_date)
+                    const checkinDates = new Set(selectedStudent.records?.map((r: any) => r.checkin_date) || [])
 
-                      // 生成日历天数
+                    // 生成所有涉及的月份
+                    const months = []
+                    const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+                    const lastMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1)
+
+                    while (current <= lastMonth) {
+                      months.push(new Date(current))
+                      current.setMonth(current.getMonth() + 1)
+                    }
+
+                    return months.map((monthDate, monthIndex) => {
+                      const year = monthDate.getFullYear()
+                      const month = monthDate.getMonth()
+                      const monthName = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'][month]
+
+                      // 生成当月日历
+                      const firstDay = new Date(year, month, 1)
+                      const lastDay = new Date(year, month + 1, 0)
                       const calendarDays = []
-                      const firstDay = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
-                      const lastDay = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0)
 
                       // 填充月初空白
                       const startWeekday = firstDay.getDay()
                       for (let i = 0; i < startWeekday; i++) {
-                        calendarDays.push(<div key={`empty-${i}`} className="p-2"></div>)
+                        calendarDays.push(<div key={`empty-${monthIndex}-${i}`} className="p-2"></div>)
                       }
 
                       // 填充日期
-                      const current = new Date(firstDay)
-                      while (current <= lastDay) {
-                        const dateStr = getBeijingDateString(current)
+                      const currentDay = new Date(firstDay)
+                      while (currentDay <= lastDay) {
+                        const dateStr = getBeijingDateString(currentDay)
                         const isInRange = dateStr >= selectedStudent.schedule.start_date && dateStr <= selectedStudent.schedule.end_date
                         const hasCheckin = checkinDates.has(dateStr)
                         const isPast = dateStr < getBeijingDateString()
@@ -882,17 +891,33 @@ export default function AdminDashboard() {
 
                         calendarDays.push(
                           <div key={dateStr} className={`p-2 rounded text-xs ${bgClass} ${textClass} relative`}>
-                            {current.getDate()}
+                            {currentDay.getDate()}
                             {hasCheckin && <div className="absolute top-0 right-0 text-xs">✅</div>}
                           </div>
                         )
 
-                        current.setDate(current.getDate() + 1)
+                        currentDay.setDate(currentDay.getDate() + 1)
                       }
 
-                      return calendarDays
-                    })()}
-                  </div>
+                      return (
+                        <div key={`${year}-${month}`} className="mb-6">
+                          {/* 月份标题 */}
+                          <div className="text-center mb-3">
+                            <h5 className="text-lg font-bold text-white">{year}年 {monthName}</h5>
+                          </div>
+
+                          {/* 日历网格 */}
+                          <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                            {/* 星期标题 */}
+                            {['日', '一', '二', '三', '四', '五', '六'].map(day => (
+                              <div key={day} className="p-2 text-white/60 font-medium">{day}</div>
+                            ))}
+                            {calendarDays}
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()}
 
                   {/* 图例 */}
                   <div className="mt-4 flex justify-center flex-wrap gap-4 text-xs text-white/70">

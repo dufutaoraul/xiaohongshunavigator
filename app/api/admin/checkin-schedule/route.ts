@@ -43,11 +43,21 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // 计算结束日期（开始日期 + 92天，因为包含开始日期本身，所以93天周期是+92）
+    // 计算结束日期（开始日期 + 92天，总计93天）
+    // 例如：开始日期2025-01-01，结束日期2025-04-04（第93天）
     const startDateObj = new Date(start_date + 'T00:00:00.000Z')
     const endDateObj = new Date(startDateObj.getTime() + (92 * 24 * 60 * 60 * 1000))
 
     const end_date = endDateObj.toISOString().split('T')[0]
+
+    // 验证日期计算：计算实际天数
+    const actualDays = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    console.log('🔍 [日期计算验证]:', {
+      start_date,
+      end_date,
+      计算天数: actualDays,
+      应该是93天: actualDays === 93
+    })
 
     console.log('🔍 [Checkin Schedule API] 日期计算:', { start_date, end_date })
 
@@ -56,7 +66,7 @@ export async function POST(request: NextRequest) {
     try {
       const { data: testData, error: testError } = await supabase
         .from('checkin_schedules')
-        .select('count(*)')
+        .select('id')
         .limit(1)
 
       if (testError) {

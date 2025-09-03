@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     // 测试基本连接
     const { data: testData, error: testError } = await supabase
       .from('users')
-      .select('count(*)')
+      .select('student_id')
       .limit(1)
 
     if (testError) {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       try {
         const { data, error } = await supabase
           .from(table)
-          .select('count(*)')
+          .select('*', { count: 'exact', head: true })
           .limit(1)
 
         tableTests[table] = {
