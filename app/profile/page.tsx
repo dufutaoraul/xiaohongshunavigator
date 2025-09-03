@@ -173,8 +173,7 @@ export default function ProfilePage() {
             real_name: userData.real_name || '',
             persona: userData.persona || '',
             keywords: userData.keywords || '',
-            vision: userData.vision || '',
-            xiaohongshu_profile_url: userData.xiaohongshu_profile_url || ''
+            vision: userData.vision || ''
           }))
           
           // 判断是否为老用户（有内容）
@@ -231,8 +230,7 @@ export default function ProfilePage() {
           real_name: result.user.real_name || '',
           persona: result.user.persona || '',
           keywords: result.user.keywords || '',
-          vision: result.user.vision || '',
-          xiaohongshu_profile_url: result.user.xiaohongshu_profile_url || ''
+          vision: result.user.vision || ''
         })
         
         const hasContent = Boolean(result.user.persona || result.user.keywords || result.user.vision)
@@ -303,8 +301,7 @@ export default function ProfilePage() {
         real_name: student.real_name || '',
         persona: student.persona || '',
         keywords: student.keywords || '',
-        vision: student.vision || '',
-        xiaohongshu_profile_url: student.xiaohongshu_profile_url || ''
+        vision: student.vision || ''
       })
       
       // 判断是否为老用户（有内容）
@@ -318,8 +315,7 @@ export default function ProfilePage() {
         real_name: '',
         persona: '',
         keywords: '',
-        vision: '',
-        xiaohongshu_profile_url: ''
+        vision: ''
       })
       setIsExistingUser(false)
     }
