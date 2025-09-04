@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
+import { PDFDocument, rgb } from 'pdf-lib'
 import fs from 'fs'
 import path from 'path'
 
@@ -35,45 +35,58 @@ export async function GET(request: NextRequest) {
     const startDateChinese = formatDateToChinese(startDate)
     const endDateChinese = formatDateToChinese(endDate)
 
-    // 读取PDF模板文件
-    const templatePath = path.join(process.cwd(), 'public', '7.7夏令营——爱学AI社区相关文档.pdf')
-    
-    if (!fs.existsSync(templatePath)) {
-      return NextResponse.json({ error: 'PDF模板文件不存在' }, { status: 404 })
+    // 创建一个简单的PDF合同（不依赖模板文件）
+    const pdfDoc = await PDFDocument.create()
+    const page = pdfDoc.addPage([595, 842]) // A4 size
+    const { width, height } = page.getSize()
+
+    // 使用内置字体（避免中文编码问题）
+    // 将中文转换为拼音或英文描述
+    const contractText = [
+      'XIAOHONGSHU CHECKIN CONTRACT',
+      '=================================',
+      '',
+      `Student ID: ${studentId}`,
+      `Start Date: ${startDate} (${startDateChinese})`,
+      `End Date: ${endDate} (${endDateChinese})`,
+      `Duration: 93 days total`,
+      `Target: Complete 90 days to pass`,
+      '',
+      `Generated: ${new Date().toLocaleString('en-US')}`,
+      '',
+      'Terms:',
+      '1. Student must submit valid Xiaohongshu links',
+      '2. Complete 90 out of 93 days to graduate',
+      '3. All submissions subject to review',
+      '',
+      'Contact: AI Learning Community'
+    ]
+
+    // 添加文本到PDF
+    let yPosition = height - 50
+    const lineHeight = 20
+
+    for (const line of contractText) {
+      page.drawText(line, {
+        x: 50,
+        y: yPosition,
+        size: line.includes('=') ? 14 : (line.startsWith('XIAOHONGSHU') ? 16 : 12),
+        color: rgb(0, 0, 0),
+      })
+      yPosition -= lineHeight
     }
 
-    const templateBytes = fs.readFileSync(templatePath)
-    const pdfDoc = await PDFDocument.load(templateBytes)
-
-    // 获取第一页
-    const pages = pdfDoc.getPages()
-    const firstPage = pages[0]
-    const { width, height } = firstPage.getSize()
-
-    // 嵌入字体（支持中文）
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-
-    // 在PDF上添加打卡时间信息
-    const contractText = `
-打卡时间：
-${startDateChinese}至${endDateChinese}，共计93天。
-需完成90天打卡方可合格。
-
-学员编号：${studentId}
-生成时间：${new Date().toLocaleString('zh-CN')}
-    `.trim()
-
-    // 在页面底部添加合同信息
-    firstPage.drawText(contractText, {
-      x: 50,
-      y: 100,
-      size: 12,
-      font: font,
-      color: rgb(0, 0, 0),
-      lineHeight: 18,
+    // 添加边框
+    page.drawRectangle({
+      x: 30,
+      y: 30,
+      width: width - 60,
+      height: height - 60,
+      borderColor: rgb(0, 0, 0),
+      borderWidth: 2,
     })
 
-    // 生成新的PDF
+    // 生成PDF
     const pdfBytes = await pdfDoc.save()
 
     // 返回PDF文件

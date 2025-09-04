@@ -117,8 +117,7 @@ export async function POST(request: NextRequest) {
       // 更新现有打卡记录
       console.log(`🔄 [Checkin Submit API] 更新现有打卡记录 ID: ${existingCheckin.id}`)
       const updateData = {
-        xiaohongshu_url: xiaohongshu_url, // 使用正确的字段名
-        xhs_url: xiaohongshu_url, // 兼容两个字段
+        xhs_url: xiaohongshu_url, // 统一使用 xhs_url 字段
         updated_at: new Date().toISOString()
       }
       console.log('🔄 [Checkin Submit API] 更新数据:', updateData)
@@ -184,10 +183,8 @@ export async function POST(request: NextRequest) {
       const insertData = {
         student_id,
         checkin_date: checkinDate,
-        xiaohongshu_url: xiaohongshu_url, // 使用正确的字段名
-        xhs_url: xiaohongshu_url, // 兼容字段
-        student_name: student_name, // 添加学员姓名
-        status: 'pending', // 默认状态
+        xhs_url: xiaohongshu_url, // 统一使用 xhs_url 字段
+        status: 'valid', // 默认状态改为 valid
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -259,7 +256,7 @@ export async function GET(request: NextRequest) {
     const startDateStr = getBeijingDateString(startDate)
 
     const { data: checkins, error } = await supabase
-      .from('student_checkins')
+      .from('checkin_records')
       .select('*')
       .eq('student_id', student_id)
       .gte('checkin_date', startDateStr)
