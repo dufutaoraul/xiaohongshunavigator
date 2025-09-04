@@ -47,7 +47,7 @@ export default function CheckinPage() {
   const [canSelfSchedule, setCanSelfSchedule] = useState(false)
   const [selfScheduleStatus, setSelfScheduleStatus] = useState<any>(null)
   const [showSelfScheduleModal, setShowSelfScheduleModal] = useState(false)
-  const [showSelfScheduleSetupModal, setShowSelfScheduleSetupModal] = useState(false)
+  // 移除复杂的设置模态框
 
   // 检查今天是否已经显示过欢迎弹窗
   useEffect(() => {
@@ -55,11 +55,18 @@ export default function CheckinPage() {
     const welcomeShownKey = `welcome_shown_${today}`
     const hasShown = localStorage.getItem(welcomeShownKey) === 'true'
     setHasShownWelcomeToday(hasShown)
-    console.log('🔍 [欢迎弹窗] 检查今天是否已显示:', { today, hasShown })
+
   }, [])
 
   // 检查认证状态和小红书主页
   useEffect(() => {
+    // 重置所有状态
+    setCanSelfSchedule(false)
+    setSelfScheduleStatus(null)
+    setShowSelfScheduleModal(false)
+    // 移除设置模态框引用
+    setHasCheckinSchedule(false)
+
     const userSession = localStorage.getItem('userSession')
     if (userSession) {
       try {
@@ -89,7 +96,7 @@ export default function CheckinPage() {
 
       if (response.ok) {
         const result = await response.json()
-        console.log('用户信息:', result) // 调试日志
+
 
         if (result?.xiaohongshu_profile_url && result.xiaohongshu_profile_url.trim() !== '') {
           setHasXiaohongshuProfile(true)
@@ -97,7 +104,7 @@ export default function CheckinPage() {
           // 检查打卡安排
           checkCheckinSchedule(studentId)
         } else {
-          console.log('用户没有小红书主页，跳转到绑定页面')
+
           setHasXiaohongshuProfile(false)
           // 跳转到profile页面进行小红书主页绑定
           window.location.href = '/profile'
@@ -119,28 +126,25 @@ export default function CheckinPage() {
   // 检查学员的自主设定权限
   const checkSelfSchedulePermission = async (studentId: string) => {
     try {
-      console.log('🔍 [自主设定权限] 开始检查学员:', studentId)
+
       const response = await fetch(`/api/student/self-schedule`, {
         headers: {
           'Authorization': `Bearer ${studentId}`
         }
       })
 
-      console.log('🔍 [自主设定权限] API响应状态:', response.status, response.statusText)
+
 
       if (response.ok) {
         const data = await response.json()
-        console.log('🔍 [自主设定权限] API响应数据:', data)
         setSelfScheduleStatus(data)
         setCanSelfSchedule(data.can_self_schedule)
         return data
       } else {
-        console.error('🔍 [自主设定权限] API响应失败:', response.status, response.statusText)
-        const errorText = await response.text()
-        console.error('🔍 [自主设定权限] 错误详情:', errorText)
+
       }
     } catch (error) {
-      console.error('🔍 [自主设定权限] 检查失败:', error)
+
     }
     return null
   }
@@ -150,55 +154,40 @@ export default function CheckinPage() {
     try {
       // 首先检查自主设定权限
       const selfScheduleData = await checkSelfSchedulePermission(studentId)
-      console.log('🔍 [打卡安排检查] 自主设定权限数据:', selfScheduleData)
+
 
       const response = await fetch(`/api/admin/checkin-schedule?student_id=${studentId}`)
       const result = await response.json()
-      console.log('🔍 [打卡安排检查] API响应:', result)
-      console.log('🔍 [打卡安排检查] API响应状态:', response.status, response.statusText)
+
 
       if (result.success && result.data && result.data.length > 0) {
         // 获取本地日期，避免时区问题
         const todayStr = getBeijingDateString()
 
-        console.log('今天日期:', todayStr)
-        console.log('打卡安排:', result.data)
-
         // 找到学员的打卡安排（不管是否在日期范围内）
-        console.log('🔍 [打卡安排检查] 所有安排:', result.data.map((s: any) => ({
-          id: s.id,
-          student_id: s.student_id,
-          is_active: s.is_active,
-          start_date: s.start_date,
-          end_date: s.end_date
-        })))
 
         const userSchedule = result.data.find((schedule: any) => schedule.is_active)
-        console.log('🔍 [打卡安排检查] 找到的活跃安排:', userSchedule)
+
 
         if (userSchedule) {
           const isInDateRange = userSchedule.start_date <= todayStr && userSchedule.end_date >= todayStr
           const isBeforeStart = todayStr < userSchedule.start_date
           const isAfterEnd = todayStr > userSchedule.end_date
 
-          console.log(`检查安排: ${userSchedule.start_date} <= ${todayStr} <= ${userSchedule.end_date}`)
-          console.log(`在日期范围内: ${isInDateRange}, 开始前: ${isBeforeStart}, 结束后: ${isAfterEnd}`)
+
 
           if (isAfterEnd) {
             // 打卡已结束
             setHasCheckinSchedule(true)
             setCheckinSchedule(userSchedule)
             setShowCheckinEndedModal(true)
-            console.log('学员打卡已结束:', userSchedule)
+
           } else if (isInDateRange) {
             // 在打卡周期内
             setHasCheckinSchedule(true)
             setCheckinSchedule(userSchedule)
-            console.log('学员在打卡周期内:', userSchedule)
-
             // 只有今天还没有显示过欢迎弹窗时才显示
             if (!hasShownWelcomeToday) {
-              console.log('🎉 [欢迎弹窗] 今天首次显示欢迎弹窗')
               setShowWelcomeModal(true)
 
               // 记录今天已经显示过欢迎弹窗
@@ -207,14 +196,14 @@ export default function CheckinPage() {
               localStorage.setItem(welcomeShownKey, 'true')
               setHasShownWelcomeToday(true)
             } else {
-              console.log('🔍 [欢迎弹窗] 今天已经显示过，跳过')
+
             }
           } else if (isBeforeStart) {
             // 打卡还未开始，但有安排
             setHasCheckinSchedule(true)
             setCheckinSchedule(userSchedule)
             setShowNoScheduleModal(true)
-            console.log('学员打卡还未开始，但有安排:', userSchedule)
+
           } else {
             // 其他情况，显示无安排提示
             setHasCheckinSchedule(false)
@@ -222,42 +211,35 @@ export default function CheckinPage() {
           }
         } else {
           // 没有找到活跃的打卡安排，检查是否有自主设定权限
-          console.log('🔍 [打卡安排检查] 没有找到活跃的打卡安排')
+
           setHasCheckinSchedule(false)
 
           // 如果有自主设定权限且还没使用过，显示自主设定模态框
           if (selfScheduleData?.can_self_schedule && !selfScheduleData?.has_used_opportunity) {
-            console.log('🔍 [打卡安排检查] 显示自主设定模态框')
             setShowSelfScheduleModal(true)
           } else if (selfScheduleData?.can_self_schedule && selfScheduleData?.has_used_opportunity) {
             // 已经使用过自主设定权限，但没有找到安排，可能是数据问题
-            console.log('🔍 [打卡安排检查] 已使用自主设定权限但没找到安排，显示无安排提示')
             setShowNoScheduleModal(true)
           } else {
             // 没有自主设定权限，显示无安排提示
-            console.log('🔍 [打卡安排检查] 没有自主设定权限，显示无安排提示')
             setShowNoScheduleModal(true)
           }
         }
       } else {
         // API返回没有打卡安排，检查是否有自主设定权限
-        console.log('🔍 [打卡安排检查] API返回没有打卡安排')
         setHasCheckinSchedule(false)
 
         if (selfScheduleData?.can_self_schedule && !selfScheduleData?.has_used_opportunity) {
-          console.log('🔍 [打卡安排检查] 显示自主设定模态框')
           setShowSelfScheduleModal(true)
         } else if (selfScheduleData?.can_self_schedule && selfScheduleData?.has_used_opportunity) {
           // 已经使用过自主设定权限，但API没有返回安排，可能是数据问题
-          console.log('🔍 [打卡安排检查] 已使用自主设定权限但API没返回安排，显示无安排提示')
           setShowNoScheduleModal(true)
         } else {
-          console.log('🔍 [打卡安排检查] 没有自主设定权限，显示无安排提示')
           setShowNoScheduleModal(true)
         }
       }
     } catch (error) {
-      console.error('检查打卡安排失败:', error)
+
       setHasCheckinSchedule(false)
       setShowNoScheduleModal(true)
     }
@@ -275,13 +257,13 @@ export default function CheckinPage() {
     if (checkinRecords.length >= 0 && checkinSchedule) {
       const stats = calculateCheckinStats(checkinRecords, checkinSchedule)
       setCheckinStats(stats)
-      console.log('重新计算统计数据:', stats)
+
     }
   }, [checkinRecords, checkinSchedule])
 
   const fetchCheckinData = async () => {
     try {
-      console.log('🔍 [数据加载] 开始获取打卡数据')
+
       setLoading(true)
 
       // 先获取打卡安排
@@ -290,14 +272,14 @@ export default function CheckinPage() {
       // 获取打卡记录，使用正确的API
       const timestamp = new Date().getTime()
       const apiUrl = `/api/checkin/records?student_id=${studentId}&limit=90&_t=${timestamp}`
-      console.log('🔍 [前端] 请求打卡记录API:', apiUrl)
+
 
       const recordsResponse = await fetch(apiUrl)
-      console.log('🔍 [前端] API响应状态:', recordsResponse.status, recordsResponse.statusText)
+
 
       if (recordsResponse.ok) {
         const recordsData = await recordsResponse.json()
-        console.log('🔍 [前端] 打卡记录API响应:', JSON.stringify(recordsData, null, 2))
+
 
         if (recordsData.success && recordsData.records) {
           // 转换数据格式以匹配前端期望的结构
@@ -313,22 +295,18 @@ export default function CheckinPage() {
           })) || []
 
           setCheckinRecords(records)
-          console.log('✅ [前端] 转换后的打卡记录:', records)
-          console.log('✅ [前端] 设置打卡记录数量:', records.length)
         } else {
-          console.log('❌ [前端] API响应格式不正确或无数据:', recordsData)
+
           setCheckinRecords([])
         }
       } else {
-        console.error('❌ [前端] 获取打卡记录失败:', recordsResponse.status, recordsResponse.statusText)
-        const errorText = await recordsResponse.text()
-        console.error('❌ [前端] 错误响应内容:', errorText)
+
         setCheckinRecords([])
       }
     } catch (error) {
       console.error('Error fetching checkin data:', error)
     } finally {
-      console.log('🔍 [数据加载] 数据加载完成')
+
       setLoading(false)
     }
   }
@@ -391,23 +369,7 @@ export default function CheckinPage() {
     const days = []
     const current = new Date(startDate)
 
-    // 详细的时间调试信息
-    const now = new Date()
-    const beijingTimeNew = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}))
-    const beijingDateStrNew = `${beijingTimeNew.getFullYear()}-${String(beijingTimeNew.getMonth() + 1).padStart(2, '0')}-${String(beijingTimeNew.getDate()).padStart(2, '0')}`
 
-    console.log('🗓️ 日历生成调试信息:', {
-      当前选择年月: `${year}-${month + 1}`,
-      系统本地时间: now.toISOString(),
-      系统本地时间字符串: now.toString(),
-      系统时区: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      系统时区偏移: now.getTimezoneOffset(),
-      新方法北京时间: beijingTimeNew.toString(),
-      新方法北京日期: beijingDateStrNew,
-      工具函数北京时间今天: beijingToday,
-      是否一致: beijingDateStrNew === beijingToday,
-      日历开始日期: startDate.toISOString().split('T')[0]
-    })
 
     for (let i = 0; i < 42; i++) { // 6周 x 7天
       // 使用北京时间格式化日期字符串
@@ -416,7 +378,7 @@ export default function CheckinPage() {
       const isToday = dateStr === beijingToday
       const checkinRecord = checkinRecords.find(record => record.checkin_date === dateStr)
 
-      console.log(`📅 日历格子 ${current.getDate()}: ${dateStr}, 是今天: ${isToday}, 有打卡: ${!!checkinRecord}`);
+
 
       // 检查是否在打卡周期内
       const isInSchedule = checkinSchedule &&
@@ -460,16 +422,12 @@ export default function CheckinPage() {
 
   // 提交打卡
   const handleSubmitCheckin = async () => {
-    console.log('🚀 [前端] 开始提交打卡')
-
     if (!xiaohongshuUrl.trim()) {
-      console.log('❌ [前端] 小红书链接为空')
       setMessage('请输入小红书链接')
       return
     }
 
     if (!xiaohongshuUrl.includes('xiaohongshu.com') && !xiaohongshuUrl.includes('xhslink.com')) {
-      console.log('❌ [前端] 小红书链接格式无效:', xiaohongshuUrl)
       setMessage('请输入有效的小红书链接')
       return
     }
@@ -482,7 +440,7 @@ export default function CheckinPage() {
       urls: [xiaohongshuUrl],
       date: selectedDate
     }
-    console.log('📤 [前端] 发送请求数据:', JSON.stringify(requestData, null, 2))
+
 
     try {
       const response = await fetch('/api/checkin/submit', {
@@ -493,16 +451,13 @@ export default function CheckinPage() {
         body: JSON.stringify(requestData)
       })
 
-      console.log('📥 [前端] 收到响应状态:', response.status, response.statusText)
       const result = await response.json()
-      console.log('📥 [前端] 收到响应数据:', JSON.stringify(result, null, 2))
 
       if (response.ok && result.success) {
-        console.log('✅ [前端] 打卡提交成功')
+
         setMessage('✅ 打卡提交成功！日历已更新')
 
         // 立即刷新打卡数据，确保UI同步更新
-        console.log('🔄 [前端] 刷新打卡数据')
         await fetchCheckinData()
 
         // 立即更新本地打卡记录状态，确保日历颜色立即变化
@@ -517,7 +472,7 @@ export default function CheckinPage() {
           updated_at: new Date().toISOString()
         }
 
-        console.log('🔄 [前端] 更新本地打卡记录:', newRecord)
+
 
         // 更新本地记录
         setCheckinRecords(prev => {
@@ -533,11 +488,11 @@ export default function CheckinPage() {
           setMessage('')
         }, 2000)
       } else {
-        console.log('❌ [前端] 打卡提交失败:', result.error)
+
         setMessage(result.error || '提交失败，请重试')
       }
     } catch (error) {
-      console.error('💥 [前端] 提交打卡失败:', error)
+
       setMessage('网络错误，请检查连接')
     } finally {
       setLoading(false)
@@ -587,11 +542,13 @@ export default function CheckinPage() {
 
   // 如果没有打卡安排，显示提示
   if (hasXiaohongshuProfile && !hasCheckinSchedule && !showNoScheduleModal && !showSelfScheduleModal) {
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-4">📅</div>
           <p className="text-white/80">正在检查打卡安排...</p>
+
         </div>
       </div>
     )
@@ -1011,20 +968,65 @@ export default function CheckinPage() {
         {showNoScheduleModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-md w-full text-center">
-              <div className="text-6xl mb-4">📅</div>
-              <h3 className="text-xl font-bold text-white mb-4">打卡还未开始</h3>
-              <p className="text-white/80 mb-6">
-                您的打卡还未开始，请联系管理员设置打卡时间。
-              </p>
-              <button
-                onClick={() => {
-                  setShowNoScheduleModal(false)
-                  router.push('/')
-                }}
-                className="px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300"
-              >
-                我知道了
-              </button>
+              {checkinSchedule ? (
+                // 有安排但还未开始
+                <>
+                  <div className="text-6xl mb-4">⏰</div>
+                  <h3 className="text-xl font-bold gradient-text mb-4">打卡即将开始</h3>
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+                    <p className="text-blue-300 text-sm font-medium mb-2">您的打卡安排</p>
+                    <p className="text-white/90 mb-1">
+                      开始日期：<span className="text-green-300 font-medium">{checkinSchedule.start_date}</span>
+                    </p>
+                    <p className="text-white/90">
+                      结束日期：<span className="text-orange-300 font-medium">{checkinSchedule.end_date}</span>
+                    </p>
+                  </div>
+                  <p className="text-white/80 mb-6 leading-relaxed">
+                    您设置的打卡日期是 <span className="text-yellow-300 font-medium">{checkinSchedule.start_date}</span> 开始，请耐心等待。
+                    <br />
+                    可以先开始课程学习，为打卡做好准备哦~ 📚✨
+                  </p>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => {
+                        setShowNoScheduleModal(false)
+                        router.push('/homework')
+                      }}
+                      className="flex-1 cosmic-button px-4 py-2 rounded-lg font-medium transition-all duration-300"
+                    >
+                      去学习课程
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowNoScheduleModal(false)
+                        router.push('/')
+                      }}
+                      className="flex-1 px-4 py-2 bg-white/10 text-white/70 hover:bg-white/20 hover:text-white rounded-lg transition-all duration-300"
+                    >
+                      返回首页
+                    </button>
+                  </div>
+                </>
+              ) : (
+                // 没有安排
+                <>
+                  <div className="text-6xl mb-4">📅</div>
+                  <h3 className="text-xl font-bold text-white mb-4">打卡还未开始</h3>
+                  <p className="text-white/80 mb-6">
+                    您的打卡还未开始，请联系管理员设置打卡时间。
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowNoScheduleModal(false)
+                      router.push('/')
+                    }}
+                    className="px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300"
+                  >
+                    我知道了
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -1086,9 +1088,8 @@ export default function CheckinPage() {
               <div className="flex space-x-4">
                 <button
                   onClick={() => {
-                    console.log('点击确认设置打卡时间')
-                    setShowSelfScheduleModal(false)
-                    setShowSelfScheduleSetupModal(true)
+                    // 简单直接跳转到设置页面
+                    router.push(`/self-schedule-setup?student_id=${studentId}`)
                   }}
                   className="flex-1 px-6 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-lg transition-all duration-300 font-medium"
                 >
@@ -1096,7 +1097,11 @@ export default function CheckinPage() {
                 </button>
                 <button
                   onClick={() => {
+
                     setShowSelfScheduleModal(false)
+                    setCanSelfSchedule(false)
+                    setSelfScheduleStatus(null)
+                    setHasCheckinSchedule(false)
                     router.push('/')
                   }}
                   className="flex-1 px-6 py-3 bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 hover:text-gray-200 rounded-lg transition-all duration-300"
@@ -1108,32 +1113,9 @@ export default function CheckinPage() {
           </div>
         )}
 
-        {/* 自主设定打卡时间设置模态框 */}
-        {showSelfScheduleSetupModal && selfScheduleStatus && (
-          <SelfScheduleSetupModal
-            selfScheduleStatus={selfScheduleStatus}
-            studentId={studentId}
-            onClose={() => {
-              console.log('关闭设置模态框')
-              setShowSelfScheduleSetupModal(false)
-            }}
-            onSuccess={() => {
-              console.log('设置成功')
-              setShowSelfScheduleSetupModal(false)
-              // 重新检查打卡安排
-              checkCheckinSchedule(studentId)
-            }}
-          />
-        )}
+        {/* 移除复杂的设置模态框，改为页面跳转 */}
 
-        {/* 调试信息 */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="fixed bottom-4 left-4 bg-black/80 text-white p-2 rounded text-xs">
-            <div>showSelfScheduleModal: {showSelfScheduleModal.toString()}</div>
-            <div>showSelfScheduleSetupModal: {showSelfScheduleSetupModal.toString()}</div>
-            <div>selfScheduleStatus: {selfScheduleStatus ? 'exists' : 'null'}</div>
-          </div>
-        )}
+
       </div>
     </div>
   )
@@ -1155,6 +1137,25 @@ function SelfScheduleSetupModal({
   const [selectedDate, setSelectedDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+
+  // 如果没有selfScheduleStatus，显示加载状态
+  if (!selfScheduleStatus) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="glass-effect p-8 rounded-xl border border-white/20 max-w-lg w-full text-center">
+          <div className="text-6xl mb-4">⏳</div>
+          <h3 className="text-xl font-bold text-white mb-4">正在加载...</h3>
+          <p className="text-white/80 mb-4">请稍候，正在获取您的权限信息</p>
+          <button
+            onClick={onClose}
+            className="px-6 py-3 bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 hover:text-gray-200 rounded-lg transition-all duration-300 font-medium"
+          >
+            关闭
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const handleSetSchedule = async () => {
     if (!selectedDate) {
@@ -1258,12 +1259,12 @@ function SelfScheduleSetupModal({
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                min={selfScheduleStatus.date_range?.earliest}
-                max={selfScheduleStatus.date_range?.latest}
+                min={selfScheduleStatus?.date_range?.earliest}
+                max={selfScheduleStatus?.date_range?.latest}
                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-400"
               />
               <p className="text-white/50 text-xs mt-1">
-                可选择范围：{selfScheduleStatus.date_range?.earliest} 至 {selfScheduleStatus.date_range?.latest}
+                可选择范围：{selfScheduleStatus?.date_range?.earliest || '加载中...'} 至 {selfScheduleStatus?.date_range?.latest || '加载中...'}
               </p>
             </div>
 

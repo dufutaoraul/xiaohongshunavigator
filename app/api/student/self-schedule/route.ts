@@ -54,18 +54,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const today = getBeijingToday()
-    const createdAt = new Date(user.created_at)
-    const deadline = new Date(user.self_schedule_deadline)
-    const deadlineStr = deadline.toISOString().split('T')[0]
-
-    // 检查是否有自主设定权限
+    // 简化逻辑：只要users表中can_self_schedule为true，就有权限
     if (!user.can_self_schedule) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         can_self_schedule: false,
+        has_used_opportunity: false,
         message: '您没有自主设定打卡时间的权限'
       })
     }
+
+    const today = getBeijingToday()
+    const deadline = new Date(user.self_schedule_deadline)
+    const deadlineStr = deadline.toISOString().split('T')[0]
 
     // 检查是否已使用过设定机会
     if (user.has_used_self_schedule) {
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         .eq('is_active', true)
         .single()
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         can_self_schedule: true,
         has_used_opportunity: true,
         current_schedule: schedule,
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
     // 检查是否超过设定截止时间
     if (today > deadlineStr) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         can_self_schedule: true,
         has_used_opportunity: false,
         is_expired: true,
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     const earliestDate = today // 最早只能选今天
     const latestDate = deadlineStr // 最晚是截止日期
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       can_self_schedule: true,
       has_used_opportunity: false,
       is_expired: false,

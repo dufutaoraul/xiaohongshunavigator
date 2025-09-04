@@ -35,7 +35,7 @@ export default function Home() {
 
   // 监听showLoginModal状态变化
   useEffect(() => {
-    console.log('🔍 首页: showLoginModal 状态变化为', showLoginModal)
+    // showLoginModal状态变化处理
   }, [showLoginModal])
 
   // 检查认证并导航

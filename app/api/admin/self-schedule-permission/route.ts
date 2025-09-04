@@ -165,20 +165,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid student ID range' }, { status: 400 })
       }
 
-      // 1. 记录批量设置范围
-      const { error: rangeError } = await supabaseAdmin
-        .from('self_schedule_ranges')
-        .insert({
-          start_student_id,
-          end_student_id,
-          created_by: admin.student_id
-        })
-
-      if (rangeError) {
-        return NextResponse.json({ error: 'Failed to save range' }, { status: 500 })
-      }
-
-      // 2. 为范围内现有学员开启权限
+      // 为范围内现有学员开启权限
       // 首先获取范围内的用户
       const { data: rangeUsers, error: fetchRangeError } = await supabaseAdmin
         .from('users')
