@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
       // 更新现有打卡记录
       console.log(`🔄 [Checkin Submit API] 更新现有打卡记录 ID: ${existingCheckin.id}`)
       const updateData = {
-        xhs_url: xiaohongshu_url, // 统一使用 xhs_url 字段
-        updated_at: new Date().toISOString()
+        xhs_url: xiaohongshu_url // 统一使用 xhs_url 字段
+        // 移除 updated_at，让数据库使用默认值
       }
       console.log('🔄 [Checkin Submit API] 更新数据:', updateData)
 
@@ -184,9 +184,8 @@ export async function POST(request: NextRequest) {
         student_id,
         checkin_date: checkinDate,
         xhs_url: xiaohongshu_url, // 统一使用 xhs_url 字段
-        status: 'valid', // 默认状态改为 valid
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        status: 'valid' // 默认状态改为 valid
+        // 移除 created_at 和 updated_at，让数据库使用默认值
       }
 
       console.log('✨ [Checkin Submit API] 准备插入数据:', JSON.stringify(insertData, null, 2))

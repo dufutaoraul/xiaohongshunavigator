@@ -78,13 +78,10 @@ export async function POST(request: NextRequest) {
       if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
         passwordValid = await bcrypt.compare(password, user.password)
       } else {
-        // 兼容旧的明文密码 - 直接比较字符串
-        passwordValid = user.password === password
-
-        // 如果直接比较失败，尝试去除空格
-        if (!passwordValid) {
-          passwordValid = user.password?.trim() === password?.trim()
-        }
+        // 兼容旧的明文密码 - 不区分大小写比较
+        const storedPassword = user.password?.toLowerCase()?.trim()
+        const inputPassword = password?.toLowerCase()?.trim()
+        passwordValid = storedPassword === inputPassword
       }
 
       console.log('Password validation result:', passwordValid)
@@ -164,8 +161,10 @@ export async function POST(request: NextRequest) {
       if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
         isCurrentPasswordValid = await bcrypt.compare(password, user.password)
       } else {
-        // 兼容旧的明文密码或初始密码（学号）
-        isCurrentPasswordValid = user.password === password || user.password?.trim() === password?.trim()
+        // 兼容旧的明文密码或初始密码（学号）- 不区分大小写
+        const storedPassword = user.password?.toLowerCase()?.trim()
+        const inputPassword = password?.toLowerCase()?.trim()
+        isCurrentPasswordValid = storedPassword === inputPassword
       }
 
       if (!isCurrentPasswordValid) {

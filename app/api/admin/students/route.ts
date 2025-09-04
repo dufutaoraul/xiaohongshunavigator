@@ -179,17 +179,20 @@ export async function POST(request: NextRequest) {
     // }
 
     const body = await request.json()
-    const { student_id, name, real_name, password, role = 'student' } = body
+    const { student_id, name, real_name, role = 'student' } = body
 
     console.log('创建学员请求:', { student_id, name, real_name: !!real_name, role });
 
     // 验证必填字段
-    if (!student_id || !name || !password) {
+    if (!student_id || !name) {
       return NextResponse.json(
-        { error: 'Missing required fields: student_id, name, password' },
+        { error: 'Missing required fields: student_id, name' },
         { status: 400 }
       )
     }
+
+    // 新增学员的初始密码默认为学号
+    const defaultPassword = student_id
 
     // 检查学号是否已存在
     const { data: existingUser, error: checkError } = await supabaseAdmin
@@ -206,8 +209,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 加密密码
-    const hashedPassword = await bcrypt.hash(password, 10)
+    // 加密密码（使用学号作为初始密码）
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
     // 创建新用户
     const { data: newUser, error: insertError } = await supabaseAdmin
