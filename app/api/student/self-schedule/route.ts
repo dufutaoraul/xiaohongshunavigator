@@ -5,7 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-// 验证学员身份
+// 验证学员身份并自动授权AXCF202505开头的学员
 async function verifyStudentAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader) {
@@ -14,7 +14,7 @@ async function verifyStudentAuth(request: NextRequest) {
 
   try {
     const studentId = authHeader.replace('Bearer ', '')
-    
+
     const { data: user, error } = await supabase
       .from('users')
       .select('student_id, name, can_self_schedule, has_used_self_schedule, self_schedule_deadline, created_at')
@@ -25,8 +25,37 @@ async function verifyStudentAuth(request: NextRequest) {
       return null
     }
 
+    // 自动授权AXCF202505开头的学员
+    if (studentId.startsWith('AXCF202505') && !user.can_self_schedule) {
+      console.log(`自动授权学员 ${studentId} 自主设定权限`)
+
+      // 计算截止日期：用户创建时间 + 6个月
+      const createdAt = new Date(user.created_at)
+      const deadline = new Date(createdAt)
+      deadline.setMonth(deadline.getMonth() + 6)
+
+      // 更新用户权限
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update({
+          can_self_schedule: true,
+          self_schedule_deadline: deadline.toISOString()
+        })
+        .eq('student_id', studentId)
+        .select('student_id, name, can_self_schedule, has_used_self_schedule, self_schedule_deadline, created_at')
+        .single()
+
+      if (updateError) {
+        console.error('自动授权失败:', updateError)
+        return user // 返回原用户信息
+      }
+
+      return updatedUser
+    }
+
     return user
   } catch (error) {
+    console.error('验证学员身份失败:', error)
     return null
   }
 }
@@ -64,8 +93,36 @@ export async function GET(request: NextRequest) {
     }
 
     const today = getBeijingToday()
-    const deadline = new Date(user.self_schedule_deadline)
-    const deadlineStr = deadline.toISOString().split('T')[0]
+
+    // 安全处理日期，避免1970年问题
+    let deadlineStr = today
+    if (user.self_schedule_deadline) {
+      try {
+        const deadline = new Date(user.self_schedule_deadline)
+        if (deadline.getTime() > 0) { // 确保是有效日期
+          deadlineStr = deadline.toISOString().split('T')[0]
+        } else {
+          // 如果日期无效，使用创建时间+6个月作为默认值
+          const createdAt = new Date(user.created_at)
+          const defaultDeadline = new Date(createdAt)
+          defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+          deadlineStr = defaultDeadline.toISOString().split('T')[0]
+        }
+      } catch (error) {
+        console.error('日期解析错误:', error)
+        // 使用创建时间+6个月作为默认值
+        const createdAt = new Date(user.created_at)
+        const defaultDeadline = new Date(createdAt)
+        defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+        deadlineStr = defaultDeadline.toISOString().split('T')[0]
+      }
+    } else {
+      // 如果没有截止日期，使用创建时间+6个月
+      const createdAt = new Date(user.created_at)
+      const defaultDeadline = new Date(createdAt)
+      defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+      deadlineStr = defaultDeadline.toISOString().split('T')[0]
+    }
 
     // 检查是否已使用过设定机会
     if (user.has_used_self_schedule) {
@@ -145,7 +202,35 @@ export async function POST(request: NextRequest) {
     }
 
     const today = getBeijingToday()
-    const deadline = new Date(user.self_schedule_deadline).toISOString().split('T')[0]
+
+    // 安全处理截止日期
+    let deadline = today
+    if (user.self_schedule_deadline) {
+      try {
+        const deadlineDate = new Date(user.self_schedule_deadline)
+        if (deadlineDate.getTime() > 0) {
+          deadline = deadlineDate.toISOString().split('T')[0]
+        } else {
+          // 使用创建时间+6个月作为默认值
+          const createdAt = new Date(user.created_at)
+          const defaultDeadline = new Date(createdAt)
+          defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+          deadline = defaultDeadline.toISOString().split('T')[0]
+        }
+      } catch (error) {
+        console.error('日期解析错误:', error)
+        const createdAt = new Date(user.created_at)
+        const defaultDeadline = new Date(createdAt)
+        defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+        deadline = defaultDeadline.toISOString().split('T')[0]
+      }
+    } else {
+      // 使用创建时间+6个月作为默认值
+      const createdAt = new Date(user.created_at)
+      const defaultDeadline = new Date(createdAt)
+      defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+      deadline = defaultDeadline.toISOString().split('T')[0]
+    }
 
     // 检查是否超期
     if (today > deadline) {

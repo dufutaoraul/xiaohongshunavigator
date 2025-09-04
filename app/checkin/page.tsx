@@ -1209,18 +1209,35 @@ function SelfScheduleSetupModal({
               </p>
             </div>
 
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
-              <a
-                href="https://pcnxm41ut6t0.feishu.cn/wiki/QCCGwbgmuifXVRkIwKvc7ZPsnib?from=from_copylink"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                <span>点击阅读打卡教程须知</span>
-              </a>
+            <div className="space-y-4 mb-6">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <a
+                  href="https://pcnxm41ut6t0.feishu.cn/wiki/QCCGwbgmuifXVRkIwKvc7ZPsnib?from=from_copylink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span>点击阅读打卡教程须知</span>
+                </a>
+              </div>
+
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <button
+                  onClick={() => {
+                    const url = `/api/contract/download?student_id=${studentId}&start_date=${selectedDate}`
+                    window.open(url, '_blank')
+                  }}
+                  className="flex items-center justify-center space-x-2 text-green-300 hover:text-green-200 transition-colors w-full"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>下载打卡合同（PDF）</span>
+                </button>
+              </div>
             </div>
 
             <div className="flex space-x-4">
