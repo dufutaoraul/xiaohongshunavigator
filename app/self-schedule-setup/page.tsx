@@ -16,32 +16,32 @@ function SelfScheduleSetupContent() {
 
   const fetchUserInfo = useCallback(async () => {
     try {
-      const response = await fetch(`/api/user?student_id=${studentId}`)
+      // 使用自主设定API获取日期范围
+      const response = await fetch(`/api/student/self-schedule?student_id=${studentId}`)
       if (response.ok) {
-        const userData = await response.json()
-        const createdAt = userData.user?.created_at
+        const data = await response.json()
 
-        if (createdAt) {
-          setUserCreatedAt(createdAt)
-
-          // 设置最小日期为今天
-          const today = new Date()
-          const todayStr = today.toISOString().split('T')[0]
-          setMinDate(todayStr)
-
-          // 设置最大日期为用户创建日期的6个月后
-          const createdDate = new Date(createdAt)
-          const maxAllowedDate = new Date(createdDate)
-          maxAllowedDate.setMonth(maxAllowedDate.getMonth() + 6)
-          const maxDateStr = maxAllowedDate.toISOString().split('T')[0]
-          setMaxDate(maxDateStr)
-
-          // 设置默认日期为今天
-          setSelectedDate(todayStr)
+        if (data.can_self_schedule && !data.has_used_opportunity && data.date_range) {
+          // 使用API返回的日期范围
+          setMinDate(data.date_range.earliest)
+          setMaxDate(data.date_range.latest)
+          setSelectedDate(data.date_range.earliest) // 默认选择最早日期
+          setUserCreatedAt(data.date_range.earliest) // 用于显示
+        } else if (data.has_used_opportunity) {
+          // 如果已经使用过机会，跳转回打卡页面
+          alert(data.message || '您已设置过打卡时间')
+          router.push(`/checkin?student_id=${studentId}`)
+          return
+        } else {
+          alert(data.message || '无法获取设定权限')
+          router.push(`/checkin?student_id=${studentId}`)
+          return
         }
+      } else {
+        throw new Error('获取设定信息失败')
       }
     } catch (error) {
-      console.error('获取用户信息失败:', error)
+      console.error('获取设定信息失败:', error)
       // 如果获取失败，设置默认值
       const today = new Date()
       const todayStr = today.toISOString().split('T')[0]
@@ -53,7 +53,7 @@ function SelfScheduleSetupContent() {
       maxDefault.setMonth(maxDefault.getMonth() + 6)
       setMaxDate(maxDefault.toISOString().split('T')[0])
     }
-  }, [studentId])
+  }, [studentId, router])
 
   // 获取用户信息并设置日期限制
   useEffect(() => {

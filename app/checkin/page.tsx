@@ -1070,7 +1070,7 @@ export default function CheckinPage() {
               </p>
 
               {/* 飞书文档链接 */}
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
                 <p className="text-white/80 text-sm mb-2">设置前请先阅读打卡须知：</p>
                 <a
                   href="https://pcnxm41ut6t0.feishu.cn/wiki/QCCGwbgmuifXVRkIwKvc7ZPsnib?from=from_copylink"
@@ -1083,6 +1083,26 @@ export default function CheckinPage() {
                   </svg>
                   <span className="text-sm">点击阅读打卡教程须知</span>
                 </a>
+              </div>
+
+              {/* PDF下载按钮 */}
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-6">
+                <p className="text-white/80 text-sm mb-2">下载打卡合同文件：</p>
+                <button
+                  onClick={() => {
+                    const url = `/api/contract/download?student_id=${studentId}&start_date=${new Date().toISOString().split('T')[0]}`
+                    window.open(url, '_blank')
+                  }}
+                  className="flex items-center justify-center space-x-2 text-green-300 hover:text-green-200 transition-colors w-full"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="text-sm">预览下载打卡合同（PDF）</span>
+                </button>
+                <p className="text-green-200/60 text-xs mt-2 text-center">
+                  可预览合同内容，确认设置后正式生效
+                </p>
               </div>
 
               <div className="flex space-x-4">
@@ -1268,28 +1288,7 @@ function SelfScheduleSetupModal({
               </p>
             </div>
 
-            {/* PDF下载功能 - 只有选择了日期才显示 */}
-            {selectedDate && (
-              <div className="mb-6">
-                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                  <button
-                    onClick={() => {
-                      const url = `/api/contract/download?student_id=${studentId}&start_date=${selectedDate}`
-                      window.open(url, '_blank')
-                    }}
-                    className="flex items-center justify-center space-x-2 text-green-300 hover:text-green-200 transition-colors w-full"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>预览下载打卡合同（PDF）</span>
-                  </button>
-                  <p className="text-green-200/60 text-xs mt-2 text-center">
-                    选择日期后可预览合同，确认设置后正式生效
-                  </p>
-                </div>
-              </div>
-            )}
+
 
             {message && (
               <div className="mb-4 p-3 bg-white/10 rounded-lg">
