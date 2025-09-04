@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function SelfScheduleSetupPage() {
+function SelfScheduleSetupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const studentId = searchParams.get('student_id')
@@ -14,14 +14,7 @@ export default function SelfScheduleSetupPage() {
   const [minDate, setMinDate] = useState('')
   const [maxDate, setMaxDate] = useState('')
 
-  // 获取用户信息并设置日期限制
-  useEffect(() => {
-    if (studentId) {
-      fetchUserInfo()
-    }
-  }, [studentId])
-
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = useCallback(async () => {
     try {
       const response = await fetch(`/api/user?student_id=${studentId}`)
       if (response.ok) {
@@ -60,7 +53,14 @@ export default function SelfScheduleSetupPage() {
       maxDefault.setMonth(maxDefault.getMonth() + 6)
       setMaxDate(maxDefault.toISOString().split('T')[0])
     }
-  }
+  }, [studentId])
+
+  // 获取用户信息并设置日期限制
+  useEffect(() => {
+    if (studentId) {
+      fetchUserInfo()
+    }
+  }, [studentId, fetchUserInfo])
 
   const handleSave = async () => {
     if (!studentId) {
@@ -196,5 +196,26 @@ export default function SelfScheduleSetupPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SelfScheduleSetupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen relative">
+        <div className="cosmic-bg"></div>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="glass-effect p-8 w-full max-w-md">
+            <div className="text-center">
+              <div className="text-5xl mb-4 breathing-glow">⏰</div>
+              <h1 className="text-2xl font-bold gradient-text mb-2">加载中...</h1>
+              <p className="text-white/70">正在初始化设置页面</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <SelfScheduleSetupContent />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 export default function TestSelfSchedulePage() {
   const [studentId, setStudentId] = useState('AXCF2025050003')
@@ -8,20 +8,20 @@ export default function TestSelfSchedulePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const testAPI = async () => {
+  const testAPI = useCallback(async () => {
     if (!studentId) return
-    
+
     setLoading(true)
     setError('')
     setApiData(null)
-    
+
     try {
       const response = await fetch(`/api/student/self-schedule`, {
         headers: {
           'Authorization': `Bearer ${studentId}`
         }
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setApiData(data)
@@ -34,11 +34,11 @@ export default function TestSelfSchedulePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [studentId])
 
   useEffect(() => {
     testAPI()
-  }, [])
+  }, [testAPI])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-8">

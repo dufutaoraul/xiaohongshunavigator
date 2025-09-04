@@ -11,6 +11,14 @@ const nextConfig = {
     BUILD_TIME: new Date().toISOString(),
   },
 
+  // 🔧 ESLint 配置 - 允许某些合理的警告
+  eslint: {
+    // 在生产构建时忽略 ESLint 错误
+    ignoreDuringBuilds: false,
+    // 只检查特定目录
+    dirs: ['app', 'lib', 'components'],
+  },
+
   headers: async () => [
     {
       source: "/(.*)",

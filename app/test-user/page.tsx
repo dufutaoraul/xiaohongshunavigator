@@ -1,30 +1,32 @@
 'use client'
 
 import { useAuth } from '../contexts/AuthContext'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 
 export default function TestUserPage() {
-  const { isAuthenticated, studentId } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+  const studentId = user?.student_id
   const [userInfo, setUserInfo] = useState<any>(null)
   const [selfScheduleInfo, setSelfScheduleInfo] = useState<any>(null)
   const [scheduleInfo, setScheduleInfo] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
-  const checkUserInfo = async () => {
+  const checkUserInfo = useCallback(async () => {
     if (!studentId) return
-    
+
     setLoading(true)
     try {
       // 检查用户基本信息
       console.log('检查用户:', studentId)
-      
+
       // 检查自主设定权限
       const selfScheduleResponse = await fetch('/api/student/self-schedule', {
         headers: {
           'Authorization': `Bearer ${studentId}`
         }
       })
-      
+
       if (selfScheduleResponse.ok) {
         const selfScheduleData = await selfScheduleResponse.json()
         setSelfScheduleInfo(selfScheduleData)
@@ -33,32 +35,32 @@ export default function TestUserPage() {
         console.error('自主设定权限API失败:', selfScheduleResponse.status)
         setSelfScheduleInfo({ error: `API失败: ${selfScheduleResponse.status}` })
       }
-      
+
       // 检查打卡安排
       const scheduleResponse = await fetch(`/api/admin/checkin-schedule?student_id=${studentId}`)
       const scheduleResult = await scheduleResponse.json()
       setScheduleInfo(scheduleResult)
       console.log('打卡安排数据:', scheduleResult)
-      
+
     } catch (error) {
       console.error('检查用户信息失败:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [studentId])
 
   useEffect(() => {
     if (isAuthenticated && studentId) {
       checkUserInfo()
     }
-  }, [isAuthenticated, studentId])
+  }, [isAuthenticated, studentId, checkUserInfo])
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="text-white text-center">
           <h1 className="text-2xl mb-4">请先登录</h1>
-          <a href="/" className="text-blue-300 hover:text-blue-200">返回首页</a>
+          <Link href="/" className="text-blue-300 hover:text-blue-200">返回首页</Link>
         </div>
       </div>
     )
@@ -118,18 +120,18 @@ export default function TestUserPage() {
               >
                 {loading ? '检查中...' : '重新检查'}
               </button>
-              <a
+              <Link
                 href="/checkin"
                 className="px-4 py-2 bg-green-500/20 text-green-300 hover:bg-green-500/30 rounded-lg transition-colors"
               >
                 前往打卡页面
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/"
                 className="px-4 py-2 bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 rounded-lg transition-colors"
               >
                 返回首页
-              </a>
+              </Link>
             </div>
           </div>
 
