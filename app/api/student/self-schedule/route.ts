@@ -124,22 +124,28 @@ export async function GET(request: NextRequest) {
       deadlineStr = defaultDeadline.toISOString().split('T')[0]
     }
 
-    // 检查是否已使用过设定机会
-    if (user.has_used_self_schedule) {
-      // 查询已设定的打卡安排
-      const { data: schedule, error } = await supabase
-        .from('checkin_schedules')
-        .select('start_date, end_date')
-        .eq('student_id', user.student_id)
-        .eq('schedule_type', 'self_set')
-        .eq('is_active', true)
-        .single()
+    // 检查是否已有任何类型的打卡安排（admin_set 或 self_set）
+    const { data: existingSchedule, error: scheduleError } = await supabase
+      .from('checkin_schedules')
+      .select('start_date, end_date, schedule_type, created_by')
+      .eq('student_id', user.student_id)
+      .eq('is_active', true)
+      .single()
 
+    if (scheduleError && scheduleError.code !== 'PGRST116') {
+      console.error('查询打卡安排失败:', scheduleError)
+      return NextResponse.json({ error: '查询打卡安排失败' }, { status: 500 })
+    }
+
+    // 如果已有打卡安排，显示现有安排
+    if (existingSchedule) {
+      const scheduleTypeText = existingSchedule.schedule_type === 'self_set' ? '自主设定' : '管理员设置'
       return NextResponse.json({
         can_self_schedule: true,
         has_used_opportunity: true,
-        current_schedule: schedule,
-        message: '您已设置过打卡时间，不可再次修改'
+        current_schedule: existingSchedule,
+        schedule_type: existingSchedule.schedule_type,
+        message: `您已有打卡安排（${scheduleTypeText}），不可再次修改`
       })
     }
 
@@ -246,19 +252,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '打卡开始日期不能超过设定截止时间' }, { status: 400 })
     }
 
-    // 检查是否已有打卡安排
+    // 检查是否已有任何类型的打卡安排
     const { data: existingSchedule, error: checkError } = await supabase
       .from('checkin_schedules')
-      .select('id')
+      .select('id, schedule_type')
       .eq('student_id', user.student_id)
       .eq('is_active', true)
 
-    if (checkError) {
+    if (checkError && checkError.code !== 'PGRST116') {
       return NextResponse.json({ error: '检查现有安排失败' }, { status: 500 })
     }
 
     if (existingSchedule && existingSchedule.length > 0) {
-      return NextResponse.json({ error: '您已有打卡安排，请联系管理员' }, { status: 409 })
+      const scheduleTypeText = existingSchedule[0].schedule_type === 'self_set' ? '自主设定' : '管理员设置'
+      return NextResponse.json({ error: `您已有打卡安排（${scheduleTypeText}），不可再次设置` }, { status: 409 })
     }
 
     // 计算结束日期（93天）
