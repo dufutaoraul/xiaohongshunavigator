@@ -53,6 +53,17 @@ CREATE TRIGGER update_checkin_records_updated_at
 -- 🧪 第4步：测试插入数据
 -- =====================================================
 
+-- 首先检查是否存在唯一约束
+SELECT '=== 检查现有约束 ===' as info;
+SELECT conname, contype
+FROM pg_constraint
+WHERE conrelid = 'checkin_records'::regclass;
+
+-- 如果没有唯一约束，先创建
+ALTER TABLE checkin_records
+ADD CONSTRAINT IF NOT EXISTS unique_student_checkin_date
+UNIQUE (student_id, checkin_date);
+
 -- 测试插入一条记录（使用一个测试学号）
 -- 注意：请确保这个学号在users表中存在
 INSERT INTO checkin_records (student_id, checkin_date, xhs_url, status)
