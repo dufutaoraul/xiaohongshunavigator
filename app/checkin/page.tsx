@@ -1085,24 +1085,39 @@ export default function CheckinPage() {
                 </a>
               </div>
 
-              {/* PDF下载按钮 */}
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-6">
-                <p className="text-white/80 text-sm mb-2">下载打卡合同文件：</p>
-                <button
-                  onClick={() => {
-                    const url = `/api/contract/download?student_id=${studentId}&start_date=${new Date().toISOString().split('T')[0]}`
-                    window.open(url, '_blank')
-                  }}
-                  className="flex items-center justify-center space-x-2 text-green-300 hover:text-green-200 transition-colors w-full"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="text-sm">预览下载打卡合同（PDF）</span>
-                </button>
-                <p className="text-green-200/60 text-xs mt-2 text-center">
-                  可预览合同内容，确认设置后正式生效
+              {/* 打卡合同学习指引 */}
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 mb-6">
+                <p className="text-white/80 text-sm mb-3">
+                  📚 <strong>重要提醒：</strong>设置打卡时间前，请务必完成以下学习：
                 </p>
+                <div className="space-y-3">
+                  <a
+                    href="https://htjxcky601.feishu.cn/wiki/ArY4wCX3hiv9TpkOHutcd3v7nzh?from=from_copylink"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center space-x-2 text-orange-300 hover:text-orange-200 transition-colors w-full p-3 bg-orange-500/10 rounded-lg border border-orange-500/30 hover:border-orange-500/50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span className="text-sm font-medium">📖 阅读打卡教程和合同说明</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                  <div className="text-orange-200/80 text-xs leading-relaxed">
+                    <p className="mb-1">🔍 <strong>在飞书文档中，您将学习：</strong></p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>打卡规则和要求详解</li>
+                      <li>如何下载和签署打卡合同</li>
+                      <li>违约责任和保证金退还规则</li>
+                      <li>常见问题解答</li>
+                    </ul>
+                    <p className="mt-2 text-orange-300 font-medium">
+                      ⚠️ 请务必仔细阅读所有内容，确认无疑问后再设置打卡时间
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex space-x-4">

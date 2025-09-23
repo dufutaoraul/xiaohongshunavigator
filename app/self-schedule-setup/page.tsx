@@ -17,7 +17,11 @@ function SelfScheduleSetupContent() {
   const fetchUserInfo = useCallback(async () => {
     try {
       // 使用自主设定API获取日期范围
-      const response = await fetch(`/api/student/self-schedule?student_id=${studentId}`)
+      const response = await fetch(`/api/student/self-schedule?student_id=${studentId}`, {
+        headers: {
+          'Authorization': `Bearer ${studentId}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
 
