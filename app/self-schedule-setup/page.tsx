@@ -42,16 +42,10 @@ function SelfScheduleSetupContent() {
       }
     } catch (error) {
       console.error('获取设定信息失败:', error)
-      // 如果获取失败，设置默认值
-      const today = new Date()
-      const todayStr = today.toISOString().split('T')[0]
-      setMinDate(todayStr)
-      setSelectedDate(todayStr)
-
-      // 设置默认6个月后的日期
-      const maxDefault = new Date()
-      maxDefault.setMonth(maxDefault.getMonth() + 6)
-      setMaxDate(maxDefault.toISOString().split('T')[0])
+      // 如果API失败，显示错误信息而不是设置错误的默认值
+      alert('无法获取设定权限，请检查网络连接或联系管理员')
+      router.push(`/checkin?student_id=${studentId}`)
+      return
     }
   }, [studentId, router])
 
