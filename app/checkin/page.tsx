@@ -586,9 +586,9 @@ export default function CheckinPage() {
         <div className="flex justify-center mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full max-w-4xl">
             {/* 总打卡天数卡片 */}
-            <Card className="text-center px-8 py-6">
-              <div className="text-4xl font-bold text-blue-400 mb-2">{checkinStats.total_days}</div>
-              <div className="text-white/70 text-lg">总打卡天数</div>
+            <Card className="text-center px-8 py-8 flex flex-col items-center justify-center">
+              <div className="text-6xl font-bold text-blue-400 mb-3">{checkinStats.total_days}</div>
+              <div className="text-white/70 text-xl font-medium">总打卡天数</div>
             </Card>
 
             {/* 进度提醒卡片 */}
@@ -624,7 +624,7 @@ export default function CheckinPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-white/70">完成进度：</span>
                     <span className="text-purple-400 font-bold">
-                      {Math.min(Math.round((checkinStats.total_days / 90) * 100), 100)}%
+                      {Math.min(((checkinStats.total_days / 90) * 100), 100).toFixed(1)}%
                     </span>
                   </div>
                 </div>
