@@ -12,6 +12,14 @@ function isFixedDeadlineStudent(studentId: string): boolean {
          studentId.startsWith('AXCF202504')
 }
 
+// 获取固定截止时间学员的统一截止日期
+function getFixedDeadline(): string {
+  const baseDate = new Date('2025-07-07')
+  const deadline = new Date(baseDate)
+  deadline.setMonth(deadline.getMonth() + 6)
+  return deadline.toISOString().split('T')[0]
+}
+
 // 验证学员身份并自动授权AXCF202505开头的学员
 async function verifyStudentAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -61,31 +69,42 @@ async function verifyStudentAuth(request: NextRequest) {
     }
 
     // 自动授权AXCF202502/202503/202504开头的学员（固定截止时间）
-    if (isFixedDeadlineStudent(studentId) && !user.can_self_schedule) {
-      console.log(`自动授权学员 ${studentId} 自主设定权限（统一截止时间）`)
+    if (isFixedDeadlineStudent(studentId)) {
+      console.log(`处理学员 ${studentId} 自主设定权限（统一截止时间）`)
 
-      // 计算截止日期：2025年7月7日 + 6个月 = 2026年1月7日
+      // 计算统一截止日期：2025年7月7日 + 6个月 = 2026年1月7日
       const baseDate = new Date('2025-07-07')
       const deadline = new Date(baseDate)
       deadline.setMonth(deadline.getMonth() + 6)
+      const unifiedDeadline = deadline.toISOString()
 
-      // 更新用户权限
-      const { data: updatedUser, error: updateError } = await supabase
-        .from('users')
-        .update({
-          can_self_schedule: true,
-          self_schedule_deadline: deadline.toISOString()
-        })
-        .eq('student_id', studentId)
-        .select('student_id, name, can_self_schedule, has_used_self_schedule, self_schedule_deadline, created_at')
-        .single()
+      // 检查是否需要更新（权限或截止时间不正确）
+      const needsUpdate = !user.can_self_schedule ||
+                         !user.self_schedule_deadline ||
+                         user.self_schedule_deadline !== unifiedDeadline
 
-      if (updateError) {
-        console.error('自动授权失败:', updateError)
-        return user // 返回原用户信息
+      if (needsUpdate) {
+        // 更新用户权限和统一截止时间
+        const { data: updatedUser, error: updateError } = await supabase
+          .from('users')
+          .update({
+            can_self_schedule: true,
+            self_schedule_deadline: unifiedDeadline
+          })
+          .eq('student_id', studentId)
+          .select('student_id, name, can_self_schedule, has_used_self_schedule, self_schedule_deadline, created_at')
+          .single()
+
+        if (updateError) {
+          console.error('更新用户信息失败:', updateError)
+          return user // 返回原用户信息
+        }
+
+        console.log(`已更新学员 ${studentId} 的截止时间为: ${unifiedDeadline}`)
+        return updatedUser
       }
 
-      return updatedUser
+      return user
     }
 
     return user
@@ -145,11 +164,8 @@ export async function GET(request: NextRequest) {
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
             deadlineStr = defaultDeadline.toISOString().split('T')[0]
           } else if (isFixedDeadlineStudent(user.student_id)) {
-            // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
-            const baseDate = new Date('2025-07-07')
-            const defaultDeadline = new Date(baseDate)
-            defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
-            deadlineStr = defaultDeadline.toISOString().split('T')[0]
+            // AXCF202502/202503/202504学号：使用统一截止时间
+            deadlineStr = getFixedDeadline()
           } else {
             // 其他学号：使用2025年7月7日+6个月（默认）
             const baseDate = new Date('2025-07-07')
@@ -168,11 +184,8 @@ export async function GET(request: NextRequest) {
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadlineStr = defaultDeadline.toISOString().split('T')[0]
         } else if (isFixedDeadlineStudent(user.student_id)) {
-          // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
-          const baseDate = new Date('2025-07-07')
-          const defaultDeadline = new Date(baseDate)
-          defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
-          deadlineStr = defaultDeadline.toISOString().split('T')[0]
+          // AXCF202502/202503/202504学号：使用统一截止时间
+          deadlineStr = getFixedDeadline()
         } else {
           // 其他学号：使用2025年7月7日+6个月（默认）
           const baseDate = new Date('2025-07-07')
@@ -190,11 +203,8 @@ export async function GET(request: NextRequest) {
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadlineStr = defaultDeadline.toISOString().split('T')[0]
       } else if (isFixedDeadlineStudent(user.student_id)) {
-        // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
-        const baseDate = new Date('2025-07-07')
-        const defaultDeadline = new Date(baseDate)
-        defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
-        deadlineStr = defaultDeadline.toISOString().split('T')[0]
+        // AXCF202502/202503/202504学号：使用统一截止时间
+        deadlineStr = getFixedDeadline()
       } else {
         // 其他学号：使用2025年7月7日+6个月（默认）
         const baseDate = new Date('2025-07-07')
@@ -305,11 +315,8 @@ export async function POST(request: NextRequest) {
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
             deadline = defaultDeadline.toISOString().split('T')[0]
           } else if (isFixedDeadlineStudent(user.student_id)) {
-            // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
-            const baseDate = new Date('2025-07-07')
-            const defaultDeadline = new Date(baseDate)
-            defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
-            deadline = defaultDeadline.toISOString().split('T')[0]
+            // AXCF202502/202503/202504学号：使用统一截止时间
+            deadline = getFixedDeadline()
           } else {
             // 其他学号：使用2025年7月7日+6个月（默认）
             const baseDate = new Date('2025-07-07')
@@ -328,11 +335,8 @@ export async function POST(request: NextRequest) {
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadline = defaultDeadline.toISOString().split('T')[0]
         } else if (isFixedDeadlineStudent(user.student_id)) {
-          // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
-          const baseDate = new Date('2025-07-07')
-          const defaultDeadline = new Date(baseDate)
-          defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
-          deadline = defaultDeadline.toISOString().split('T')[0]
+          // AXCF202502/202503/202504学号：使用统一截止时间
+          deadline = getFixedDeadline()
         } else {
           // 其他学号：使用2025年7月7日+6个月（默认）
           const baseDate = new Date('2025-07-07')
@@ -350,11 +354,8 @@ export async function POST(request: NextRequest) {
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadline = defaultDeadline.toISOString().split('T')[0]
       } else if (isFixedDeadlineStudent(user.student_id)) {
-        // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
-        const baseDate = new Date('2025-07-07')
-        const defaultDeadline = new Date(baseDate)
-        defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
-        deadline = defaultDeadline.toISOString().split('T')[0]
+        // AXCF202502/202503/202504学号：使用统一截止时间
+        deadline = getFixedDeadline()
       } else {
         // 其他学号：使用2025年7月7日+6个月（默认）
         const baseDate = new Date('2025-07-07')
