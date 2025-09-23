@@ -5,6 +5,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+// 判断是否为固定截止时间的学员（AXCF202502/202503/202504）
+function isFixedDeadlineStudent(studentId: string): boolean {
+  return studentId.startsWith('AXCF202502') ||
+         studentId.startsWith('AXCF202503') ||
+         studentId.startsWith('AXCF202504')
+}
+
 // 验证学员身份并自动授权AXCF202505开头的学员
 async function verifyStudentAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -53,9 +60,9 @@ async function verifyStudentAuth(request: NextRequest) {
       return updatedUser
     }
 
-    // 自动授权AXCF202504开头的学员
-    if (studentId.startsWith('AXCF202504') && !user.can_self_schedule) {
-      console.log(`自动授权学员 ${studentId} 自主设定权限（AXCF202504统一截止时间）`)
+    // 自动授权AXCF202502/202503/202504开头的学员（固定截止时间）
+    if (isFixedDeadlineStudent(studentId) && !user.can_self_schedule) {
+      console.log(`自动授权学员 ${studentId} 自主设定权限（统一截止时间）`)
 
       // 计算截止日期：2025年7月7日 + 6个月 = 2026年1月7日
       const baseDate = new Date('2025-07-07')
@@ -137,8 +144,8 @@ export async function GET(request: NextRequest) {
             const defaultDeadline = new Date(createdAt)
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
             deadlineStr = defaultDeadline.toISOString().split('T')[0]
-          } else if (user.student_id.startsWith('AXCF202504')) {
-            // AXCF202504学号：使用2025年7月7日+6个月
+          } else if (isFixedDeadlineStudent(user.student_id)) {
+            // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
             const baseDate = new Date('2025-07-07')
             const defaultDeadline = new Date(baseDate)
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
@@ -160,8 +167,8 @@ export async function GET(request: NextRequest) {
           const defaultDeadline = new Date(createdAt)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadlineStr = defaultDeadline.toISOString().split('T')[0]
-        } else if (user.student_id.startsWith('AXCF202504')) {
-          // AXCF202504学号：使用2025年7月7日+6个月
+        } else if (isFixedDeadlineStudent(user.student_id)) {
+          // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
           const baseDate = new Date('2025-07-07')
           const defaultDeadline = new Date(baseDate)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
@@ -182,8 +189,8 @@ export async function GET(request: NextRequest) {
         const defaultDeadline = new Date(createdAt)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadlineStr = defaultDeadline.toISOString().split('T')[0]
-      } else if (user.student_id.startsWith('AXCF202504')) {
-        // AXCF202504学号：使用2025年7月7日+6个月
+      } else if (isFixedDeadlineStudent(user.student_id)) {
+        // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
         const baseDate = new Date('2025-07-07')
         const defaultDeadline = new Date(baseDate)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
@@ -297,8 +304,8 @@ export async function POST(request: NextRequest) {
             const defaultDeadline = new Date(createdAt)
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
             deadline = defaultDeadline.toISOString().split('T')[0]
-          } else if (user.student_id.startsWith('AXCF202504')) {
-            // AXCF202504学号：使用2025年7月7日+6个月
+          } else if (isFixedDeadlineStudent(user.student_id)) {
+            // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
             const baseDate = new Date('2025-07-07')
             const defaultDeadline = new Date(baseDate)
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
@@ -320,8 +327,8 @@ export async function POST(request: NextRequest) {
           const defaultDeadline = new Date(createdAt)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadline = defaultDeadline.toISOString().split('T')[0]
-        } else if (user.student_id.startsWith('AXCF202504')) {
-          // AXCF202504学号：使用2025年7月7日+6个月
+        } else if (isFixedDeadlineStudent(user.student_id)) {
+          // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
           const baseDate = new Date('2025-07-07')
           const defaultDeadline = new Date(baseDate)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
@@ -342,8 +349,8 @@ export async function POST(request: NextRequest) {
         const defaultDeadline = new Date(createdAt)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadline = defaultDeadline.toISOString().split('T')[0]
-      } else if (user.student_id.startsWith('AXCF202504')) {
-        // AXCF202504学号：使用2025年7月7日+6个月
+      } else if (isFixedDeadlineStudent(user.student_id)) {
+        // AXCF202502/202503/202504学号：使用2025年7月7日+6个月
         const baseDate = new Date('2025-07-07')
         const defaultDeadline = new Date(baseDate)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
