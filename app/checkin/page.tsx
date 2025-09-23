@@ -1090,32 +1090,28 @@ export default function CheckinPage() {
                 <p className="text-white/80 text-sm mb-3">
                   📚 <strong>重要提醒：</strong>设置打卡时间前，请务必完成以下学习：
                 </p>
-                <div className="space-y-3">
-                  <a
-                    href="https://htjxcky601.feishu.cn/wiki/ArY4wCX3hiv9TpkOHutcd3v7nzh?from=from_copylink"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center space-x-2 text-orange-300 hover:text-orange-200 transition-colors w-full p-3 bg-orange-500/10 rounded-lg border border-orange-500/30 hover:border-orange-500/50"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <span className="text-sm font-medium">📖 阅读打卡教程和合同说明</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                  <div className="text-orange-200/80 text-xs leading-relaxed">
-                    <p className="mb-1">🔍 <strong>在飞书文档中，您将学习：</strong></p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
-                      <li>打卡规则和要求详解</li>
-                      <li>如何下载和签署打卡合同</li>
-                      <li>违约责任和保证金退还规则</li>
-                      <li>常见问题解答</li>
-                    </ul>
-                    <p className="mt-2 text-orange-300 font-medium">
-                      ⚠️ 请务必仔细阅读所有内容，确认无疑问后再设置打卡时间
-                    </p>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-orange-400">📋</span>
+                    <a
+                      href="https://xiaohongshunavigator.feishu.cn/docx/ICk8doiLFosT7TxXG5FcXTvvncd"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-orange-300 hover:text-orange-200 underline decoration-orange-400/50 hover:decoration-orange-300"
+                    >
+                      自助打卡、学费返还、第二阶段学习说明
+                    </a>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-orange-400">📝</span>
+                    <a
+                      href="https://xiaohongshunavigator.feishu.cn/docx/A8Gtd5ZJAoK8bYxfNNhcINrSnBf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-orange-300 hover:text-orange-200 underline decoration-orange-400/50 hover:decoration-orange-300"
+                    >
+                      三个月打卡合同签订说明
+                    </a>
                   </div>
                 </div>
               </div>

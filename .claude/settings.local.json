@@ -103,7 +103,8 @@
       "Bash(find:*)",
       "Bash(pkill:*)",
       "Bash(npm run lint)",
-      "Read(//c/Users/杜富陶/Downloads/**)"
+      "Read(//c/Users/杜富陶/Downloads/**)",
+      "Bash(npx supabase db describe:*)"
     ],
     "deny": []
   }
