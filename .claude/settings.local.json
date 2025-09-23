@@ -104,7 +104,9 @@
       "Bash(pkill:*)",
       "Bash(npm run lint)",
       "Read(//c/Users/杜富陶/Downloads/**)",
-      "Bash(npx supabase db describe:*)"
+      "Bash(npx supabase db describe:*)",
+      "Bash(git fetch:*)",
+      "Bash(git restore:*)"
     ],
     "deny": []
   }

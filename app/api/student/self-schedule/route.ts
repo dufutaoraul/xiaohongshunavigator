@@ -53,12 +53,12 @@ async function verifyStudentAuth(request: NextRequest) {
       return updatedUser
     }
 
-    // 自动授权其他学员（非AXCF202505开头）
-    if (!studentId.startsWith('AXCF202505') && !user.can_self_schedule) {
-      console.log(`自动授权学员 ${studentId} 自主设定权限（统一截止时间）`)
+    // 自动授权AXCF202504开头的学员
+    if (studentId.startsWith('AXCF202504') && !user.can_self_schedule) {
+      console.log(`自动授权学员 ${studentId} 自主设定权限（AXCF202504统一截止时间）`)
 
-      // 计算截止日期：2024年7月7日 + 6个月 = 2025年1月7日
-      const baseDate = new Date('2024-07-07')
+      // 计算截止日期：2025年7月7日 + 6个月 = 2026年1月7日
+      const baseDate = new Date('2025-07-07')
       const deadline = new Date(baseDate)
       deadline.setMonth(deadline.getMonth() + 6)
 
@@ -137,9 +137,15 @@ export async function GET(request: NextRequest) {
             const defaultDeadline = new Date(createdAt)
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
             deadlineStr = defaultDeadline.toISOString().split('T')[0]
+          } else if (user.student_id.startsWith('AXCF202504')) {
+            // AXCF202504学号：使用2025年7月7日+6个月
+            const baseDate = new Date('2025-07-07')
+            const defaultDeadline = new Date(baseDate)
+            defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+            deadlineStr = defaultDeadline.toISOString().split('T')[0]
           } else {
-            // 其他学号：使用2024年7月7日+6个月
-            const baseDate = new Date('2024-07-07')
+            // 其他学号：使用2025年7月7日+6个月（默认）
+            const baseDate = new Date('2025-07-07')
             const defaultDeadline = new Date(baseDate)
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
             deadlineStr = defaultDeadline.toISOString().split('T')[0]
@@ -154,9 +160,15 @@ export async function GET(request: NextRequest) {
           const defaultDeadline = new Date(createdAt)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadlineStr = defaultDeadline.toISOString().split('T')[0]
+        } else if (user.student_id.startsWith('AXCF202504')) {
+          // AXCF202504学号：使用2025年7月7日+6个月
+          const baseDate = new Date('2025-07-07')
+          const defaultDeadline = new Date(baseDate)
+          defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+          deadlineStr = defaultDeadline.toISOString().split('T')[0]
         } else {
-          // 其他学号：使用2024年7月7日+6个月
-          const baseDate = new Date('2024-07-07')
+          // 其他学号：使用2025年7月7日+6个月（默认）
+          const baseDate = new Date('2025-07-07')
           const defaultDeadline = new Date(baseDate)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadlineStr = defaultDeadline.toISOString().split('T')[0]
@@ -170,9 +182,15 @@ export async function GET(request: NextRequest) {
         const defaultDeadline = new Date(createdAt)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadlineStr = defaultDeadline.toISOString().split('T')[0]
+      } else if (user.student_id.startsWith('AXCF202504')) {
+        // AXCF202504学号：使用2025年7月7日+6个月
+        const baseDate = new Date('2025-07-07')
+        const defaultDeadline = new Date(baseDate)
+        defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+        deadlineStr = defaultDeadline.toISOString().split('T')[0]
       } else {
-        // 其他学号：使用2024年7月7日+6个月
-        const baseDate = new Date('2024-07-07')
+        // 其他学号：使用2025年7月7日+6个月（默认）
+        const baseDate = new Date('2025-07-07')
         const defaultDeadline = new Date(baseDate)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadlineStr = defaultDeadline.toISOString().split('T')[0]
@@ -279,9 +297,15 @@ export async function POST(request: NextRequest) {
             const defaultDeadline = new Date(createdAt)
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
             deadline = defaultDeadline.toISOString().split('T')[0]
+          } else if (user.student_id.startsWith('AXCF202504')) {
+            // AXCF202504学号：使用2025年7月7日+6个月
+            const baseDate = new Date('2025-07-07')
+            const defaultDeadline = new Date(baseDate)
+            defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+            deadline = defaultDeadline.toISOString().split('T')[0]
           } else {
-            // 其他学号：使用2024年7月7日+6个月
-            const baseDate = new Date('2024-07-07')
+            // 其他学号：使用2025年7月7日+6个月（默认）
+            const baseDate = new Date('2025-07-07')
             const defaultDeadline = new Date(baseDate)
             defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
             deadline = defaultDeadline.toISOString().split('T')[0]
@@ -296,9 +320,15 @@ export async function POST(request: NextRequest) {
           const defaultDeadline = new Date(createdAt)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadline = defaultDeadline.toISOString().split('T')[0]
+        } else if (user.student_id.startsWith('AXCF202504')) {
+          // AXCF202504学号：使用2025年7月7日+6个月
+          const baseDate = new Date('2025-07-07')
+          const defaultDeadline = new Date(baseDate)
+          defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+          deadline = defaultDeadline.toISOString().split('T')[0]
         } else {
-          // 其他学号：使用2024年7月7日+6个月
-          const baseDate = new Date('2024-07-07')
+          // 其他学号：使用2025年7月7日+6个月（默认）
+          const baseDate = new Date('2025-07-07')
           const defaultDeadline = new Date(baseDate)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadline = defaultDeadline.toISOString().split('T')[0]
@@ -312,9 +342,15 @@ export async function POST(request: NextRequest) {
         const defaultDeadline = new Date(createdAt)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadline = defaultDeadline.toISOString().split('T')[0]
+      } else if (user.student_id.startsWith('AXCF202504')) {
+        // AXCF202504学号：使用2025年7月7日+6个月
+        const baseDate = new Date('2025-07-07')
+        const defaultDeadline = new Date(baseDate)
+        defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+        deadline = defaultDeadline.toISOString().split('T')[0]
       } else {
-        // 其他学号：使用2024年7月7日+6个月
-        const baseDate = new Date('2024-07-07')
+        // 其他学号：使用2025年7月7日+6个月（默认）
+        const baseDate = new Date('2025-07-07')
         const defaultDeadline = new Date(baseDate)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadline = defaultDeadline.toISOString().split('T')[0]
