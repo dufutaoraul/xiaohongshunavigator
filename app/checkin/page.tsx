@@ -288,7 +288,7 @@ export default function CheckinPage() {
             student_id: record.student_id,
             student_name: record.student_name || '',
             checkin_date: record.checkin_date,
-            xiaohongshu_url: record.xiaohongshu_link || record.xiaohongshu_url || '', // 兼容两种字段名
+            xiaohongshu_url: record.xhs_url || record.xiaohongshu_url || record.xiaohongshu_link || '', // 使用标准字段名xhs_url
             status: record.status || 'pending',
             created_at: record.created_at,
             updated_at: record.updated_at

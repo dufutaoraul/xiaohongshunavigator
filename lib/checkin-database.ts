@@ -5,15 +5,17 @@ import { getBeijingDateString } from './date-utils'
 export interface CheckinRecord {
   id?: string
   student_id: string
-  student_name: string
+  student_name?: string
   checkin_date: string // YYYY-MM-DD 格式
-  xiaohongshu_url: string
+  xhs_url: string // 标准字段名
+  xiaohongshu_url?: string // 兼容字段，用于前端显示
   content_title?: string
   content_description?: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'approved' | 'rejected' | 'valid' | 'invalid'
   created_at?: string
   updated_at?: string
   admin_comment?: string
+  admin_review_notes?: string
 }
 
 // 打卡统计接口
@@ -94,8 +96,7 @@ export async function upsertCheckinRecord(record: Omit<CheckinRecord, 'id' | 'cr
       const { error: updateError } = await supabase
         .from('checkin_records')
         .update({
-          xhs_url: record.xiaohongshu_url, // 兼容旧字段
-          xiaohongshu_url: record.xiaohongshu_url, // 新字段
+          xhs_url: record.xhs_url || record.xiaohongshu_url, // 使用标准字段
           content_title: record.content_title,
           content_description: record.content_description,
           status: 'pending', // 重新提交后状态重置为待审核
@@ -115,8 +116,7 @@ export async function upsertCheckinRecord(record: Omit<CheckinRecord, 'id' | 'cr
           student_id: record.student_id,
           student_name: record.student_name,
           checkin_date: record.checkin_date,
-          xhs_url: record.xiaohongshu_url, // 映射到数据库的xhs_url字段
-          xiaohongshu_url: record.xiaohongshu_url, // 保持新字段
+          xhs_url: record.xhs_url || record.xiaohongshu_url, // 使用标准字段
           content_title: record.content_title,
           content_description: record.content_description,
           status: 'pending',

@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       .upsert({
         student_id,
         checkin_date: today,
-        xiaohongshu_url: xiaohongshu_link,
+        xhs_url: xiaohongshu_link,
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'student_id,checkin_date'
