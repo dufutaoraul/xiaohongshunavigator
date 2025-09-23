@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-
-export const supabase = createClient(supabaseUrl, supabaseKey)
+import { supabase } from './supabase'
 
 // 学员信息接口
 export interface StudentInfo {
@@ -44,28 +39,52 @@ export async function getStudentByStudentId(studentId: string): Promise<StudentI
 // 创建或更新学员信息
 export async function upsertStudent(studentData: StudentInfo): Promise<boolean> {
   try {
-    console.log('Upserting student data:', studentData)
-    const { error } = await supabase
+    console.log('🔄 开始保存学员数据:', studentData)
+
+    // 检查Supabase客户端配置
+    console.log('🔗 Supabase配置检查:', {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
+      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      client: !!supabase
+    })
+
+    const updateData = {
+      student_id: studentData.student_id,
+      name: studentData.name,
+      real_name: studentData.real_name,
+      persona: studentData.persona,
+      keywords: studentData.keywords,
+      vision: studentData.vision
+    }
+
+    console.log('💾 准备upsert的数据:', updateData)
+
+    const { data, error } = await supabase
       .from('users')
-      .upsert({
-        student_id: studentData.student_id,
-        name: studentData.name,
-        real_name: studentData.real_name,
-        persona: studentData.persona,
-        keywords: studentData.keywords,
-        vision: studentData.vision
-      }, {
+      .upsert(updateData, {
         onConflict: 'student_id'
       })
+      .select()
 
     if (error) {
-      console.error('Supabase upsert error:', error)
+      console.error('❌ Supabase upsert 错误详情:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: error.stack
+      })
       throw error
     }
-    console.log('Student data upserted successfully')
+
+    console.log('✅ 学员数据保存成功:', data)
     return true
   } catch (error) {
-    console.error('Error upserting student:', error)
+    console.error('🚨 upsertStudent函数错误:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      studentData
+    })
     return false
   }
 }
