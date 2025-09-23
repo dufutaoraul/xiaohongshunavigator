@@ -132,7 +132,8 @@ export async function POST(request: NextRequest) {
       student_id,
       student_name,
       checkin_date,
-      xiaohongshu_url,
+      xhs_url: xiaohongshu_url, // 映射到标准字段
+      xiaohongshu_url, // 保持兼容性
       content_title: content_title || '',
       content_description: content_description || '',
       status: 'pending'
