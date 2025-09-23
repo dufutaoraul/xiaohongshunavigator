@@ -30,10 +30,20 @@ export default function XiaohongshuProfileModal({
 
   const validateXiaohongshuUrl = (url: string): boolean => {
     if (!url.trim()) return false
-    
-    // 小红书链接格式验证
-    const xiaohongshuRegex = /^https?:\/\/(www\.)?xiaohongshu\.com\/user\/profile\/[a-zA-Z0-9]+(\?.*)?$/
-    return xiaohongshuRegex.test(url.trim())
+
+    const trimmedUrl = url.trim()
+
+    // 支持多种小红书链接格式
+    const patterns = [
+      // 标准小红书链接格式
+      /^https?:\/\/(www\.)?xiaohongshu\.com\/user\/profile\/[a-zA-Z0-9]+(\?.*)?$/,
+      // 小红书短链接格式 (xhslink.com)
+      /^https?:\/\/xhslink\.com\/[a-zA-Z0-9]+$/,
+      // 手机端分享链接格式
+      /^https?:\/\/xhslink\.com\/m\/[a-zA-Z0-9]+$/
+    ]
+
+    return patterns.some(pattern => pattern.test(trimmedUrl))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,7 +56,7 @@ export default function XiaohongshuProfileModal({
     }
 
     if (!validateXiaohongshuUrl(trimmedUrl)) {
-      setError('请输入有效的小红书主页链接格式，如：https://www.xiaohongshu.com/user/profile/xxxxxx')
+      setError('请输入有效的小红书主页链接。支持格式：\n• https://www.xiaohongshu.com/user/profile/xxxxxx\n• https://xhslink.com/xxxxxx\n• https://xhslink.com/m/xxxxxx')
       return
     }
 
@@ -95,6 +105,7 @@ export default function XiaohongshuProfileModal({
               <li>• 进入个人主页</li>
               <li>• 点击右上角分享按钮</li>
               <li>• 选择&ldquo;复制链接&rdquo;即可获得</li>
+              <li className="text-green-300 mt-2">✨ 支持手机端短链接（xhslink.com格式）</li>
             </ul>
           </div>
 
