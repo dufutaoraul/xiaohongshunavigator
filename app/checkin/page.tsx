@@ -413,7 +413,7 @@ export default function CheckinPage() {
       // 如果今天已经有打卡记录，预填数据
       const existingRecord = checkinRecords.find(record => record.checkin_date === day.dateStr)
       if (existingRecord) {
-        setXiaohongshuUrl(existingRecord.xiaohongshu_url)
+        setXiaohongshuUrl(existingRecord.xiaohongshu_url || existingRecord.xhs_url || '')
       } else {
         setXiaohongshuUrl('')
       }
@@ -466,7 +466,8 @@ export default function CheckinPage() {
           student_id: studentId,
           student_name: userName,
           checkin_date: selectedDate,
-          xiaohongshu_url: xiaohongshuUrl,
+          xhs_url: xiaohongshuUrl, // 标准字段
+          xiaohongshu_url: xiaohongshuUrl, // 兼容字段
           status: 'pending',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
