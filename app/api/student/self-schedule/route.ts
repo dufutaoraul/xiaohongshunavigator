@@ -53,6 +53,34 @@ async function verifyStudentAuth(request: NextRequest) {
       return updatedUser
     }
 
+    // 自动授权其他学员（非AXCF202505开头）
+    if (!studentId.startsWith('AXCF202505') && !user.can_self_schedule) {
+      console.log(`自动授权学员 ${studentId} 自主设定权限（统一截止时间）`)
+
+      // 计算截止日期：2024年7月7日 + 6个月 = 2025年1月7日
+      const baseDate = new Date('2024-07-07')
+      const deadline = new Date(baseDate)
+      deadline.setMonth(deadline.getMonth() + 6)
+
+      // 更新用户权限
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update({
+          can_self_schedule: true,
+          self_schedule_deadline: deadline.toISOString()
+        })
+        .eq('student_id', studentId)
+        .select('student_id, name, can_self_schedule, has_used_self_schedule, self_schedule_deadline, created_at')
+        .single()
+
+      if (updateError) {
+        console.error('自动授权失败:', updateError)
+        return user // 返回原用户信息
+      }
+
+      return updatedUser
+    }
+
     return user
   } catch (error) {
     console.error('验证学员身份失败:', error)
@@ -102,26 +130,53 @@ export async function GET(request: NextRequest) {
         if (deadline.getTime() > 0) { // 确保是有效日期
           deadlineStr = deadline.toISOString().split('T')[0]
         } else {
-          // 如果日期无效，使用创建时间+6个月作为默认值
+          // 如果日期无效，根据学号计算默认值
+          if (user.student_id.startsWith('AXCF202505')) {
+            // AXCF202505开头：使用创建时间+6个月
+            const createdAt = new Date(user.created_at)
+            const defaultDeadline = new Date(createdAt)
+            defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+            deadlineStr = defaultDeadline.toISOString().split('T')[0]
+          } else {
+            // 其他学号：使用2024年7月7日+6个月
+            const baseDate = new Date('2024-07-07')
+            const defaultDeadline = new Date(baseDate)
+            defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+            deadlineStr = defaultDeadline.toISOString().split('T')[0]
+          }
+        }
+      } catch (error) {
+        console.error('日期解析错误:', error)
+        // 根据学号计算默认值
+        if (user.student_id.startsWith('AXCF202505')) {
+          // AXCF202505开头：使用创建时间+6个月
           const createdAt = new Date(user.created_at)
           const defaultDeadline = new Date(createdAt)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadlineStr = defaultDeadline.toISOString().split('T')[0]
+        } else {
+          // 其他学号：使用2024年7月7日+6个月
+          const baseDate = new Date('2024-07-07')
+          const defaultDeadline = new Date(baseDate)
+          defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+          deadlineStr = defaultDeadline.toISOString().split('T')[0]
         }
-      } catch (error) {
-        console.error('日期解析错误:', error)
-        // 使用创建时间+6个月作为默认值
+      }
+    } else {
+      // 如果没有截止日期，根据学号计算默认值
+      if (user.student_id.startsWith('AXCF202505')) {
+        // AXCF202505开头：使用创建时间+6个月
         const createdAt = new Date(user.created_at)
         const defaultDeadline = new Date(createdAt)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadlineStr = defaultDeadline.toISOString().split('T')[0]
+      } else {
+        // 其他学号：使用2024年7月7日+6个月
+        const baseDate = new Date('2024-07-07')
+        const defaultDeadline = new Date(baseDate)
+        defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+        deadlineStr = defaultDeadline.toISOString().split('T')[0]
       }
-    } else {
-      // 如果没有截止日期，使用创建时间+6个月
-      const createdAt = new Date(user.created_at)
-      const defaultDeadline = new Date(createdAt)
-      defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
-      deadlineStr = defaultDeadline.toISOString().split('T')[0]
     }
 
     // 检查是否已有任何类型的打卡安排（admin_set 或 self_set）
@@ -217,25 +272,53 @@ export async function POST(request: NextRequest) {
         if (deadlineDate.getTime() > 0) {
           deadline = deadlineDate.toISOString().split('T')[0]
         } else {
-          // 使用创建时间+6个月作为默认值
+          // 根据学号计算默认值
+          if (user.student_id.startsWith('AXCF202505')) {
+            // AXCF202505开头：使用创建时间+6个月
+            const createdAt = new Date(user.created_at)
+            const defaultDeadline = new Date(createdAt)
+            defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+            deadline = defaultDeadline.toISOString().split('T')[0]
+          } else {
+            // 其他学号：使用2024年7月7日+6个月
+            const baseDate = new Date('2024-07-07')
+            const defaultDeadline = new Date(baseDate)
+            defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+            deadline = defaultDeadline.toISOString().split('T')[0]
+          }
+        }
+      } catch (error) {
+        console.error('日期解析错误:', error)
+        // 根据学号计算默认值
+        if (user.student_id.startsWith('AXCF202505')) {
+          // AXCF202505开头：使用创建时间+6个月
           const createdAt = new Date(user.created_at)
           const defaultDeadline = new Date(createdAt)
           defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
           deadline = defaultDeadline.toISOString().split('T')[0]
+        } else {
+          // 其他学号：使用2024年7月7日+6个月
+          const baseDate = new Date('2024-07-07')
+          const defaultDeadline = new Date(baseDate)
+          defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+          deadline = defaultDeadline.toISOString().split('T')[0]
         }
-      } catch (error) {
-        console.error('日期解析错误:', error)
+      }
+    } else {
+      // 根据学号计算默认值
+      if (user.student_id.startsWith('AXCF202505')) {
+        // AXCF202505开头：使用创建时间+6个月
         const createdAt = new Date(user.created_at)
         const defaultDeadline = new Date(createdAt)
         defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
         deadline = defaultDeadline.toISOString().split('T')[0]
+      } else {
+        // 其他学号：使用2024年7月7日+6个月
+        const baseDate = new Date('2024-07-07')
+        const defaultDeadline = new Date(baseDate)
+        defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
+        deadline = defaultDeadline.toISOString().split('T')[0]
       }
-    } else {
-      // 使用创建时间+6个月作为默认值
-      const createdAt = new Date(user.created_at)
-      const defaultDeadline = new Date(createdAt)
-      defaultDeadline.setMonth(defaultDeadline.getMonth() + 6)
-      deadline = defaultDeadline.toISOString().split('T')[0]
     }
 
     // 检查是否超期

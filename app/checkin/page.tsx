@@ -1132,7 +1132,7 @@ export default function CheckinPage() {
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
                 <p className="text-white/80 text-sm mb-2">设置前请先阅读打卡须知：</p>
                 <a
-                  href="https://pcnxm41ut6t0.feishu.cn/wiki/QCCGwbgmuifXVRkIwKvc7ZPsnib?from=from_copylink"
+                  href="https://pcnxm41ut6t0.feishu.cn/wiki/QCCGwbgmuifXVRkIwKvc7ZPsnib"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors"
@@ -1144,36 +1144,6 @@ export default function CheckinPage() {
                 </a>
               </div>
 
-              {/* 打卡合同学习指引 */}
-              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 mb-6">
-                <p className="text-white/80 text-sm mb-3">
-                  📚 <strong>重要提醒：</strong>设置打卡时间前，请务必完成以下学习：
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-orange-400">📋</span>
-                    <a
-                      href="https://xiaohongshunavigator.feishu.cn/docx/ICk8doiLFosT7TxXG5FcXTvvncd"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-orange-300 hover:text-orange-200 underline decoration-orange-400/50 hover:decoration-orange-300"
-                    >
-                      自助打卡、学费返还、第二阶段学习说明
-                    </a>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-orange-400">📝</span>
-                    <a
-                      href="https://xiaohongshunavigator.feishu.cn/docx/A8Gtd5ZJAoK8bYxfNNhcINrSnBf"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-orange-300 hover:text-orange-200 underline decoration-orange-400/50 hover:decoration-orange-300"
-                    >
-                      三个月打卡合同签订说明
-                    </a>
-                  </div>
-                </div>
-              </div>
 
               <div className="flex space-x-4">
                 <button
