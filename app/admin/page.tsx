@@ -1040,14 +1040,14 @@ export default function AdminDashboard() {
                               ✅ 已打卡
                             </span>
                           </div>
-                          {(record.xiaohongshu_link || record.xiaohongshu_url) && (
+                          {(record.xhs_url || record.xiaohongshu_link || record.xiaohongshu_url) && (
                             <a
-                              href={record.xiaohongshu_link || record.xiaohongshu_url}
+                              href={record.xhs_url || record.xiaohongshu_link || record.xiaohongshu_url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-400 hover:text-blue-300 text-sm break-all"
                             >
-                              🔗 {record.xiaohongshu_link || record.xiaohongshu_url}
+                              🔗 {record.xhs_url || record.xiaohongshu_link || record.xiaohongshu_url}
                             </a>
                           )}
                           {record.admin_comment && (

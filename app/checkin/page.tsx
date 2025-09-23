@@ -582,12 +582,70 @@ export default function CheckinPage() {
           </div>
         </div>
 
-        {/* 打卡统计 - 简化版本，只显示总打卡天数 */}
+        {/* 打卡统计和进度提醒 */}
         <div className="flex justify-center mb-6">
-          <Card className="text-center px-8 py-6">
-            <div className="text-4xl font-bold text-blue-400 mb-2">{checkinStats.total_days}</div>
-            <div className="text-white/70 text-lg">总打卡天数</div>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full max-w-4xl">
+            {/* 总打卡天数卡片 */}
+            <Card className="text-center px-8 py-6">
+              <div className="text-4xl font-bold text-blue-400 mb-2">{checkinStats.total_days}</div>
+              <div className="text-white/70 text-lg">总打卡天数</div>
+            </Card>
+
+            {/* 进度提醒卡片 */}
+            {checkinSchedule && (
+              <Card className="px-6 py-4">
+                <div className="flex items-center mb-3">
+                  <span className="text-2xl mr-3">🎯</span>
+                  <h3 className="text-lg font-semibold text-white">打卡进度</h3>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">开始日期：</span>
+                    <span className="text-green-400 font-medium">
+                      {new Date(checkinSchedule.start_date).toLocaleDateString('zh-CN', {
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">结束日期：</span>
+                    <span className="text-orange-400 font-medium">
+                      {new Date(checkinSchedule.end_date).toLocaleDateString('zh-CN', {
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">目标天数：</span>
+                    <span className="text-blue-400 font-medium">90天</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">完成进度：</span>
+                    <span className="text-purple-400 font-bold">
+                      {Math.min(Math.round((checkinStats.total_days / 90) * 100), 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* 进度条 */}
+                <div className="mt-4">
+                  <div className="w-full bg-white/10 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min((checkinStats.total_days / 90) * 100, 100)}%`
+                      }}
+                    ></div>
+                  </div>
+                  <div className="text-center mt-2 text-xs text-white/60">
+                    已完成 {checkinStats.total_days}/90 天
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
 
         {/* 今日打卡按钮 */}
