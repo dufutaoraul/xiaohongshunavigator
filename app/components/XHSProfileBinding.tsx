@@ -187,9 +187,9 @@ export default function XHSProfileBinding({ student_id, currentProfileUrl, onUpd
 
         <div className="text-xs text-white/50 space-y-1">
           <div>💡 获取主页链接方法：</div>
-          <div>1. 打开小红书APP，进入"我"页面</div>
+          <div>1. 打开小红书APP，进入&ldquo;我&rdquo;页面</div>
           <div>2. 点击右上角分享按钮</div>
-          <div>3. 选择"复制链接"即可获得主页URL</div>
+          <div>3. 选择&ldquo;复制链接&rdquo;即可获得主页URL</div>
         </div>
 
         {error && (

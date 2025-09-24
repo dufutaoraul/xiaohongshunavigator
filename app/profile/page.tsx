@@ -45,14 +45,31 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
 
-  // 页面加载时检查登录状态和编辑模式
-  useEffect(() => {
-    checkAuthStatus()
-    checkEditMode()
+  // 加载学员完整信息（用于编辑模式）
+  const loadStudentProfile = useCallback(async (studentId: string) => {
+    try {
+      const response = await fetch(`/api/user?student_id=${studentId}`)
+      if (response.ok) {
+        const userData = await response.json()
+        if (userData) {
+          setProfile({
+            student_id: userData.student_id,
+            name: userData.name || '',
+            real_name: userData.real_name || '',
+            persona: userData.persona || '',
+            keywords: userData.keywords || '',
+            vision: userData.vision || '',
+            xiaohongshu_profile_url: userData.xiaohongshu_profile_url || ''
+          })
+        }
+      }
+    } catch (error) {
+      console.error('加载学员信息失败:', error)
+    }
   }, [])
 
   // 检查是否是编辑模式
-  const checkEditMode = () => {
+  const checkEditMode = useCallback(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const isEdit = urlParams.get('edit') === 'true'
     const editStudentId = urlParams.get('student_id')
@@ -68,7 +85,8 @@ export default function ProfilePage() {
         real_name: decodeURIComponent(editRealName || ''),
         persona: '',
         keywords: '',
-        vision: ''
+        vision: '',
+        xiaohongshu_profile_url: ''
       })
       setIsExistingUser(true)
       setIsAuthenticated(true)
@@ -76,31 +94,9 @@ export default function ProfilePage() {
       // 加载完整的学员信息
       loadStudentProfile(editStudentId)
     }
-  }
+  }, [loadStudentProfile])
 
-  // 加载学员完整信息（用于编辑模式）
-  const loadStudentProfile = async (studentId: string) => {
-    try {
-      const response = await fetch(`/api/user?student_id=${studentId}`)
-      if (response.ok) {
-        const userData = await response.json()
-        if (userData) {
-          setProfile({
-            student_id: userData.student_id,
-            name: userData.name || '',
-            real_name: userData.real_name || '',
-            persona: userData.persona || '',
-            keywords: userData.keywords || '',
-            vision: userData.vision || ''
-          })
-        }
-      }
-    } catch (error) {
-      console.error('加载学员信息失败:', error)
-    }
-  }
-
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       const userSession = localStorage.getItem('userSession')
       const lastCredentials = localStorage.getItem('lastCredentials')
@@ -160,7 +156,13 @@ export default function ProfilePage() {
       console.error('Error checking auth status:', error)
       setShowLoginModal(true)
     }
-  }
+  }, [])
+
+  // 页面加载时检查登录状态和编辑模式
+  useEffect(() => {
+    checkAuthStatus()
+    checkEditMode()
+  }, [checkAuthStatus, checkEditMode])
 
   // 加载用户完整信息的独立函数
   const loadUserProfile = async (studentId: string) => {
@@ -176,7 +178,8 @@ export default function ProfilePage() {
             real_name: userData.real_name || '',
             persona: userData.persona || '',
             keywords: userData.keywords || '',
-            vision: userData.vision || ''
+            vision: userData.vision || '',
+            xiaohongshu_profile_url: userData.xiaohongshu_profile_url || ''
           }))
           
           // 判断是否为老用户（有内容）
@@ -305,7 +308,8 @@ export default function ProfilePage() {
         real_name: student.real_name || '',
         persona: student.persona || '',
         keywords: student.keywords || '',
-        vision: student.vision || ''
+        vision: student.vision || '',
+        xiaohongshu_profile_url: (student as any).xiaohongshu_profile_url || ''
       })
       
       // 判断是否为老用户（有内容）
@@ -319,7 +323,8 @@ export default function ProfilePage() {
         real_name: '',
         persona: '',
         keywords: '',
-        vision: ''
+        vision: '',
+        xiaohongshu_profile_url: ''
       })
       setIsExistingUser(false)
     }
