@@ -67,12 +67,11 @@ export async function POST(request: NextRequest) {
       hasXHSProfile: !!userData.xiaohongshu_profile_url
     })
 
-    // 获取该学员已有的打卡记录（用于重复检测）
-    console.log('🔍 [Checkin Submit API] 获取已有打卡记录进行重复检测...')
+    // 获取所有已提交的打卡记录（用于全局重复检测）
+    console.log('🔍 [Checkin Submit API] 获取所有已有打卡记录进行全局重复检测...')
     const { data: existingRecords, error: existingError } = await supabase
       .from('checkin_records')
-      .select('xhs_url')
-      .eq('student_id', student_id)
+      .select('xhs_url, student_id')
 
     if (existingError) {
       console.error('❌ [Checkin Submit API] 获取已有记录失败:', existingError)
@@ -82,12 +81,15 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // 提取已存在的URL列表
-    const existingUrls = (existingRecords || []).map(record =>
-      record.xhs_url
-    ).filter(Boolean)
+    // 过滤有效的记录（去除空URL）
+    const validExistingRecords = (existingRecords || [])
+      .filter(record => record.xhs_url)
+      .map(record => ({
+        xhs_url: record.xhs_url,
+        student_id: record.student_id
+      }))
 
-    console.log('🔍 [Checkin Submit API] 已有打卡记录数量:', existingUrls.length)
+    console.log('🔍 [Checkin Submit API] 全局已有打卡记录数量:', validExistingRecords.length)
 
     // 验证 URLs 格式和重复性
     console.log('🔍 [Checkin Submit API] 开始验证URLs:', urls)
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
       const validation = validateXHSPost(
         url,
         userData.xiaohongshu_profile_url,
-        existingUrls
+        validExistingRecords
       )
       console.log(`🔍 [Checkin Submit API] URL[${index}] 验证结果:`, {
         url: url.substring(0, 50) + '...',

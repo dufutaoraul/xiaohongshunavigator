@@ -14,12 +14,18 @@ export default function XHSValidationTestPage() {
   const handleTest = () => {
     const existingUrlList = existingUrls.split('\n').filter(url => url.trim())
 
+    // 将URL列表转换为记录格式（测试用）
+    const existingRecords = existingUrlList.map((url, index) => ({
+      xhs_url: url,
+      student_id: `TEST_USER_${index + 1}`
+    }))
+
     // 解析URL信息
     const urlInfo = parseXHSUrl(testUrl)
     const profileInfo = profileUrl ? parseXHSUrl(profileUrl) : null
 
     // 验证帖子
-    const validation = validateXHSPost(testUrl, profileUrl || undefined, existingUrlList)
+    const validation = validateXHSPost(testUrl, profileUrl || undefined, existingRecords)
 
     // 其他辅助信息
     const normalized = normalizeXHSUrl(testUrl)

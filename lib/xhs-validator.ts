@@ -6,6 +6,10 @@ interface XHSValidationResult {
     userId?: string
     userUrl?: string
   }
+  duplicateInfo?: {
+    studentId: string
+    url: string
+  }
 }
 
 interface XHSUrlInfo {
@@ -67,12 +71,12 @@ export function parseXHSUrl(url: string): XHSUrlInfo {
  * 验证小红书帖子是否符合要求
  * @param postUrl 帖子链接
  * @param userProfileUrl 用户绑定的小红书主页链接
- * @param existingUrls 已存在的帖子链接列表（用于重复检测）
+ * @param existingRecords 已存在的帖子记录列表（用于重复检测）
  */
 export function validateXHSPost(
   postUrl: string,
   userProfileUrl?: string,
-  existingUrls: string[] = []
+  existingRecords: Array<{xhs_url: string, student_id: string}> = []
 ): XHSValidationResult {
 
   // 1. 基础URL格式验证
@@ -85,14 +89,19 @@ export function validateXHSPost(
   }
 
   // 2. 重复检测
-  const isDuplicate = existingUrls.some(existingUrl =>
-    normalizeXHSUrl(existingUrl) === normalizeXHSUrl(postUrl)
+  const normalizedPostUrl = normalizeXHSUrl(postUrl)
+  const duplicateRecord = existingRecords.find(record =>
+    normalizeXHSUrl(record.xhs_url) === normalizedPostUrl
   )
 
-  if (isDuplicate) {
+  if (duplicateRecord) {
     return {
       isValid: false,
-      reason: '该帖子链接已经提交过了'
+      reason: `该帖子链接已经被学员 ${duplicateRecord.student_id} 提交过了`,
+      duplicateInfo: {
+        studentId: duplicateRecord.student_id,
+        url: duplicateRecord.xhs_url
+      }
     }
   }
 
