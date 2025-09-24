@@ -21,7 +21,7 @@ function getFixedDeadline(): string {
   return deadline.toISOString().split('T')[0]
 }
 
-// 验证学员身份并自动授权AXCF202505开头的学员
+// 验证学员身份（不再自动授权，权限只能由管理员设置）
 async function verifyStudentAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader) {
@@ -41,72 +41,7 @@ async function verifyStudentAuth(request: NextRequest) {
       return null
     }
 
-    // 自动授权AXCF202505开头的学员
-    if (studentId.startsWith('AXCF202505') && !user.can_self_schedule) {
-      console.log(`自动授权学员 ${studentId} 自主设定权限`)
-
-      // 计算截止日期：用户创建时间 + 6个月
-      const createdAt = new Date(user.created_at)
-      const deadline = new Date(createdAt)
-      deadline.setMonth(deadline.getMonth() + 6)
-
-      // 更新用户权限
-      const { data: updatedUser, error: updateError } = await supabase
-        .from('users')
-        .update({
-          can_self_schedule: true,
-          self_schedule_deadline: deadline.toISOString()
-        })
-        .eq('student_id', studentId)
-        .select('student_id, name, can_self_schedule, has_used_self_schedule, self_schedule_deadline, created_at')
-        .single()
-
-      if (updateError) {
-        console.error('自动授权失败:', updateError)
-        return user // 返回原用户信息
-      }
-
-      return updatedUser
-    }
-
-    // 自动授权AXCF202501/202502/202503/202504开头的学员（固定截止时间）
-    if (isFixedDeadlineStudent(studentId)) {
-      console.log(`处理学员 ${studentId} 自主设定权限（统一截止时间）`)
-
-      // 计算统一截止日期：2025年7月7日 + 6个月 = 2026年1月7日
-      const baseDate = new Date('2025-07-07')
-      const deadline = new Date(baseDate)
-      deadline.setMonth(deadline.getMonth() + 6)
-      const unifiedDeadline = deadline.toISOString()
-
-      // 检查是否需要更新（权限或截止时间不正确）
-      const needsUpdate = !user.can_self_schedule ||
-                         !user.self_schedule_deadline ||
-                         user.self_schedule_deadline !== unifiedDeadline
-
-      if (needsUpdate) {
-        // 更新用户权限和统一截止时间
-        const { data: updatedUser, error: updateError } = await supabase
-          .from('users')
-          .update({
-            can_self_schedule: true,
-            self_schedule_deadline: unifiedDeadline
-          })
-          .eq('student_id', studentId)
-          .select('student_id, name, can_self_schedule, has_used_self_schedule, self_schedule_deadline, created_at')
-          .single()
-
-        if (updateError) {
-          console.error('更新用户信息失败:', updateError)
-          return user // 返回原用户信息
-        }
-
-        console.log(`已更新学员 ${studentId} 的截止时间为: ${unifiedDeadline}`)
-        return updatedUser
-      }
-
-      return user
-    }
+    // 注意：不再自动授权，can_self_schedule权限只能由管理员手动设置
 
     return user
   } catch (error) {
