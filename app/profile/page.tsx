@@ -9,6 +9,7 @@ import StudentInputWithAutocomplete from '../components/StudentInputWithAutocomp
 import LoginModal from '../components/LoginModal'
 import PasswordChangeModal from '../components/PasswordChangeModal'
 import GlobalUserMenu from '../components/GlobalUserMenu'
+import XHSProfileBinding from '../components/XHSProfileBinding'
 import { StudentInfo, upsertStudent } from '../../lib/database'
 
 interface UserProfile {
@@ -18,6 +19,7 @@ interface UserProfile {
   persona: string
   keywords: string
   vision: string
+  xiaohongshu_profile_url: string
 }
 
 export default function ProfilePage() {
@@ -29,7 +31,8 @@ export default function ProfilePage() {
     real_name: '',
     persona: '',
     keywords: '',
-    vision: ''
+    vision: '',
+    xiaohongshu_profile_url: ''
   })
   const [isExistingUser, setIsExistingUser] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -230,7 +233,8 @@ export default function ProfilePage() {
           real_name: result.user.real_name || '',
           persona: result.user.persona || '',
           keywords: result.user.keywords || '',
-          vision: result.user.vision || ''
+          vision: result.user.vision || '',
+          xiaohongshu_profile_url: result.user.xiaohongshu_profile_url || ''
         })
         
         const hasContent = Boolean(result.user.persona || result.user.keywords || result.user.vision)
@@ -550,6 +554,19 @@ export default function ProfilePage() {
           </div>
         </div>
       </Card>
+
+      {/* 小红书主页绑定 */}
+      <div className="mb-8">
+        <XHSProfileBinding
+          student_id={profile.student_id}
+          currentProfileUrl={profile.xiaohongshu_profile_url}
+          onUpdate={(profileUrl) => {
+            setProfile(prev => ({ ...prev, xiaohongshu_profile_url: profileUrl }))
+            setMessage('小红书主页链接已更新！')
+            setTimeout(() => setMessage(''), 3000)
+          }}
+        />
+      </div>
 
       <Card className="mt-8" title="使用提示" icon="💡">
         <div className="text-sm text-white/70 space-y-3">

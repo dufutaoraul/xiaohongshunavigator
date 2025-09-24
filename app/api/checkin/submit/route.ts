@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getBeijingDateString } from '@/lib/date-utils'
+import { validateXHSPost, hasXHSProfileBound } from '@/lib/xhs-validator'
 
 interface CheckinRequest {
   student_id: string
@@ -31,28 +32,114 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 验证 URLs 格式
-    console.log('🔍 [Checkin Submit API] 开始验证URLs:', urls)
-    const validUrls = urls.filter((url, index) => {
-      try {
-        new URL(url)
-        const isValid = url.includes('xiaohongshu.com') || url.includes('xhslink.com')
-        console.log(`🔍 [Checkin Submit API] URL[${index}] 验证结果:`, { url, isValid })
-        return isValid
-      } catch (error) {
-        console.log(`❌ [Checkin Submit API] URL[${index}] 格式错误:`, { url, error: error instanceof Error ? error.message : String(error) })
-        return false
-      }
+    // 获取学员信息（包括小红书主页绑定）
+    console.log('🔍 [Checkin Submit API] 获取学员信息:', student_id)
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, student_id, name, role, xiaohongshu_profile_url')
+      .eq('student_id', student_id)
+      .single()
+
+    if (userError) {
+      console.error('❌ [Checkin Submit API] 学员不存在或查询失败:', {
+        student_id,
+        error: userError,
+        code: userError.code,
+        message: userError.message
+      })
+      return NextResponse.json({
+        success: false,
+        error: `学员 ${student_id} 不存在或查询失败: ` + userError.message
+      }, { status: 404 })
+    }
+
+    if (!userData) {
+      console.error('❌ [Checkin Submit API] 学员数据为空:', student_id)
+      return NextResponse.json({
+        success: false,
+        error: `学员 ${student_id} 不存在`
+      }, { status: 404 })
+    }
+
+    console.log('✅ [Checkin Submit API] 学员信息获取成功:', {
+      student_id: userData.student_id,
+      name: userData.name,
+      hasXHSProfile: !!userData.xiaohongshu_profile_url
     })
 
-    console.log('✅ [Checkin Submit API] 有效URLs:', validUrls)
+    // 获取该学员已有的打卡记录（用于重复检测）
+    console.log('🔍 [Checkin Submit API] 获取已有打卡记录进行重复检测...')
+    const { data: existingRecords, error: existingError } = await supabase
+      .from('checkin_records')
+      .select('xhs_url, xiaohongshu_url')
+      .eq('student_id', student_id)
+
+    if (existingError) {
+      console.error('❌ [Checkin Submit API] 获取已有记录失败:', existingError)
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to fetch existing records: ' + existingError.message
+      }, { status: 500 })
+    }
+
+    // 提取已存在的URL列表
+    const existingUrls = (existingRecords || []).map(record =>
+      record.xhs_url || record.xiaohongshu_url
+    ).filter(Boolean)
+
+    console.log('🔍 [Checkin Submit API] 已有打卡记录数量:', existingUrls.length)
+
+    // 验证 URLs 格式和重复性
+    console.log('🔍 [Checkin Submit API] 开始验证URLs:', urls)
+    const validationResults = urls.map((url, index) => {
+      const validation = validateXHSPost(
+        url,
+        userData.xiaohongshu_profile_url,
+        existingUrls
+      )
+      console.log(`🔍 [Checkin Submit API] URL[${index}] 验证结果:`, {
+        url: url.substring(0, 50) + '...',
+        isValid: validation.isValid,
+        reason: validation.reason
+      })
+      return { url, validation }
+    })
+
+    const validUrls = validationResults
+      .filter(result => result.validation.isValid)
+      .map(result => result.url)
+
+    const invalidUrls = validationResults
+      .filter(result => !result.validation.isValid)
+
+    console.log('✅ [Checkin Submit API] 验证结果:', {
+      valid: validUrls.length,
+      invalid: invalidUrls.length,
+      hasXHSProfile: hasXHSProfileBound(userData.xiaohongshu_profile_url)
+    })
 
     if (validUrls.length === 0) {
-      console.error('❌ [Checkin Submit API] 没有有效的小红书链接')
+      const firstError = invalidUrls[0]?.validation.reason || '没有有效的小红书链接'
+      console.error('❌ [Checkin Submit API] 没有有效链接:', firstError)
       return NextResponse.json(
-        { success: false, error: 'No valid xiaohongshu URLs provided' },
+        {
+          success: false,
+          error: firstError,
+          details: invalidUrls.map(item => ({
+            url: item.url.substring(0, 50) + '...',
+            reason: item.validation.reason
+          }))
+        },
         { status: 400 }
       )
+    }
+
+    // 如果有无效URL，给出警告但继续处理有效的URL
+    if (invalidUrls.length > 0) {
+      console.log('⚠️ [Checkin Submit API] 部分URL无效，仅处理有效URL:', {
+        validCount: validUrls.length,
+        invalidReasons: invalidUrls.map(item => item.validation.reason)
+      })
     }
 
     // 使用提供的日期或今天（北京时间）
@@ -147,38 +234,11 @@ export async function POST(request: NextRequest) {
       // 创建新的打卡记录
       console.log(`✨ [Checkin Submit API] 创建新打卡记录`)
 
-      // 获取学员信息并验证学员是否存在
-      console.log('🔍 [Checkin Submit API] 验证学员是否存在:', student_id)
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, student_id, name, role')
-        .eq('student_id', student_id)
-        .single()
-
-      if (userError) {
-        console.error('❌ [Checkin Submit API] 学员不存在或查询失败:', {
-          student_id,
-          error: userError,
-          code: userError.code,
-          message: userError.message
-        })
-        return NextResponse.json({
-          success: false,
-          error: `学员 ${student_id} 不存在或查询失败: ` + userError.message
-        }, { status: 404 })
-      }
-
-      console.log('✅ [Checkin Submit API] 学员信息验证成功:', userData)
-
-      if (!userData) {
-        console.error('❌ [Checkin Submit API] 学员数据为空:', student_id)
-        return NextResponse.json({
-          success: false,
-          error: `学员 ${student_id} 不存在`
-        }, { status: 404 })
-      }
-
-      const student_name = userData?.name || '未知学员'
+      // 学员信息已在前面获取，直接使用
+      console.log('✅ [Checkin Submit API] 使用已获取的学员信息:', {
+        student_id: userData.student_id,
+        name: userData.name
+      })
 
       const insertData = {
         student_id,
