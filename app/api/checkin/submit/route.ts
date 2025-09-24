@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 [Checkin Submit API] 获取已有打卡记录进行重复检测...')
     const { data: existingRecords, error: existingError } = await supabase
       .from('checkin_records')
-      .select('xhs_url, xiaohongshu_url')
+      .select('xhs_url')
       .eq('student_id', student_id)
 
     if (existingError) {
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // 提取已存在的URL列表
     const existingUrls = (existingRecords || []).map(record =>
-      record.xhs_url || record.xiaohongshu_url
+      record.xhs_url
     ).filter(Boolean)
 
     console.log('🔍 [Checkin Submit API] 已有打卡记录数量:', existingUrls.length)
