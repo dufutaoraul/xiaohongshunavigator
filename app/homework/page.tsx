@@ -125,7 +125,7 @@ export default function HomeworkPage() {
 
             <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-400/30 rounded-lg">
               <p className="text-yellow-300 text-sm text-center">
-                💡 提示：飞书作业系统提供快速的作业提交和查询功能，点击上方链接直接访问
+                📋 在提交作业前请先阅读作业说明文档：<a href="https://pcnxm41ut6t0.feishu.cn/docx/K0TjdhsuGoub6ExK8Lsclm2On3f?from=from_copylink" target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline">点击查看</a>
               </p>
             </div>
           </div>
