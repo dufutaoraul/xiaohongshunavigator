@@ -179,9 +179,9 @@ export async function POST(request: NextRequest) {
     // }
 
     const body = await request.json()
-    const { student_id, name, real_name, role = 'student' } = body
+    const { student_id, name, real_name, role = 'student', can_self_schedule = false } = body
 
-    console.log('创建学员请求:', { student_id, name, real_name: !!real_name, role });
+    console.log('创建学员请求:', { student_id, name, real_name: !!real_name, role, can_self_schedule });
 
     // 验证必填字段
     if (!student_id || !name) {
@@ -212,6 +212,33 @@ export async function POST(request: NextRequest) {
     // 加密密码（使用学号作为初始密码）
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
 
+    // 如果设置了can_self_schedule权限，计算截止时间
+    let selfScheduleDeadline = null
+    if (can_self_schedule && role === 'student') {
+      if (student_id.startsWith('AXCF202505')) {
+        // AXCF202505开头：使用创建时间+6个月
+        const now = new Date()
+        const deadline = new Date(now)
+        deadline.setMonth(deadline.getMonth() + 6)
+        selfScheduleDeadline = deadline.toISOString()
+      } else if (student_id.startsWith('AXCF202501') ||
+                 student_id.startsWith('AXCF202502') ||
+                 student_id.startsWith('AXCF202503') ||
+                 student_id.startsWith('AXCF202504')) {
+        // AXCF202501/202502/202503/202504开头：使用2025年7月7日+6个月
+        const baseDate = new Date('2025-07-07')
+        const deadline = new Date(baseDate)
+        deadline.setMonth(deadline.getMonth() + 6)
+        selfScheduleDeadline = deadline.toISOString()
+      } else {
+        // 其他学号：使用2025年7月7日+6个月（默认）
+        const baseDate = new Date('2025-07-07')
+        const deadline = new Date(baseDate)
+        deadline.setMonth(deadline.getMonth() + 6)
+        selfScheduleDeadline = deadline.toISOString()
+      }
+    }
+
     // 创建新用户
     const { data: newUser, error: insertError } = await supabaseAdmin
       .from('users')
@@ -220,7 +247,10 @@ export async function POST(request: NextRequest) {
         name,
         real_name,
         password: hashedPassword,
-        role
+        role,
+        can_self_schedule: role === 'student' ? can_self_schedule : false,
+        self_schedule_deadline: selfScheduleDeadline,
+        has_used_self_schedule: false
       })
       .select()
       .single()

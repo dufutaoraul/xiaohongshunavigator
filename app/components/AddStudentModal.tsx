@@ -14,7 +14,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
   const [formData, setFormData] = useState({
     student_id: '',
     name: '',
-    role: 'student'
+    role: 'student',
+    can_self_schedule: false
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -61,7 +62,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
           setFormData({
             student_id: '',
             name: '',
-            role: 'student'
+            role: 'student',
+            can_self_schedule: false
           })
           setSuccess(false)
           setCreatedStudentInfo(null)
@@ -84,7 +86,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
       setFormData({
         student_id: '',
         name: '',
-        role: 'student'
+        role: 'student',
+        can_self_schedule: false
       })
       setError('')
       setSuccess(false)
@@ -125,6 +128,12 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
                   <span className="text-white/70">初始密码：</span>
                   <span className="text-green-300 font-mono">{createdStudentInfo.student_id}</span>
                 </div>
+                {formData.can_self_schedule && formData.role === 'student' && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/70">自主设定权限：</span>
+                    <span className="text-purple-300">✅ 已开启</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -180,6 +189,29 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess }: AddStude
               <option value="admin">管理员</option>
             </select>
           </div>
+
+          {/* 自主设定权限勾选框 - 仅对学员显示 */}
+          {formData.role === 'student' && (
+            <div className="p-4 bg-purple-500/10 border border-purple-400/30 rounded-lg">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.can_self_schedule}
+                  onChange={(e) => setFormData(prev => ({ ...prev, can_self_schedule: e.target.checked }))}
+                  disabled={loading}
+                  className="mt-1 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+                />
+                <div>
+                  <span className="text-white font-medium text-sm">
+                    🔧 授予自主设定打卡时间权限
+                  </span>
+                  <p className="text-white/60 text-xs mt-1">
+                    勾选后，该学员可以自主设定打卡开始时间（有且只有一次设置机会）
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-400/30 rounded-lg">
