@@ -6,6 +6,7 @@ import Card from '../components/Card'
 import Textarea from '../components/Textarea'
 import Button from '../components/Button'
 import GlobalUserMenu from '../components/GlobalUserMenu'
+import TrendingPostsWidget from '../components/TrendingPostsWidget'
 
 export default function GeneratePage() {
   const [studentId, setStudentId] = useState('')
@@ -19,6 +20,7 @@ export default function GeneratePage() {
   const [message, setMessage] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userProfile, setUserProfile] = useState({ persona: '', keywords: '', vision: '' })
+  const [extractedKeywords, setExtractedKeywords] = useState('')
   const router = useRouter()
 
   // 检查认证状态并获取用户信息
@@ -229,6 +231,27 @@ export default function GeneratePage() {
     }
   }
 
+  // 从用户输入中提取关键词用于推荐
+  const extractKeywordsFromInput = (input: string): string => {
+    if (!input || input.trim().length < 3) return ''
+
+    // 简单的关键词提取：取前几个有意义的词
+    const words = input.trim().split(/\s+|[，。！？；：]/)
+      .filter(word => word.length >= 2)
+      .slice(0, 3)
+      .join(' ')
+
+    return words || input.slice(0, 20)
+  }
+
+  // 当用户输入变化时，提取关键词
+  useEffect(() => {
+    const keywords = extractKeywordsFromInput(userInput)
+    if (keywords !== extractedKeywords) {
+      setExtractedKeywords(keywords)
+    }
+  }, [userInput])
+
   // 如果未认证，显示加载状态（实际会自动跳转）
   if (!isAuthenticated) {
     return (
@@ -389,6 +412,15 @@ export default function GeneratePage() {
           )}
         </div>
       </Card>
+
+      {/* 热门帖子推荐组件 */}
+      {(extractedKeywords || studentId) && (
+        <TrendingPostsWidget
+          keywords={extractedKeywords}
+          studentId={studentId}
+          className="mb-8"
+        />
+      )}
 
       </div>
     </div>
