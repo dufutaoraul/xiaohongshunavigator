@@ -153,6 +153,49 @@ export default function TrendingPostsWidget({
     return `${Math.floor(diffDays / 30)}月前`
   }
 
+  const handleOpenPost = (url: string, title: string) => {
+    // 显示友好提示
+    const confirmMessage = `即将打开小红书帖子："${title}"
+
+⚠️ 温馨提示：
+• 可能需要登录小红书账号
+• 如果出现二维码，请使用小红书App扫码
+• 建议在手机上使用小红书App查看效果更佳
+
+是否继续打开？`
+
+    if (confirm(confirmMessage)) {
+      // 尝试多种打开方式
+      try {
+        // 方式1：直接打开
+        window.open(url, '_blank', 'noopener,noreferrer')
+
+        // 方式2：同时复制链接到剪贴板
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(url).then(() => {
+            console.log('链接已复制到剪贴板:', url)
+          }).catch(() => {
+            console.log('复制失败，链接:', url)
+          })
+        }
+
+        // 显示后续指导
+        setTimeout(() => {
+          alert(`💡 如果页面无法正常显示，请：
+
+1. 复制此链接到小红书App中搜索
+2. 或在小红书网页版登录后访问
+3. 链接已复制到剪贴板，可直接粘贴使用
+
+链接：${url}`)
+        }, 1000)
+      } catch (error) {
+        console.error('打开链接失败:', error)
+        alert(`打开失败，请手动复制链接：\n${url}`)
+      }
+    }
+  }
+
   const PostCard = ({ post }: { post: TrendingPost }) => (
     <div className="bg-gradient-to-br from-purple-500/5 to-pink-500/5 border border-white/10 rounded-lg p-4 hover:border-purple-400/30 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
       <div className="flex items-center justify-between mb-3">
@@ -184,14 +227,12 @@ export default function TrendingPostsWidget({
           <span>💬 {formatNumber(post.stats.comments)}</span>
           <span>⭐ {formatNumber(post.stats.collections)}</span>
         </div>
-        <a
-          href={post.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-purple-300 hover:text-purple-200 text-xs underline"
+        <button
+          onClick={() => handleOpenPost(post.url, post.title)}
+          className="text-purple-300 hover:text-purple-200 text-xs underline cursor-pointer bg-transparent border-none"
         >
           查看原文
-        </a>
+        </button>
       </div>
     </div>
   )
