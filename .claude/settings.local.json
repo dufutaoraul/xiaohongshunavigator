@@ -107,7 +107,23 @@
       "Bash(npx supabase db describe:*)",
       "Bash(git fetch:*)",
       "Bash(git restore:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(go:*)",
+      "Bash(winget install:*)",
+      "Read(//d/工作盘/三个月陪跑/陪跑打卡模板/xiaohongshu-mcp/**)",
+      "Bash(echo:*)",
+      "Bash(powershell:*)",
+      "Bash(findstr:*)",
+      "Bash(where chrome)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(python:*)",
+      "Bash(./xiaohongshu-mcp.exe -bin=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" -headless=true)",
+      "Bash(./xiaohongshu-mcp.exe -bin=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" -headless=false)",
+      "Read(//d/必要软件/**)",
+      "Bash(systeminfo)",
+      "Bash(wmic:*)"
     ],
     "deny": []
   }

@@ -286,7 +286,43 @@ ORDER BY tp.calculation_date DESC, tp.ranking_position ASC;
 COMMENT ON VIEW v_student_trending_posts IS '学员主页优秀帖子排行榜视图';
 COMMENT ON VIEW v_checkin_trending_posts IS '学员打卡优秀帖子排行榜视图';
 
+-- =====================================================
+-- 第六步：创建MCP服务状态监控表
+-- =====================================================
+CREATE TABLE IF NOT EXISTS xhs_mcp_service_status (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    service_version TEXT,
+    is_running BOOLEAN DEFAULT false,
+    is_healthy BOOLEAN DEFAULT false,
+    login_status BOOLEAN DEFAULT false,
+    last_health_check TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    uptime_seconds INTEGER DEFAULT 0,
+    total_requests INTEGER DEFAULT 0,
+    successful_requests INTEGER DEFAULT 0,
+    error_count INTEGER DEFAULT 0,
+    last_error TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 插入初始状态记录
+INSERT INTO xhs_mcp_service_status (
+    service_version,
+    is_running,
+    is_healthy,
+    login_status
+) VALUES (
+    'unknown',
+    false,
+    false,
+    false
+) ON CONFLICT DO NOTHING;
+
+-- 创建MCP服务状态索引
+CREATE INDEX IF NOT EXISTS idx_xhs_mcp_service_status_health_check ON xhs_mcp_service_status(last_health_check);
+CREATE INDEX IF NOT EXISTS idx_xhs_mcp_service_status_running ON xhs_mcp_service_status(is_running);
+
 -- 执行完成提示
 SELECT
-    '小红书集成数据表创建完成' as message,
+    '小红书集成数据表创建完成 (包含MCP服务监控)' as message,
     NOW() as completed_at;
