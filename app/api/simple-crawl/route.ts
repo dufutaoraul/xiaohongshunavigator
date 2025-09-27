@@ -29,7 +29,16 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ MCP服务连接正常')
 
-    // 步骤2: 通过MCP协议获取用户帖子数据
+    // 步骤2: 通过MCP协议获取用户个人主页信息
+    // 首先从URL中提取用户ID
+    const userIdMatch = userUrl.match(/user\/profile\/([^?]+)/)
+    if (!userIdMatch) {
+      throw new Error('无法从URL中提取用户ID，请确保URL格式正确')
+    }
+
+    const userId = userIdMatch[1]
+    console.log('📝 提取到用户ID:', userId)
+
     const mcpResponse = await fetch('http://localhost:18060/mcp', {
       method: 'POST',
       headers: {
@@ -37,10 +46,13 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         jsonrpc: '2.0',
-        method: 'get_user_posts',
+        method: 'tools/call',
         params: {
-          user_url: userUrl,
-          limit: 10
+          name: 'user_profile',
+          arguments: {
+            user_id: userId,
+            xsec_token: ''  // 先尝试空token，如果失败会提示需要token
+          }
         },
         id: 1
       }),
@@ -59,28 +71,48 @@ export async function POST(request: NextRequest) {
       throw new Error(`MCP错误: ${mcpData.error.message || mcpData.error}`)
     }
 
-    const posts = mcpData.result?.posts || []
-    
-    if (posts.length === 0) {
+    const userProfile = mcpData.result?.content?.[0]?.text
+    if (!userProfile) {
       return NextResponse.json({
         success: false,
-        error: '未找到该用户的帖子数据，可能需要先登录小红书账号'
+        error: '未找到该用户的数据，可能需要先登录小红书账号或提供正确的xsec_token'
+      })
+    }
+
+    // 解析用户资料数据
+    let profileData
+    try {
+      profileData = JSON.parse(userProfile)
+    } catch (e) {
+      throw new Error('解析用户资料数据失败')
+    }
+
+    const notes = profileData.notes || []
+
+    if (notes.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: '该用户暂无公开帖子'
       })
     }
 
     // 步骤4: 按互动数据排序，获取前三名
-    const sortedPosts = posts
-      .filter((post: any) => post.url && post.title)
-      .map((post: any) => ({
-        title: post.title,
-        url: post.url,
-        likes: parseInt(post.likes || 0),
-        comments: parseInt(post.comments || 0),
-        collections: parseInt(post.collections || 0),
-        hotScore: (parseInt(post.likes || 0) * 1) + 
-                 (parseInt(post.comments || 0) * 3) + 
-                 (parseInt(post.collections || 0) * 5)
-      }))
+    const sortedPosts = notes
+      .filter((note: any) => note.note_card && note.note_card.interact_info)
+      .map((note: any) => {
+        const card = note.note_card
+        const interactInfo = card.interact_info
+        return {
+          title: card.display_title || '无标题',
+          url: `https://www.xiaohongshu.com/explore/${note.id}`,
+          likes: parseInt(interactInfo.liked_count || 0),
+          comments: parseInt(interactInfo.comment_count || 0),
+          collections: parseInt(interactInfo.collected_count || 0),
+          hotScore: (parseInt(interactInfo.liked_count || 0) * 1) +
+                   (parseInt(interactInfo.comment_count || 0) * 3) +
+                   (parseInt(interactInfo.collected_count || 0) * 5)
+        }
+      })
       .sort((a, b) => b.hotScore - a.hotScore)
       .slice(0, 3)
 
@@ -90,9 +122,17 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         userUrl,
-        totalPosts: posts.length,
+        userId,
+        userInfo: {
+          nickname: profileData.basic_info?.nickname || '未知用户',
+          desc: profileData.basic_info?.desc || '暂无简介',
+          follows: profileData.basic_info?.follows || 0,
+          fans: profileData.basic_info?.fans || 0,
+          interaction: profileData.basic_info?.interaction || 0
+        },
+        totalPosts: notes.length,
         topPosts: sortedPosts,
-        message: `成功抓取到 ${posts.length} 个帖子，以下是热度排名前三的帖子`
+        message: `成功抓取到用户 ${profileData.basic_info?.nickname || '未知用户'} 的 ${notes.length} 个帖子，以下是热度排名前三的帖子`
       }
     })
 

@@ -89,15 +89,40 @@ export default function SimpleTestPage() {
         <div className="bg-green-50 border border-green-200 rounded-lg p-6">
           <h3 className="text-green-800 font-semibold mb-4">✅ 抓取成功！</h3>
           
-          <div className="mb-4">
+          <div className="mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <h4 className="text-lg font-semibold text-blue-800 mb-2">👤 用户信息</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-700">
+                    <strong>昵称:</strong> {result.userInfo?.nickname}
+                  </p>
+                  <p className="text-gray-700">
+                    <strong>简介:</strong> {result.userInfo?.desc}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-700">
+                    <strong>关注:</strong> {result.userInfo?.follows}
+                  </p>
+                  <p className="text-gray-700">
+                    <strong>粉丝:</strong> {result.userInfo?.fans}
+                  </p>
+                  <p className="text-gray-700">
+                    <strong>获赞:</strong> {result.userInfo?.interaction}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <p className="text-gray-700">
-              <strong>用户链接:</strong> {result.userUrl}
+              <strong>用户ID:</strong> {result.userId}
             </p>
             <p className="text-gray-700">
               <strong>总帖子数:</strong> {result.totalPosts}
             </p>
-            <p className="text-gray-700">
-              <strong>消息:</strong> {result.message}
+            <p className="text-green-700 font-medium">
+              <strong>✅ {result.message}</strong>
             </p>
           </div>
 
