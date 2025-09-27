@@ -55,13 +55,13 @@ export async function POST(request: NextRequest) {
         })
 
       } catch (error) {
-        console.error(`❌ 处理关键词 ${keyword} 时出错:`, error.message)
+        console.error(`❌ 处理关键词 ${keyword} 时出错:`, error instanceof Error ? error.message : '未知错误')
         results.push({
           keyword,
           posts: [],
           source: 'error',
           count: 0,
-          error: error.message
+          error: error instanceof Error ? error.message : '未知错误'
         })
       }
     }

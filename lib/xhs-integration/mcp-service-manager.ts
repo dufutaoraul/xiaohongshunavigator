@@ -144,29 +144,60 @@ export class MCPServiceManager {
    */
   async getServiceStatus(): Promise<MCPServiceStatus> {
     try {
-      // 检查HTTP健康端点
-      const response = await fetch('http://localhost:18060/health', {
-        method: 'GET',
-        timeout: 5000
-      })
-
-      if (response.ok) {
-        const data = await response.json()
+      // 首先检查端口是否开放
+      const isPortOpen = await this.checkPort(18060)
+      if (!isPortOpen) {
         return {
-          isRunning: true,
-          isHealthy: true,
-          loginStatus: data.loginStatus || false,
-          version: data.version,
-          uptime: data.uptime,
-          processId: this.mcpProcess?.pid
+          isRunning: false,
+          isHealthy: false,
+          loginStatus: false,
+          lastError: '端口18060未开放，服务可能未启动'
         }
       }
 
+      // 尝试多个端点检查服务状态
+      const endpoints = ['/health', '/api/v1/health', '/status', '/']
+
+      for (const endpoint of endpoints) {
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 3000)
+
+          const response = await fetch(`http://localhost:18060${endpoint}`, {
+            method: 'GET',
+            signal: controller.signal
+          })
+
+          clearTimeout(timeoutId)
+
+          if (response.ok) {
+            let data = {}
+            try {
+              data = await response.json()
+            } catch {
+              // 如果不是JSON响应，也认为服务是健康的
+            }
+
+            return {
+              isRunning: true,
+              isHealthy: true,
+              loginStatus: (data as any).loginStatus || false,
+              version: (data as any).version || 'unknown',
+              uptime: (data as any).uptime,
+              processId: this.mcpProcess?.pid
+            }
+          }
+        } catch {
+          continue // 尝试下一个端点
+        }
+      }
+
+      // 如果所有端点都失败，但端口开放，认为服务运行但不健康
       return {
-        isRunning: false,
+        isRunning: true,
         isHealthy: false,
         loginStatus: false,
-        lastError: `HTTP ${response.status}: ${response.statusText}`
+        lastError: '服务运行但健康检查失败'
       }
 
     } catch (error) {

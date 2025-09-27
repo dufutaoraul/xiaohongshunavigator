@@ -76,7 +76,7 @@ export default function MCPServicePage() {
         setMessage({ type: 'error', text: data.error })
       }
     } catch (error) {
-      setMessage({ type: 'error', text: `操作失败: ${error.message}` })
+      setMessage({ type: 'error', text: `操作失败: ${error instanceof Error ? error.message : '未知错误'}` })
     } finally {
       setLoading(false)
     }
@@ -381,11 +381,11 @@ export default function MCPServicePage() {
                     运行 xhs-mcp/login.bat 进行账号登录
                   </p>
                 </div>
-                
+
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-medium mb-2">3. 启动MCP服务</h4>
                   <p className="text-sm text-muted-foreground">
-                    运行 xhs-mcp/start-mcp.bat 或使用上方的"启动服务"按钮
+                    运行 xhs-mcp/start-mcp.bat 或使用上方的&ldquo;启动服务&rdquo;按钮
                   </p>
                 </div>
               </div>

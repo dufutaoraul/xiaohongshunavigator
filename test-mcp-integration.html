@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP服务集成测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-danger { background: #dc3545; color: white; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        .loading { opacity: 0.6; pointer-events: none; }
+        .step { margin: 20px 0; padding: 15px; border-left: 4px solid #007bff; }
+        .step h3 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 MCP服务集成测试</h1>
+        <p>这个页面将帮助您测试小红书MCP服务的集成功能</p>
+
+        <!-- 步骤1: MCP服务状态检查 -->
+        <div class="card step">
+            <h3>步骤1: MCP服务状态检查</h3>
+            <p>首先检查MCP服务是否正在运行</p>
+            <button class="btn-primary" onclick="checkMCPService()">检查MCP服务状态</button>
+            <button class="btn-success" onclick="startMCPService()">启动MCP服务</button>
+            <div id="mcp-status"></div>
+        </div>
+
+        <!-- 步骤2: 登录状态检查 -->
+        <div class="card step">
+            <h3>步骤2: 小红书登录状态</h3>
+            <p>检查是否已登录小红书账号</p>
+            <button class="btn-primary" onclick="checkLoginStatus()">检查登录状态</button>
+            <button class="btn-warning" onclick="openLoginWindow()">打开登录窗口</button>
+            <div id="login-status"></div>
+        </div>
+
+        <!-- 步骤3: 关键词搜索测试 -->
+        <div class="card step">
+            <h3>步骤3: 关键词搜索测试</h3>
+            <p>测试通过MCP服务搜索小红书内容</p>
+            <input type="text" id="search-keyword" placeholder="输入搜索关键词，如：AI学习" value="AI学习">
+            <button class="btn-primary" onclick="testKeywordSearch()">测试搜索</button>
+            <div id="search-results"></div>
+        </div>
+
+        <!-- 步骤4: 用户数据抓取测试 -->
+        <div class="card step">
+            <h3>步骤4: 用户数据抓取测试</h3>
+            <p>测试抓取指定用户的帖子数据</p>
+            <input type="text" id="user-url" placeholder="输入小红书用户链接" value="https://www.xiaohongshu.com/user/profile/5ff0e4ac000000000100d1b4">
+            <button class="btn-primary" onclick="testUserDataScraping()">测试用户数据抓取</button>
+            <div id="user-data-results"></div>
+        </div>
+
+        <!-- 步骤5: 完整集成测试 -->
+        <div class="card step">
+            <h3>步骤5: 完整集成测试</h3>
+            <p>测试完整的学员数据抓取和排行榜功能</p>
+            <button class="btn-success" onclick="testFullIntegration()">运行完整测试</button>
+            <div id="full-test-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // 显示状态消息
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // 显示加载状态
+        function showLoading(elementId, message = '正在处理...') {
+            showStatus(elementId, `⏳ ${message}`, 'info');
+        }
+
+        // 检查MCP服务状态
+        async function checkMCPService() {
+            showLoading('mcp-status', '检查MCP服务状态...');
+            try {
+                const response = await fetch('/api/xhs/mcp-service?action=status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('mcp-status', `✅ ${data.message}<br><pre>${JSON.stringify(data.data, null, 2)}</pre>`, 'success');
+                } else {
+                    showStatus('mcp-status', `❌ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('mcp-status', `❌ 连接失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 启动MCP服务
+        async function startMCPService() {
+            showLoading('mcp-status', '启动MCP服务...');
+            try {
+                const response = await fetch('/api/xhs/mcp-service', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'start' })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('mcp-status', `✅ ${data.message}`, 'success');
+                    // 等待3秒后自动检查状态
+                    setTimeout(checkMCPService, 3000);
+                } else {
+                    showStatus('mcp-status', `❌ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('mcp-status', `❌ 启动失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 检查登录状态
+        async function checkLoginStatus() {
+            showLoading('login-status', '检查登录状态...');
+            try {
+                const response = await fetch('/api/xhs/mcp-service?action=health');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const loginStatus = data.data.login;
+                    if (loginStatus.isLoggedIn) {
+                        showStatus('login-status', `✅ 已登录小红书<br><pre>${JSON.stringify(loginStatus, null, 2)}</pre>`, 'success');
+                    } else {
+                        showStatus('login-status', `⚠️ 未登录小红书，请先登录<br><pre>${JSON.stringify(loginStatus, null, 2)}</pre>`, 'warning');
+                    }
+                } else {
+                    showStatus('login-status', `❌ ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('login-status', `❌ 检查失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 打开登录窗口
+        function openLoginWindow() {
+            showStatus('login-status', '💡 请手动运行 xhs-mcp/login.bat 进行登录', 'info');
+        }
+
+        // 测试关键词搜索
+        async function testKeywordSearch() {
+            const keyword = document.getElementById('search-keyword').value;
+            if (!keyword) {
+                showStatus('search-results', '❌ 请输入搜索关键词', 'error');
+                return;
+            }
+
+            showLoading('search-results', `搜索关键词: ${keyword}...`);
+            try {
+                const response = await fetch(`/api/xhs/keyword-search/personalized?keywords=${encodeURIComponent(keyword)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const results = data.data.recommendations || [];
+                    showStatus('search-results', 
+                        `✅ 搜索成功，找到 ${results.length} 个结果<br><pre>${JSON.stringify(results.slice(0, 3), null, 2)}</pre>`, 
+                        'success'
+                    );
+                } else {
+                    showStatus('search-results', `❌ 搜索失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('search-results', `❌ 搜索失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试用户数据抓取
+        async function testUserDataScraping() {
+            const userUrl = document.getElementById('user-url').value;
+            if (!userUrl) {
+                showStatus('user-data-results', '❌ 请输入用户链接', 'error');
+                return;
+            }
+
+            showLoading('user-data-results', '抓取用户数据...');
+            try {
+                const response = await fetch('/api/xhs/direct-api-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userUrl })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('user-data-results', 
+                        `✅ 抓取成功<br><pre>${JSON.stringify(data.data, null, 2)}</pre>`, 
+                        'success'
+                    );
+                } else {
+                    showStatus('user-data-results', `❌ 抓取失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('user-data-results', `❌ 抓取失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 完整集成测试
+        async function testFullIntegration() {
+            showLoading('full-test-results', '运行完整集成测试...');
+            try {
+                const response = await fetch('/api/xhs/combined-student-ranking');
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('full-test-results', 
+                        `✅ 完整测试成功<br><pre>${JSON.stringify(data.data, null, 2)}</pre>`, 
+                        'success'
+                    );
+                } else {
+                    showStatus('full-test-results', `❌ 测试失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('full-test-results', `❌ 测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动检查MCP服务状态
+        window.onload = function() {
+            checkMCPService();
+        };
+    </script>
+</body>
+</html>

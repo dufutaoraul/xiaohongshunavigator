@@ -28,14 +28,19 @@ export async function POST(request: NextRequest) {
       for (const keyword of keywords) {
         try {
           // 调用MCP服务搜索真实数据
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 5000)
+
           const mcpResponse = await fetch(`http://localhost:18060/search?query=${encodeURIComponent(keyword)}&limit=3`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
               'User-Agent': 'XiaohongshuNavigator/1.0'
             },
-            timeout: 5000
+            signal: controller.signal
           })
+
+          clearTimeout(timeoutId)
 
           if (mcpResponse.ok) {
             const mcpData = await mcpResponse.json()
@@ -49,7 +54,7 @@ export async function POST(request: NextRequest) {
             }
           }
         } catch (mcpError) {
-          console.log(`⚠️ MCP服务调用失败 (${keyword}):`, mcpError.message)
+          console.log(`⚠️ MCP服务调用失败 (${keyword}):`, mcpError instanceof Error ? mcpError.message : '未知错误')
         }
 
         // 如果MCP失败，使用高质量模拟数据作为备选
@@ -73,7 +78,7 @@ export async function POST(request: NextRequest) {
       })
 
     } catch (error) {
-      console.log('❌ 获取数据失败，使用备选方案:', error.message)
+      console.log('❌ 获取数据失败，使用备选方案:', error instanceof Error ? error.message : '未知错误')
 
       // 完全失败时的备选方案
       const fallbackRecommendations = [

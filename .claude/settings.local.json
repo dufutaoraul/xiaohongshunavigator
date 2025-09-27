@@ -123,7 +123,23 @@
       "Bash(./xiaohongshu-mcp.exe -bin=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" -headless=false)",
       "Read(//d/必要软件/**)",
       "Bash(systeminfo)",
-      "Bash(wmic:*)"
+      "Bash(wmic:*)",
+      "Read(//d/CursorWork/xiaohongshu-mcp-windows-amd64/**)",
+      "Bash(copy xiaohongshu-mcp-windows-amd64.exe xiaohongshu-mcp.exe)",
+      "Bash(copy:*)",
+      "Bash(./xiaohongshu-mcp.exe -help)",
+      "Bash(./xiaohongshu-login.exe -bin=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\")",
+      "Bash(./xiaohongshu-login.exe -bin=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" -headless=false)",
+      "Bash(sxstrace trace:*)",
+      "Bash(./VC_redist.x64.exe /quiet /norestart)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(docker:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(./xiaohongshu-mcp.exe -h)",
+      "Bash(docker-compose:*)",
+      "Bash(git clone:*)",
+      "WebSearch",
+      "WebFetch(domain:pkg.go.dev)"
     ],
     "deny": []
   }

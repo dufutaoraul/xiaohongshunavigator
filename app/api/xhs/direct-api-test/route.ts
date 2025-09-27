@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
             console.log(`✅ Web API成功获取 ${student.real_name} 的 ${posts.length} 个帖子`)
           }
         } catch (webError) {
-          error_msg = webError.message
-          console.log(`Web API失败:`, webError.message)
+          error_msg = webError instanceof Error ? webError.message : '未知错误'
+          console.log(`Web API失败:`, webError instanceof Error ? webError.message : '未知错误')
         }
 
         // 方法2: 尝试移动端API
@@ -60,8 +60,8 @@ export async function POST(request: NextRequest) {
               console.log(`✅ Mobile API成功获取 ${student.real_name} 的 ${posts.length} 个帖子`)
             }
           } catch (mobileError) {
-            error_msg += '; ' + mobileError.message
-            console.log(`Mobile API失败:`, mobileError.message)
+            error_msg += '; ' + (mobileError instanceof Error ? mobileError.message : '未知错误')
+            console.log(`Mobile API失败:`, mobileError instanceof Error ? mobileError.message : '未知错误')
           }
         }
 
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
               console.log(`✅ Public Feed成功获取 ${student.real_name} 的 ${posts.length} 个帖子`)
             }
           } catch (feedError) {
-            error_msg += '; ' + feedError.message
-            console.log(`Public Feed失败:`, feedError.message)
+            error_msg += '; ' + (feedError instanceof Error ? feedError.message : '未知错误')
+            console.log(`Public Feed失败:`, feedError instanceof Error ? feedError.message : '未知错误')
           }
         }
 
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         })
 
       } catch (error) {
-        console.error(`❌ 处理学员 ${student.real_name} 时出错:`, error.message)
+        console.error(`❌ 处理学员 ${student.real_name} 时出错:`, error instanceof Error ? error.message : '未知错误')
         studentResults.push({
           student: {
             student_id: student.student_id,
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           posts_count: 0,
           posts: [],
           source: 'error',
-          error: error.message
+          error: error instanceof Error ? error.message : '未知错误'
         })
       }
     }
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: '直接API调用失败',
-      details: error.message
+      details: error instanceof Error ? error.message : '未知错误'
     }, { status: 500 })
   }
 }
@@ -144,6 +144,9 @@ export async function POST(request: NextRequest) {
 // 通过小红书Web API获取数据
 async function fetchViaWebAPI(userId: string, student: any) {
   const apiUrl = `https://edith.xiaohongshu.com/api/sns/web/v1/user_posted?num=20&cursor=&user_id=${userId}&image_scenes=`
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000)
 
   const response = await fetch(apiUrl, {
     headers: {
@@ -155,8 +158,10 @@ async function fetchViaWebAPI(userId: string, student: any) {
       'sec-fetch-mode': 'cors',
       'sec-fetch-site': 'same-site'
     },
-    timeout: 10000
+    signal: controller.signal
   })
+
+  clearTimeout(timeoutId)
 
   if (!response.ok) {
     throw new Error(`Web API HTTP ${response.status}`)
@@ -194,14 +199,19 @@ async function fetchViaWebAPI(userId: string, student: any) {
 async function fetchViaMobileAPI(userId: string, student: any) {
   const apiUrl = `https://www.xiaohongshu.com/api/sns/web/v1/user_posted?user_id=${userId}&cursor=&num=20`
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 8000)
+
   const response = await fetch(apiUrl, {
     headers: {
       'User-Agent': 'XiaoHongShu/7.98.1 (iPhone; iOS 15.0; Scale/3.00)',
       'Accept': 'application/json',
       'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
     },
-    timeout: 8000
+    signal: controller.signal
   })
+
+  clearTimeout(timeoutId)
 
   if (!response.ok) {
     throw new Error(`Mobile API HTTP ${response.status}`)
