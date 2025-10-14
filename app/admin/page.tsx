@@ -676,7 +676,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          </div>
           </>) : showStudentManagement ? (
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center mb-6">
