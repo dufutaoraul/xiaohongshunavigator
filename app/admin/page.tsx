@@ -945,14 +945,6 @@ export default function AdminDashboard() {
                     const endDate = new Date(selectedStudent.schedule.end_date)
                     const checkinDates = new Set(selectedStudent.records?.map((r: any) => r.checkin_date) || [])
 
-                    // 调试信息
-                    console.log(`🔍 [管理员日历] 学员 ${selectedStudent.student_id}:`, {
-                      打卡安排: selectedStudent.schedule,
-                      打卡记录数: selectedStudent.records?.length || 0,
-                      打卡日期: selectedStudent.records?.map((r: any) => r.checkin_date) || [],
-                      检查的日期: checkinDates
-                    })
-
                     // 生成所有涉及的月份
                     const months = []
                     const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
@@ -990,56 +982,30 @@ export default function AdminDashboard() {
                         const today = getBeijingDateString()
                         const isPast = dateStr < today
 
-                        // 调试关键日期
-                        if (dateStr === '2025-10-08' || dateStr === '2025-10-09' || dateStr === '2025-10-10') {
-                          console.log(`🔍 [关键日期] ${dateStr}:`, {
-                            日期字符串: dateStr,
-                            有打卡: hasCheckin,
-                            在周期内: isInSchedule,
-                            是过去: isPast,
-                            今天: today,
-                            周期开始: selectedStudent.schedule.start_date,
-                            周期结束: selectedStudent.schedule.end_date,
-                            所有打卡日期: Array.from(checkinDates)
-                          })
-                        }
-
-                        let bgClass = 'bg-gray-500/20'
-                        let textClass = 'text-white/30'
+                        // 复制学员端的逻辑，保持完全一致
+                        let statusClass = 'glass-effect border-white/20'
+                        let textClass = 'text-white'
 
                         if (!isInSchedule) {
-                          // 不在打卡周期内 - 灰色显示
-                          bgClass = 'bg-gray-500/10 !important'
-                          textClass = 'text-white/40 !important'
+                          // 不在打卡周期内 - 普通显示
+                          statusClass = 'bg-gray-500/10 border-gray-500/30'
+                          textClass = 'text-white/50'
                         } else if (hasCheckin) {
-                          // 已打卡 - 绿色
-                          bgClass = 'bg-green-500/30 !important'
-                          textClass = 'text-green-300 !important'
+                          // 已打卡 - 绿色（打卡合格）
+                          statusClass = 'bg-green-500/30 border-green-400'
+                          textClass = 'text-white'
                         } else if (isPast) {
-                          // 在打卡周期内但未打卡的过去日期 - 红色
-                          bgClass = 'bg-red-500/30 !important'
-                          textClass = 'text-red-300 !important'
+                          // 忘记打卡（过去的日期但没有打卡）- 红色
+                          statusClass = 'bg-red-500/30 border-red-400'
+                          textClass = 'text-white'
                         } else {
-                          // 在打卡周期内的未来日期 - 灰色
-                          bgClass = 'bg-gray-500/20 !important'
-                          textClass = 'text-white/60 !important'
-                        }
-
-                        // 调试关键日期的CSS类
-                        if (dateStr === '2025-10-08' || dateStr === '2025-10-09' || dateStr === '2025-10-10') {
-                          console.log(`🎨 [CSS调试] ${dateStr}:`, {
-                            日期: dateStr,
-                            最终背景类: bgClass,
-                            最终文字类: textClass,
-                            hasCheckin: hasCheckin,
-                            isInSchedule: isInSchedule,
-                            isPast: isPast,
-                            完整类名: `p-2 rounded text-xs ${bgClass} ${textClass} relative`
-                          })
+                          // 待打卡（未来的日期或今天）- 灰色边框
+                          statusClass = 'bg-gray-500/20 border-gray-400/50'
+                          textClass = 'text-white'
                         }
 
                         calendarDays.push(
-                          <div key={dateStr} className={`p-2 rounded text-xs ${bgClass} ${textClass} relative`}>
+                          <div key={dateStr} className={`p-2 rounded text-xs ${statusClass} ${textClass} relative`}>
                             {currentDay.getDate()}
                             {hasCheckin && <div className="absolute top-0 right-0 text-xs">✅</div>}
                           </div>
