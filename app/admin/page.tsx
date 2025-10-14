@@ -678,9 +678,7 @@ export default function AdminDashboard() {
                   >
                     🧹 清理测试数据
                   </Link>
-                </div>
               </div>
-            </div>
           </>) : showStudentManagement ? (
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center mb-6">
