@@ -1009,20 +1009,20 @@ export default function AdminDashboard() {
 
                         if (!isInSchedule) {
                           // 不在打卡周期内 - 灰色显示
-                          bgClass = 'bg-gray-500/10'
-                          textClass = 'text-white/40'
+                          bgClass = 'bg-gray-500/10 !important'
+                          textClass = 'text-white/40 !important'
                         } else if (hasCheckin) {
                           // 已打卡 - 绿色
-                          bgClass = 'bg-green-500/30'
-                          textClass = 'text-green-300'
+                          bgClass = 'bg-green-500/30 !important'
+                          textClass = 'text-green-300 !important'
                         } else if (isPast) {
                           // 在打卡周期内但未打卡的过去日期 - 红色
-                          bgClass = 'bg-red-500/30'
-                          textClass = 'text-red-300'
+                          bgClass = 'bg-red-500/30 !important'
+                          textClass = 'text-red-300 !important'
                         } else {
                           // 在打卡周期内的未来日期 - 灰色
-                          bgClass = 'bg-gray-500/20'
-                          textClass = 'text-white/60'
+                          bgClass = 'bg-gray-500/20 !important'
+                          textClass = 'text-white/60 !important'
                         }
 
                         // 调试关键日期的CSS类
