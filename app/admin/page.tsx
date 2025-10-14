@@ -1004,8 +1004,19 @@ export default function AdminDashboard() {
                           textClass = 'text-white'
                         }
 
+                        // 强制修复：对于有打卡的日期使用内联样式
+                        const finalStyle = hasCheckin ? {
+                          backgroundColor: 'rgba(34, 197, 94, 0.3)',
+                          borderColor: 'rgb(34, 197, 94)',
+                          color: 'white'
+                        } : {}
+
                         calendarDays.push(
-                          <div key={dateStr} className={`p-2 rounded text-xs ${statusClass} ${textClass} relative`}>
+                          <div
+                            key={`${dateStr}-${hasCheckin ? 'checked' : 'unchecked'}`}
+                            className={`p-2 rounded text-xs ${statusClass} ${textClass} relative`}
+                            style={finalStyle}
+                          >
                             {currentDay.getDate()}
                             {hasCheckin && <div className="absolute top-0 right-0 text-xs">✅</div>}
                           </div>
