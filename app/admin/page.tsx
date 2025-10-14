@@ -945,6 +945,14 @@ export default function AdminDashboard() {
                     const endDate = new Date(selectedStudent.schedule.end_date)
                     const checkinDates = new Set(selectedStudent.records?.map((r: any) => r.checkin_date) || [])
 
+                    // 调试信息
+                    console.log(`🔍 [管理员日历] 学员 ${selectedStudent.student_id}:`, {
+                      打卡安排: selectedStudent.schedule,
+                      打卡记录数: selectedStudent.records?.length || 0,
+                      打卡日期: selectedStudent.records?.map((r: any) => r.checkin_date) || [],
+                      检查的日期: checkinDates
+                    })
+
                     // 生成所有涉及的月份
                     const months = []
                     const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
