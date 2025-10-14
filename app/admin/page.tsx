@@ -277,7 +277,7 @@ export default function AdminDashboard() {
           records: studentRecords,
           schedule: studentSchedule
         }
-      })
+      }))
 
       // 根据类型过滤学员
       const checkinFilteredStudents = studentStats.filter((s: any) => s.status === type)
@@ -678,8 +678,11 @@ export default function AdminDashboard() {
                   >
                     🧹 清理测试数据
                   </Link>
+                </div>
               </div>
-          </>) : showStudentManagement ? (
+            </div>
+          </>
+        ) : showStudentManagement ? (
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center mb-6">
               <button
