@@ -658,7 +658,7 @@ export default function AdminDashboard() {
 
             {/* 测试数据清理工具 */}
             <div className="glass-effect p-6 rounded-xl mt-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">🧹</div>
                   <div>
@@ -666,7 +666,7 @@ export default function AdminDashboard() {
                     <p className="text-2xl font-bold text-white">工具</p>
                   </div>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 ml-4">
                   <Link
                     href="/admin/simple-test-data-cleanup"
                     className="block w-full px-4 py-2 bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 hover:text-orange-200 rounded-lg transition-all duration-300 text-sm text-center"
@@ -676,8 +676,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          </>
-        ) : showStudentManagement ? (
+          ) : showStudentManagement ? (
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center mb-6">
               <button
