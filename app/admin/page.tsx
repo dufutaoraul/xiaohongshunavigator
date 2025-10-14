@@ -203,7 +203,7 @@ export default function AdminDashboard() {
       const now = new Date()
 
       // 计算每个学员的打卡状态
-      const studentStats = allStudents.map((student: any) => {
+      const studentStats = await Promise.all(allStudents.map(async (student: any) => {
         // 找到该学员的打卡安排
         const studentSchedule = schedules.find((s: any) => {
           return s.student_id === student.student_id
@@ -222,13 +222,18 @@ export default function AdminDashboard() {
           }
         }
 
+        // 使用与学员端相同的API获取该学员的打卡记录
+        const timestamp = new Date().getTime()
+        const studentRecordsResponse = await fetch(`/api/checkin/records?student_id=${student.student_id}&limit=90&_t=${timestamp}`)
+
+        let studentRecords = []
+        if (studentRecordsResponse.ok) {
+          const studentRecordsData = await studentRecordsResponse.json()
+          studentRecords = studentRecordsData.records || []
+        }
+
         const startDate = new Date(studentSchedule.start_date + 'T00:00:00')
         const endDate = new Date(studentSchedule.end_date + 'T23:59:59')
-
-        // 获取学员的所有打卡记录（不限制日期范围）
-        const studentRecords = recordsData.records.filter((r: any) =>
-          r.student_id === student.student_id
-        )
 
         const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
         const checkinDays = studentRecords.length
