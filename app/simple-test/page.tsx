@@ -189,8 +189,8 @@ export default function SimpleTestPage() {
           <li>输入任意小红书用户的主页链接</li>
           <li>系统会自动抓取该用户的帖子数据</li>
           <li>按照热度排序，返回前三名帖子</li>
-          <li>热度计算：点赞×1 + 评论×3 + 收藏×5</li>
-          <li>点击"查看帖子"可以直接访问原帖</li>
+          <li>热度计算：点赞&times;1 + 评论&times;3 + 收藏&times;5</li>
+          <li>点击&ldquo;查看帖子&rdquo;可以直接访问原帖</li>
         </ul>
       </div>
     </div>

@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
               user_id: extractUserIdFromUrl(student.xiaohongshu_profile_url),
               xsec_token: ""
             }),
-            timeout: 15000
+            signal: AbortSignal.timeout(15000)
           })
 
           if (mcpResponse.ok) {
@@ -71,9 +71,9 @@ export async function POST(request: NextRequest) {
               console.log(`✅ MCP成功获取 ${student.real_name} 的 ${posts.length} 个帖子`)
             }
           }
-        } catch (mcpError) {
-          error_msg = mcpError.message
-          console.log(`MCP获取失败:`, mcpError.message)
+        } catch (mcpError: any) {
+          error_msg = mcpError?.message || '未知错误'
+          console.log(`MCP获取失败:`, mcpError?.message || '未知错误')
         }
 
         // 如果MCP失败，尝试直接网页抓取
@@ -84,9 +84,9 @@ export async function POST(request: NextRequest) {
               source = 'web_scrape_real'
               console.log(`✅ 网页抓取成功获取 ${student.real_name} 的 ${posts.length} 个帖子`)
             }
-          } catch (scrapeError) {
-            error_msg += '; ' + scrapeError.message
-            console.log(`网页抓取失败:`, scrapeError.message)
+          } catch (scrapeError: any) {
+            error_msg += '; ' + (scrapeError?.message || '未知错误')
+            console.log(`网页抓取失败:`, scrapeError?.message || '未知错误')
           }
         }
 
@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
           error: error_msg || undefined
         })
 
-      } catch (error) {
-        console.error(`❌ 处理学员 ${student.real_name} 时出错:`, error.message)
+      } catch (error: any) {
+        console.error(`❌ 处理学员 ${student.real_name} 时出错:`, error?.message || '未知错误')
         studentResults.push({
           student: {
             student_id: student.student_id,
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
           posts_count: 0,
           posts: [],
           source: 'error',
-          error: error.message
+          error: error?.message || '未知错误'
         })
       }
     }
@@ -141,12 +141,12 @@ export async function POST(request: NextRequest) {
       message: `成功从数据库获取${students.length}个真实学员，抓取到${allRealPosts.length}个真实帖子`
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('真实学员数据获取API错误:', error)
     return NextResponse.json({
       success: false,
       error: '获取真实学员数据失败',
-      details: error.message
+      details: error?.message || '未知错误'
     }, { status: 500 })
   }
 }

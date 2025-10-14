@@ -90,7 +90,7 @@ function ResultPageContent() {
       
       setSelectedTags(finalSelected)
     }
-  }, [data])
+  }, [data, requiredTags])
 
   const copyToClipboard = async (text: string, type: string) => {
     try {

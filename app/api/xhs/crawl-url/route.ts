@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
           },
           id: 1
         }),
-        timeout: 30000
+        signal: AbortSignal.timeout(30000)
       })
 
       // 如果失败，尝试方法2: 直接调用get_profile_info
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
             },
             id: 1
           }),
-          timeout: 30000
+          signal: AbortSignal.timeout(30000)
         })
       }
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
             params: [url],
             id: 1
           }),
-          timeout: 30000
+          signal: AbortSignal.timeout(30000)
         })
       }
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         // 备用方法1: 尝试REST API
         let backupResponse = await fetch(`http://localhost:18060/api/v1/profile?url=${encodeURIComponent(url)}`, {
           method: 'GET',
-          timeout: 30000
+          signal: AbortSignal.timeout(30000)
         })
 
         // 备用方法2: 尝试另一个端点
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: url }),
-            timeout: 30000
+            signal: AbortSignal.timeout(30000)
           })
         }
 
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ profile_url: url }),
-            timeout: 30000
+            signal: AbortSignal.timeout(30000)
           })
         }
 

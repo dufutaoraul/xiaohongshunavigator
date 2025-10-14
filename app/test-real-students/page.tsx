@@ -57,7 +57,7 @@ export default function TestRealStudents() {
   }
 
   const getSourceBadge = (source: string) => {
-    const badges = {
+    const badges: Record<string, { bg: string; text: string; label: string }> = {
       'mcp_real': { bg: 'bg-green-500/20', text: 'text-green-300', label: '🔥 MCP真实抓取' },
       'web_scrape_real': { bg: 'bg-blue-500/20', text: 'text-blue-300', label: '🌐 网页真实抓取' },
       'error': { bg: 'bg-red-500/20', text: 'text-red-300', label: '❌ 抓取失败' }

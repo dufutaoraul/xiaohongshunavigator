@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 export default function TestRealXHSPage() {
   const [searchKeyword, setSearchKeyword] = useState('美食')
@@ -114,9 +115,11 @@ export default function TestRealXHSPage() {
                             </p>
                           </div>
                           {post.coverImage && (
-                            <img
+                            <Image
                               src={post.coverImage}
                               alt="封面"
+                              width={80}
+                              height={80}
                               className="w-20 h-20 object-cover rounded ml-4"
                             />
                           )}

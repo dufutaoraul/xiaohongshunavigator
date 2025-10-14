@@ -75,9 +75,14 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`🔍 测试: ${testMethod.name}`)
 
-        const response = await fetch(testMethod.config.url, {
+        const headers: Record<string, string> = {}
+      if (testMethod.config.headers && typeof testMethod.config.headers === 'object') {
+        Object.assign(headers, testMethod.config.headers)
+      }
+
+      const response = await fetch(testMethod.config.url, {
           method: testMethod.config.method,
-          headers: testMethod.config.headers,
+          headers,
           body: testMethod.config.body,
           signal: AbortSignal.timeout(10000) // 10秒超时
         })

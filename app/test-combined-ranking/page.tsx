@@ -60,7 +60,7 @@ export default function TestCombinedRanking() {
   }
 
   const getSourceBadge = (source: string) => {
-    const badges = {
+    const badges: Record<string, { bg: string; text: string; label: string }> = {
       'mcp': { bg: 'bg-green-500/20', text: 'text-green-300', label: '真实数据' },
       'mock': { bg: 'bg-yellow-500/20', text: 'text-yellow-300', label: '高质量模拟' },
       'error': { bg: 'bg-red-500/20', text: 'text-red-300', label: '获取失败' }

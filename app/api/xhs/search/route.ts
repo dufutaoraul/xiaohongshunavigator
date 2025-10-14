@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     // 检查xiaohongshu-mcp服务状态
     const serviceCheck = await fetch('http://localhost:18060/api/v1/login/status', {
       method: 'GET',
-      timeout: 5000
+      signal: AbortSignal.timeout(5000)
     })
 
     if (!serviceCheck.ok) {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         page: 1,
         page_size: 20
       }),
-      timeout: 30000
+      signal: AbortSignal.timeout(30000)
     })
 
     if (!searchResponse.ok) {

@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     // 检查数据结构并提取帖子信息
     let notes = []
-    let userInfo = {}
+    let userInfo: any = {}
 
     if (profileData) {
       // 尝试多种可能的数据结构
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
           hotScore: (likes * 1) + (comments * 3) + (collections * 5)
         }
       })
-      .sort((a, b) => b.hotScore - a.hotScore)
+      .sort((a: any, b: any) => b.hotScore - a.hotScore)
       .slice(0, 3)
 
     console.log('🏆 排名前三的帖子:', sortedPosts)

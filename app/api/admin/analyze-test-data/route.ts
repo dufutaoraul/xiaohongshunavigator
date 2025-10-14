@@ -138,9 +138,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 常见测试原因统计
-    const testReasonStats = {}
+    const testReasonStats: Record<string, number> = {}
     testRecords.forEach(record => {
-      record.analysis.testReasons.forEach(reason => {
+      record.analysis.testReasons.forEach((reason: string) => {
         testReasonStats[reason] = (testReasonStats[reason] || 0) + 1
       })
     })

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
             },
             id: 1
           }),
-          timeout: 10000
+          signal: AbortSignal.timeout(10000)
         })
 
         if (!initResponse.ok) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
             params: {},
             id: 2
           }),
-          timeout: 10000
+          signal: AbortSignal.timeout(10000)
         })
 
         if (toolsResponse.ok) {
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
           },
           id: 3
         }),
-        timeout: 10000
+        signal: AbortSignal.timeout(10000)
       })
 
       if (loginResponse.ok) {
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
           },
           id: 4
         }),
-        timeout: 30000
+        signal: AbortSignal.timeout(30000)
       })
 
       if (feedResponse.ok) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 export default function TestPublishPage() {
   const [isPublishing, setIsPublishing] = useState(false)
@@ -81,9 +82,11 @@ export default function TestPublishPage() {
 
           <div className="mb-6">
             <h3 className="font-medium text-gray-700 mb-2">配图：</h3>
-            <img
+            <Image
               src={postContent.imageUrls[0]}
               alt="纽西兰陶波湖毛利岩雕"
+              width={400}
+              height={300}
               className="max-w-md rounded-lg shadow-sm"
             />
           </div>

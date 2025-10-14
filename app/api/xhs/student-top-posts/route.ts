@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json',
             'User-Agent': 'XiaohongshuNavigator/1.0'
           },
-          timeout: 10000
+          signal: AbortSignal.timeout(10000)
         })
 
         if (mcpResponse.ok) {
@@ -94,14 +94,14 @@ export async function POST(request: NextRequest) {
           source: 'mock'
         })
 
-      } catch (error) {
-        console.error(`❌ 处理学员 ${profile.name} 时出错:`, error.message)
+      } catch (error: any) {
+        console.error(`❌ 处理学员 ${profile.name} 时出错:`, error?.message || '未知错误')
 
         results.push({
           student: {
             name: profile.name,
             url: profile.url,
-            error: error.message
+            error: error?.message || '未知错误'
           },
           posts: [],
           total_posts: 0,
@@ -121,11 +121,12 @@ export async function POST(request: NextRequest) {
       message: `成功分析了 ${results.length} 个学员的主页热门帖子`
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('学员主页分析API错误:', error)
     return NextResponse.json({
       success: false,
-      error: '分析失败，请稍后重试'
+      error: '分析失败，请稍后重试',
+      details: error?.message || '未知错误'
     }, { status: 500 })
   }
 }

@@ -83,12 +83,12 @@ export async function POST(request: NextRequest) {
       message: `成功获取 ${allRealPosts.length} 个真实小红书帖子，已按热度排名`
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('真实数据获取API错误:', error)
     return NextResponse.json({
       success: false,
       error: '真实数据获取失败，请稍后重试',
-      details: error.message
+      details: error?.message || '未知错误'
     }, { status: 500 })
   }
 }
@@ -112,7 +112,7 @@ async function fetchRealXiaohongshuData(keyword: string, limit: number) {
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin'
       },
-      timeout: 10000
+      signal: AbortSignal.timeout(10000)
     })
 
     if (!response.ok) {
@@ -147,8 +147,8 @@ async function fetchRealXiaohongshuData(keyword: string, limit: number) {
     }
 
     return null
-  } catch (error) {
-    console.log(`小红书API获取 ${keyword} 失败:`, error.message)
+  } catch (error: any) {
+    console.log(`小红书API获取 ${keyword} 失败:`, error?.message || '未知错误')
     return null
   }
 }
@@ -185,8 +185,8 @@ async function fetchXiaohongshuWebData(keyword: string, limit: number) {
     }
 
     return webPosts
-  } catch (error) {
-    console.log(`网页数据获取 ${keyword} 失败:`, error.message)
+  } catch (error: any) {
+    console.log(`网页数据获取 ${keyword} 失败:`, error?.message || '未知错误')
     return null
   }
 }

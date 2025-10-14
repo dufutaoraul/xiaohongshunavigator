@@ -60,7 +60,7 @@ export default function TestRealData() {
   }
 
   const getSourceBadge = (source: string) => {
-    const badges = {
+    const badges: Record<string, { bg: string; text: string; label: string }> = {
       'real_api': { bg: 'bg-green-500/20', text: 'text-green-300', label: '🔥 API真实数据' },
       'web_scrape': { bg: 'bg-blue-500/20', text: 'text-blue-300', label: '🌐 网页真实数据' },
       'failed': { bg: 'bg-red-500/20', text: 'text-red-300', label: '❌ 获取失败' },
