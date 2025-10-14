@@ -20,7 +20,7 @@ export class MCPServiceManager {
   private readonly configPath: string
 
   constructor() {
-    this.servicePath = path.join(process.cwd(), 'xhs-mcp')
+    this.servicePath = 'D:\\CursorWork\\xiaohongshu-mcp-windows-amd64'
     this.configPath = path.join(this.servicePath, 'config.yaml')
   }
 
@@ -36,7 +36,7 @@ export class MCPServiceManager {
       }
 
       // 检查服务文件是否存在
-      const executablePath = path.join(this.servicePath, 'xiaohongshu-mcp.exe')
+      const executablePath = path.join(this.servicePath, 'xiaohongshu-mcp-windows-amd64.exe')
       try {
         await fs.access(executablePath)
       } catch {
@@ -47,7 +47,7 @@ export class MCPServiceManager {
       }
 
       // 启动服务进程
-      this.mcpProcess = spawn(executablePath, ['-headless=true', '-port=18060'], {
+      this.mcpProcess = spawn(executablePath, ['-headless=true'], {
         cwd: this.servicePath,
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: false
@@ -255,33 +255,39 @@ export class MCPServiceManager {
    */
   async checkLoginStatus(): Promise<{ isLoggedIn: boolean; message: string }> {
     try {
-      const response = await fetch('http://localhost:18060/mcp', {
-        method: 'POST',
+      // 使用直接的HTTP API端点检查登录状态
+      const response = await fetch('http://localhost:18060/api/v1/login/status', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'check_login_status',
-          params: {},
-          id: 1
-        }),
         timeout: 10000
       })
 
       if (response.ok) {
         const data = await response.json()
-        const isLoggedIn = data.result?.logged_in || false
-        
+
+        if (!data.success) {
+          return {
+            isLoggedIn: false,
+            message: data.message || '检查登录状态失败'
+          }
+        }
+
+        const isLoggedIn = data.data?.is_logged_in || false
+        const username = data.data?.username || 'unknown'
+
         return {
           isLoggedIn,
-          message: isLoggedIn ? '已登录小红书账号' : '未登录，请先运行登录工具'
+          message: isLoggedIn
+            ? `已登录小红书账号 (${username})`
+            : '未登录，请先运行登录工具'
         }
       }
 
       return {
         isLoggedIn: false,
-        message: '无法检查登录状态'
+        message: `HTTP请求失败: ${response.status} ${response.statusText}`
       }
 
     } catch (error) {
@@ -336,6 +342,26 @@ export class MCPServiceManager {
         }
       }
     }, 60000) // 每分钟检查一次
+  }
+
+  /**
+   * 检查端口是否开放
+   */
+  private async checkPort(port: number): Promise<boolean> {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 2000)
+
+      const response = await fetch(`http://localhost:${port}`, {
+        method: 'GET',
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+      return true // 如果能连接到端口，认为端口是开放的
+    } catch {
+      return false // 连接失败，端口未开放
+    }
   }
 
   /**

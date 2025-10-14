@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 export default function SimpleTestPage() {
   const [userUrl, setUserUrl] = useState('https://www.xiaohongshu.com/user/profile/5ff0e4ac000000000100d1b4')
+  const [cookies, setCookies] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
@@ -24,7 +25,10 @@ export default function SimpleTestPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userUrl: userUrl.trim() })
+        body: JSON.stringify({
+          userUrl: userUrl.trim(),
+          cookies: cookies.trim() || null
+        })
       })
 
       const data = await response.json()
@@ -60,6 +64,22 @@ export default function SimpleTestPage() {
               placeholder="https://www.xiaohongshu.com/user/profile/用户ID"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              🍪 小红书Cookies (可选，如果抓取失败请提供):
+            </label>
+            <textarea
+              value={cookies}
+              onChange={(e) => setCookies(e.target.value)}
+              placeholder="从浏览器开发者工具中复制小红书的cookies..."
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 如果抓取失败，请按F12打开开发者工具，在Network标签页找到小红书请求，复制Cookie头部信息
+            </p>
           </div>
           
           <button

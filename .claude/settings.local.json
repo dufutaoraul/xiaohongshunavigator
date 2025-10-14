@@ -139,7 +139,12 @@
       "Bash(docker-compose:*)",
       "Bash(git clone:*)",
       "WebSearch",
-      "WebFetch(domain:pkg.go.dev)"
+      "WebFetch(domain:pkg.go.dev)",
+      "Bash(./xiaohongshu-mcp-windows-amd64.exe -h)",
+      "Bash(./xiaohongshu-mcp-windows-amd64.exe -bin=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" -headless=true)",
+      "Read(//c/Users/杜富陶/.cursor/**)",
+      "Bash(xiaohongshu-login-windows-amd64.exe:*)",
+      "Bash(.xiaohongshu-login-windows-amd64.exe:*)"
     ],
     "deny": []
   }

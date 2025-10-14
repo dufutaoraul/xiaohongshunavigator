@@ -225,11 +225,9 @@ export default function AdminDashboard() {
         const startDate = new Date(studentSchedule.start_date + 'T00:00:00')
         const endDate = new Date(studentSchedule.end_date + 'T23:59:59')
 
-        // 只计算在打卡周期内的记录
+        // 获取学员的所有打卡记录（不限制日期范围）
         const studentRecords = recordsData.records.filter((r: any) =>
-          r.student_id === student.student_id &&
-          r.checkin_date >= studentSchedule.start_date &&
-          r.checkin_date <= studentSchedule.end_date
+          r.student_id === student.student_id
         )
 
         const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -657,6 +655,27 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
+
+            {/* 测试数据清理工具 */}
+            <div className="glass-effect p-6 rounded-xl mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">🧹</div>
+                  <div>
+                    <p className="text-white/60 text-sm">测试数据清理</p>
+                    <p className="text-2xl font-bold text-white">工具</p>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <Link
+                    href="/admin/simple-test-data-cleanup"
+                    className="block w-full px-4 py-2 bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 hover:text-orange-200 rounded-lg transition-all duration-300 text-sm text-center"
+                  >
+                    🧹 清理测试数据
+                  </Link>
+                </div>
+              </div>
+            </div>
           </>
         ) : showStudentManagement ? (
           <div className="max-w-6xl mx-auto">
@@ -957,24 +976,32 @@ export default function AdminDashboard() {
                       const currentDay = new Date(firstDay)
                       while (currentDay <= lastDay) {
                         const dateStr = getBeijingDateString(currentDay)
-                        const isInRange = dateStr >= selectedStudent.schedule.start_date && dateStr <= selectedStudent.schedule.end_date
                         const hasCheckin = checkinDates.has(dateStr)
-                        const isPast = dateStr < getBeijingDateString()
+
+                        // 检查是否在打卡周期内
+                        const isInSchedule = dateStr >= selectedStudent.schedule.start_date && dateStr <= selectedStudent.schedule.end_date
+                        const today = getBeijingDateString()
+                        const isPast = dateStr < today
 
                         let bgClass = 'bg-gray-500/20'
                         let textClass = 'text-white/30'
 
-                        if (isInRange) {
-                          if (hasCheckin) {
-                            bgClass = 'bg-green-500/30'
-                            textClass = 'text-green-300'
-                          } else if (isPast) {
-                            bgClass = 'bg-red-500/30'
-                            textClass = 'text-red-300'
-                          } else {
-                            bgClass = 'bg-gray-500/20'
-                            textClass = 'text-white/60'
-                          }
+                        if (!isInSchedule) {
+                          // 不在打卡周期内 - 灰色显示
+                          bgClass = 'bg-gray-500/10'
+                          textClass = 'text-white/40'
+                        } else if (hasCheckin) {
+                          // 已打卡 - 绿色
+                          bgClass = 'bg-green-500/30'
+                          textClass = 'text-green-300'
+                        } else if (isPast) {
+                          // 在打卡周期内但未打卡的过去日期 - 红色
+                          bgClass = 'bg-red-500/30'
+                          textClass = 'text-red-300'
+                        } else {
+                          // 在打卡周期内的未来日期 - 灰色
+                          bgClass = 'bg-gray-500/20'
+                          textClass = 'text-white/60'
                         }
 
                         calendarDays.push(

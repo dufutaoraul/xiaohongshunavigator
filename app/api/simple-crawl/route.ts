@@ -6,8 +6,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userUrl } = await request.json()
-    
+    const { userUrl, cookies } = await request.json()
+
     if (!userUrl) {
       return NextResponse.json({
         success: false,
@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🔍 开始抓取用户:', userUrl)
+    console.log('🍪 是否提供cookies:', !!cookies)
 
     // 步骤1: 测试MCP服务连接
     const healthResponse = await fetch('http://localhost:18060/health', {
@@ -51,7 +52,8 @@ export async function POST(request: NextRequest) {
           name: 'user_profile',
           arguments: {
             user_id: userId,
-            xsec_token: ''  // 先尝试空token，如果失败会提示需要token
+            xsec_token: '',  // 先尝试空token，如果失败会提示需要token
+            ...(cookies && { cookies: cookies })
           }
         },
         id: 1
@@ -71,46 +73,127 @@ export async function POST(request: NextRequest) {
       throw new Error(`MCP错误: ${mcpData.error.message || mcpData.error}`)
     }
 
-    const userProfile = mcpData.result?.content?.[0]?.text
-    if (!userProfile) {
+    console.log('📦 完整MCP响应结构:', JSON.stringify(mcpData, null, 2))
+
+    // 尝试多种可能的数据结构
+    let userProfile = null
+    let profileData = null
+
+    // 方式1: 检查 result.content[0].text
+    if (mcpData.result?.content?.[0]?.text) {
+      userProfile = mcpData.result.content[0].text
+      console.log('📄 找到用户资料文本:', userProfile.substring(0, 200) + '...')
+    }
+    // 方式2: 检查 result 直接包含数据
+    else if (mcpData.result && typeof mcpData.result === 'object') {
+      profileData = mcpData.result
+      console.log('📊 直接使用result数据')
+    }
+    // 方式3: 检查其他可能的结构
+    else {
+      console.log('❓ 未知的响应结构，尝试解析...')
       return NextResponse.json({
         success: false,
-        error: '未找到该用户的数据，可能需要先登录小红书账号或提供正确的xsec_token'
+        error: '未找到该用户的数据，可能需要先登录小红书账号',
+        debug: {
+          hasResult: !!mcpData.result,
+          resultType: typeof mcpData.result,
+          resultKeys: mcpData.result ? Object.keys(mcpData.result) : [],
+          fullResponse: mcpData
+        }
       })
     }
 
     // 解析用户资料数据
-    let profileData
-    try {
-      profileData = JSON.parse(userProfile)
-    } catch (e) {
-      throw new Error('解析用户资料数据失败')
+    if (userProfile && !profileData) {
+      try {
+        profileData = JSON.parse(userProfile)
+        console.log('✅ 成功解析用户资料JSON')
+      } catch (e) {
+        console.log('❌ JSON解析失败，尝试其他方式:', e)
+        // 如果不是JSON，可能是纯文本描述
+        return NextResponse.json({
+          success: false,
+          error: '用户资料数据格式异常，可能需要登录或提供xsec_token',
+          debug: {
+            rawData: userProfile.substring(0, 500),
+            parseError: e instanceof Error ? e.message : '未知错误'
+          }
+        })
+      }
     }
 
-    const notes = profileData.notes || []
+    // 检查数据结构并提取帖子信息
+    let notes = []
+    let userInfo = {}
+
+    if (profileData) {
+      // 尝试多种可能的数据结构
+      notes = profileData.notes || profileData.posts || profileData.data || []
+      userInfo = profileData.basic_info || profileData.user_info || profileData.info || {}
+
+      console.log('📊 数据结构分析:')
+      console.log('- 帖子数量:', notes.length)
+      console.log('- 用户信息键:', Object.keys(userInfo))
+      console.log('- 完整数据键:', Object.keys(profileData))
+    }
 
     if (notes.length === 0) {
       return NextResponse.json({
         success: false,
-        error: '该用户暂无公开帖子'
+        error: '该用户暂无公开帖子或需要登录查看',
+        debug: {
+          profileDataKeys: profileData ? Object.keys(profileData) : [],
+          hasNotes: !!profileData?.notes,
+          hasPosts: !!profileData?.posts,
+          hasData: !!profileData?.data
+        }
       })
     }
 
     // 步骤4: 按互动数据排序，获取前三名
     const sortedPosts = notes
-      .filter((note: any) => note.note_card && note.note_card.interact_info)
+      .filter((note: any) => {
+        // 支持多种数据结构
+        return note && (note.note_card || note.interact_info || note.stats)
+      })
       .map((note: any) => {
-        const card = note.note_card
-        const interactInfo = card.interact_info
+        // 适配不同的数据结构
+        let title = '无标题'
+        let likes = 0
+        let comments = 0
+        let collections = 0
+        let noteId = note.id || note.note_id || ''
+
+        if (note.note_card) {
+          // 结构1: note_card格式
+          const card = note.note_card
+          const interactInfo = card.interact_info || {}
+          title = card.display_title || card.title || '无标题'
+          likes = parseInt(interactInfo.liked_count || 0)
+          comments = parseInt(interactInfo.comment_count || 0)
+          collections = parseInt(interactInfo.collected_count || 0)
+        } else if (note.interact_info) {
+          // 结构2: 直接interact_info格式
+          title = note.title || note.display_title || '无标题'
+          likes = parseInt(note.interact_info.liked_count || 0)
+          comments = parseInt(note.interact_info.comment_count || 0)
+          collections = parseInt(note.interact_info.collected_count || 0)
+        } else if (note.stats) {
+          // 结构3: stats格式
+          title = note.title || '无标题'
+          likes = parseInt(note.stats.likes || 0)
+          comments = parseInt(note.stats.comments || 0)
+          collections = parseInt(note.stats.collections || 0)
+        }
+
         return {
-          title: card.display_title || '无标题',
-          url: `https://www.xiaohongshu.com/explore/${note.id}`,
-          likes: parseInt(interactInfo.liked_count || 0),
-          comments: parseInt(interactInfo.comment_count || 0),
-          collections: parseInt(interactInfo.collected_count || 0),
-          hotScore: (parseInt(interactInfo.liked_count || 0) * 1) +
-                   (parseInt(interactInfo.comment_count || 0) * 3) +
-                   (parseInt(interactInfo.collected_count || 0) * 5)
+          title,
+          url: `https://www.xiaohongshu.com/explore/${noteId}`,
+          likes,
+          comments,
+          collections,
+          hotScore: (likes * 1) + (comments * 3) + (collections * 5)
         }
       })
       .sort((a, b) => b.hotScore - a.hotScore)
@@ -124,15 +207,21 @@ export async function POST(request: NextRequest) {
         userUrl,
         userId,
         userInfo: {
-          nickname: profileData.basic_info?.nickname || '未知用户',
-          desc: profileData.basic_info?.desc || '暂无简介',
-          follows: profileData.basic_info?.follows || 0,
-          fans: profileData.basic_info?.fans || 0,
-          interaction: profileData.basic_info?.interaction || 0
+          nickname: userInfo.nickname || userInfo.name || '未知用户',
+          desc: userInfo.desc || userInfo.description || userInfo.bio || '暂无简介',
+          follows: userInfo.follows || userInfo.following || 0,
+          fans: userInfo.fans || userInfo.followers || 0,
+          interaction: userInfo.interaction || userInfo.likes || 0
         },
         totalPosts: notes.length,
         topPosts: sortedPosts,
-        message: `成功抓取到用户 ${profileData.basic_info?.nickname || '未知用户'} 的 ${notes.length} 个帖子，以下是热度排名前三的帖子`
+        message: `成功抓取到用户 ${userInfo.nickname || userInfo.name || '未知用户'} 的 ${notes.length} 个帖子，以下是热度排名前三的帖子`,
+        debug: {
+          mcpResponseStructure: Object.keys(mcpData),
+          profileDataStructure: profileData ? Object.keys(profileData) : [],
+          userInfoStructure: Object.keys(userInfo),
+          notesStructure: notes.length > 0 ? Object.keys(notes[0]) : []
+        }
       }
     })
 
