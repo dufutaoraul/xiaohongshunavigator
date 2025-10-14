@@ -1025,6 +1025,19 @@ export default function AdminDashboard() {
                           textClass = 'text-white/60'
                         }
 
+                        // 调试关键日期的CSS类
+                        if (dateStr === '2025-10-08' || dateStr === '2025-10-09' || dateStr === '2025-10-10') {
+                          console.log(`🎨 [CSS调试] ${dateStr}:`, {
+                            日期: dateStr,
+                            最终背景类: bgClass,
+                            最终文字类: textClass,
+                            hasCheckin: hasCheckin,
+                            isInSchedule: isInSchedule,
+                            isPast: isPast,
+                            完整类名: `p-2 rounded text-xs ${bgClass} ${textClass} relative`
+                          })
+                        }
+
                         calendarDays.push(
                           <div key={dateStr} className={`p-2 rounded text-xs ${bgClass} ${textClass} relative`}>
                             {currentDay.getDate()}
