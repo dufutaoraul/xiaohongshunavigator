@@ -247,7 +247,7 @@ class XHSMCPClient {
       try {
         const response = await fetch(url, {
           ...options,
-          timeout: this.config.timeout
+          signal: AbortSignal.timeout(this.config.timeout)
         })
 
         // 分析响应进行风险监控
@@ -400,7 +400,7 @@ class XHSMCPClient {
           },
           id: Date.now()
         }),
-        timeout: this.config.timeout
+        signal: AbortSignal.timeout(this.config.timeout)
       })
 
       if (!response.ok) {
@@ -609,22 +609,19 @@ class XHSMCPClient {
       title: altPost.title || '',
       description: altPost.desc || '',
       author: {
-        user_id: altPost.user?.user_id || '',
+        userId: altPost.user?.user_id || '',
         nickname: altPost.user?.nickname || '',
         avatar: altPost.user?.avatar || ''
       },
-      interact_info: {
-        liked_count: altPost.interact_info?.liked_count || '0',
-        collected_count: altPost.interact_info?.collected_count || '0',
-        comment_count: altPost.interact_info?.comment_count || '0',
-        share_count: altPost.interact_info?.share_count || '0'
+      stats: {
+        likes: parseInt(altPost.interact_info?.liked_count || '0'),
+        comments: parseInt(altPost.interact_info?.comment_count || '0'),
+        shares: parseInt(altPost.interact_info?.share_count || '0'),
+        collections: parseInt(altPost.interact_info?.collected_count || '0')
       },
-      cover: altPost.cover ? { url: altPost.cover.url } : undefined,
+      publishTime: new Date(),
       images: altPost.images || [],
-      video: altPost.video || undefined,
-      time: Date.now(),
-      last_update_time: Date.now(),
-      type: altPost.type || 'normal'
+      url: altPost.url || ''
     }
   }
 

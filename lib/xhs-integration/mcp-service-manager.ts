@@ -226,7 +226,7 @@ export class MCPServiceManager {
           params: {},
           id: 1
         }),
-        timeout: 10000
+        signal: AbortSignal.timeout(10000)
       })
 
       if (response.ok) {
@@ -261,7 +261,7 @@ export class MCPServiceManager {
         headers: {
           'Content-Type': 'application/json'
         },
-        timeout: 10000
+        signal: AbortSignal.timeout(10000)
       })
 
       if (response.ok) {
@@ -308,7 +308,7 @@ export class MCPServiceManager {
       try {
         const response = await fetch('http://localhost:18060/health', {
           method: 'GET',
-          timeout: 2000
+          signal: AbortSignal.timeout(2000)
         })
         
         if (response.ok) {
