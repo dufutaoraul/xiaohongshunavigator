@@ -990,6 +990,20 @@ export default function AdminDashboard() {
                         const today = getBeijingDateString()
                         const isPast = dateStr < today
 
+                        // 调试关键日期
+                        if (dateStr === '2025-10-08' || dateStr === '2025-10-09' || dateStr === '2025-10-10') {
+                          console.log(`🔍 [关键日期] ${dateStr}:`, {
+                            日期字符串: dateStr,
+                            有打卡: hasCheckin,
+                            在周期内: isInSchedule,
+                            是过去: isPast,
+                            今天: today,
+                            周期开始: selectedStudent.schedule.start_date,
+                            周期结束: selectedStudent.schedule.end_date,
+                            所有打卡日期: Array.from(checkinDates)
+                          })
+                        }
+
                         let bgClass = 'bg-gray-500/20'
                         let textClass = 'text-white/30'
 
